@@ -1,0 +1,104 @@
+import type MarkdownIt from 'markdown-it';
+import type Token from 'markdown-it/lib/token.mjs';
+
+export const CALLOUT_ICONS: Record<string, string> = {
+  note: 'ℹ',
+  tip: '💡',
+  hint: '💡',
+  warning: '⚠',
+  caution: '⚠',
+  attention: '⚠',
+  danger: '⛔',
+  error: '⛔',
+  bug: '🐛',
+  failure: '❌',
+  fail: '❌',
+  missing: '❌',
+  info: 'ℹ',
+  todo: '📋',
+  abstract: '📄',
+  summary: '📄',
+  tldr: '📄',
+  example: '📌',
+  quote: '💬',
+  cite: '💬',
+  success: '✅',
+  check: '✅',
+  done: '✅',
+  question: '❓',
+  help: '❓',
+  faq: '❓',
+};
+
+const CALLOUT_HEADER_RE = /^\[!([\w-]+)\][ \t]*(.*)/;
+const CALLOUT_STRIP_RE = /^\[!([\w-]+)\][ \t]*.*\n?/;
+
+interface CalloutMeta {
+  callout: true;
+  type: string;
+  title: string;
+}
+
+const hasCalloutMeta = (token: Token | undefined): token is Token & { meta: CalloutMeta } =>
+  Boolean(token?.meta && (token.meta as Partial<CalloutMeta>).callout === true);
+
+export const pluginObsidianCallouts = (md: MarkdownIt): void => {
+  md.core.ruler.before('inline', 'obsidian_callouts', (state) => {
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length; i++) {
+      const open = tokens[i];
+      if (!open || open.type !== 'blockquote_open') continue;
+
+      let inlineIdx = -1;
+      for (let j = i + 1; j < tokens.length; j++) {
+        const token = tokens[j];
+        if (!token) continue;
+        if (token.type === 'blockquote_close' && token.level === open.level) break;
+        if (token.type === 'inline') {
+          inlineIdx = j;
+          break;
+        }
+      }
+      if (inlineIdx < 0) continue;
+
+      const inline = tokens[inlineIdx];
+      if (!inline) continue;
+      const match = inline.content.match(CALLOUT_HEADER_RE);
+      if (!match) continue;
+
+      const type = match[1]!.toLowerCase();
+      const rawTitle = match[2]?.trim() ?? '';
+      const title = rawTitle.length > 0 ? rawTitle : type.charAt(0).toUpperCase() + type.slice(1);
+
+      inline.content = inline.content.replace(CALLOUT_STRIP_RE, '');
+      open.meta = { callout: true, type, title } satisfies CalloutMeta;
+    }
+  });
+
+  const origOpen = md.renderer.rules.blockquote_open;
+  const origClose = md.renderer.rules.blockquote_close;
+
+  md.renderer.rules.blockquote_open = (tokens, idx, opts, env, self) => {
+    const token = tokens[idx];
+    if (hasCalloutMeta(token)) {
+      const { type, title } = token.meta;
+      const icon = CALLOUT_ICONS[type] ?? 'ℹ';
+      return `<div class="callout callout-${type}"><div class="callout-title"><span class="callout-icon">${icon}</span> ${md.utils.escapeHtml(title)}</div><div class="callout-body">`;
+    }
+    return origOpen ? origOpen(tokens, idx, opts, env, self) : self.renderToken(tokens, idx, opts);
+  };
+
+  md.renderer.rules.blockquote_close = (tokens, idx, opts, env, self) => {
+    for (let j = idx - 1; j >= 0; j--) {
+      const token = tokens[j];
+      if (!token) continue;
+      if (token.type === 'blockquote_open' && token.level === tokens[idx]!.level) {
+        if (hasCalloutMeta(token)) return '</div></div>';
+        break;
+      }
+    }
+    return origClose
+      ? origClose(tokens, idx, opts, env, self)
+      : self.renderToken(tokens, idx, opts);
+  };
+};

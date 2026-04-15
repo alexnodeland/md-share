@@ -1,0 +1,63 @@
+import MarkdownIt from 'markdown-it';
+import { describe, expect, it } from 'vitest';
+import { pluginAtlassianBlocks } from '../../src/plugins/atlassianBlocks.ts';
+
+const build = () => {
+  const md = new MarkdownIt({ html: true });
+  pluginAtlassianBlocks(md);
+  return md;
+};
+
+describe('pluginAtlassianBlocks — panels', () => {
+  it.each([
+    'info',
+    'note',
+    'warning',
+    'tip',
+    'error',
+  ])('renders {%s} ... {%s} as a typed panel', (type) => {
+    const html = build().render(`{${type}}\nbody\n{${type}}`);
+    expect(html).toContain(`class="atl-panel atl-panel-${type}"`);
+    expect(html).toContain('body');
+    expect(html).toContain(`<div class="atl-panel-title">${type}</div>`);
+  });
+
+  it('uses the custom title from {type:title=X}', () => {
+    const html = build().render('{info:title=Release Notes}\nv2\n{info}');
+    expect(html).toContain('<div class="atl-panel-title">Release Notes</div>');
+  });
+
+  it('is case-insensitive for the panel type', () => {
+    const html = build().render('{INFO}\nhi\n{INFO}');
+    expect(html).toContain('atl-panel-info');
+  });
+});
+
+describe('pluginAtlassianBlocks — expand', () => {
+  it('renders {expand:title} as details+summary', () => {
+    const html = build().render('{expand:Read more}\ninner\n{expand}');
+    expect(html).toContain('<details class="atl-expand">');
+    expect(html).toContain('<summary>Read more</summary>');
+    expect(html).toContain('<div class="expand-body">');
+    expect(html).toContain('inner');
+  });
+
+  it('defaults summary text when no title is provided', () => {
+    const html = build().render('{expand}\nbody\n{expand}');
+    expect(html).toContain('<summary>Click to expand</summary>');
+  });
+});
+
+describe('pluginAtlassianBlocks — code', () => {
+  it('converts {code:lang} to a fenced code block', () => {
+    const html = build().render('{code:python}\ndef f(): pass\n{code}');
+    expect(html).toContain('<code');
+    expect(html).toContain('def f(): pass');
+  });
+
+  it('allows {code} without language', () => {
+    const html = build().render('{code}\nraw\n{code}');
+    expect(html).toContain('<pre>');
+    expect(html).toContain('raw');
+  });
+});

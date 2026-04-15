@@ -1,5 +1,5 @@
 {
   "permissions": {
-    "allow": ["Bash(npm --version)", "Bash(npx biome *)"]
+    "allow": ["Bash(npm --version)", "Bash(npx biome *)", "Bash(npx vitest *)"]
   }
 }
