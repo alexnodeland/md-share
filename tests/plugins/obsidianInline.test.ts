@@ -8,6 +8,28 @@ const build = () => {
   return md;
 };
 
+const getInlineRule = (md: MarkdownIt, name: string) => {
+  const rules = (md.inline as unknown as { ruler: { __rules__: { name: string; fn: unknown }[] } })
+    .ruler.__rules__;
+  return rules.find((r) => r.name === name)?.fn as
+    | ((state: unknown, silent: boolean) => boolean)
+    | undefined;
+};
+
+const makeState = (src: string, pos = 0) => {
+  let pushed = false;
+  const state = {
+    src,
+    pos,
+    posMax: src.length,
+    push: () => {
+      pushed = true;
+      return { content: '', meta: {} };
+    },
+  };
+  return { state, wasPushed: () => pushed };
+};
+
 describe('wikilink', () => {
   it('renders [[target]] as a wikilink span with title=target', () => {
     const html = build().render('see [[My Note]] here');
@@ -48,6 +70,26 @@ describe('highlight', () => {
   });
 });
 
+describe('wikilink — silent mode', () => {
+  it('returns true without pushing when silent=true', () => {
+    const md = build();
+    const rule = getInlineRule(md, 'wikilink')!;
+    const { state, wasPushed } = makeState('[[x]]');
+    expect(rule(state, true)).toBe(true);
+    expect(wasPushed()).toBe(false);
+  });
+});
+
+describe('highlight — silent mode', () => {
+  it('returns true without pushing when silent=true', () => {
+    const md = build();
+    const rule = getInlineRule(md, 'obsidian_highlight')!;
+    const { state, wasPushed } = makeState('==x==');
+    expect(rule(state, true)).toBe(true);
+    expect(wasPushed()).toBe(false);
+  });
+});
+
 describe('obsidian tag', () => {
   it('renders #tag as span with obsidian-tag class', () => {
     const html = build().render('see #docs for more');
@@ -64,8 +106,21 @@ describe('obsidian tag', () => {
     expect(html).not.toContain('obsidian-tag');
   });
 
+  it('does not match when # is followed by non-tag chars', () => {
+    const html = build().render('hash #!notatag');
+    expect(html).not.toContain('obsidian-tag');
+  });
+
   it('recognizes a tag at the start of the line', () => {
     const html = build().render('#alone');
     expect(html).toContain('obsidian-tag');
+  });
+
+  it('returns true without pushing when silent=true', () => {
+    const md = build();
+    const rule = getInlineRule(md, 'obsidian_tag')!;
+    const { state, wasPushed } = makeState('#tag');
+    expect(rule(state, true)).toBe(true);
+    expect(wasPushed()).toBe(false);
   });
 });

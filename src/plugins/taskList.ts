@@ -14,7 +14,8 @@ export const pluginTaskList = (md: MarkdownIt): void => {
       const checked = content[1] !== ' ';
       token.content = content.slice(4);
       const parsed = md.parseInline(token.content, state.env);
-      token.children = parsed[0]?.children ?? [];
+      // parseInline always returns a single wrapper token with a children array
+      token.children = parsed[0]!.children;
 
       for (let j = i - 1; j >= 0; j--) {
         const prev = state.tokens[j];

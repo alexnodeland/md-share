@@ -27,7 +27,7 @@ export const pluginKaTeX = (md: MarkdownIt, katex: typeof katexNs): void => {
   });
 
   md.renderer.rules.math_block = (tokens, idx) => {
-    const content = tokens[idx]?.content ?? '';
+    const content = tokens[idx]!.content;
     try {
       return `<div class="katex-display">${katex.renderToString(content, {
         displayMode: true,
@@ -53,7 +53,7 @@ export const pluginKaTeX = (md: MarkdownIt, katex: typeof katexNs): void => {
   });
 
   md.renderer.rules.math_inline = (tokens, idx) => {
-    const content = tokens[idx]?.content ?? '';
+    const content = tokens[idx]!.content;
     try {
       return katex.renderToString(content, { displayMode: false, throwOnError: false });
     } catch {

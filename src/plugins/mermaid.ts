@@ -16,9 +16,9 @@ export const createMermaidCounter = (): MermaidCounter => {
 };
 
 export const wrapMermaidFences = (md: MarkdownIt, counter: MermaidCounter): void => {
-  const origFence =
-    md.renderer.rules.fence ??
-    ((tokens, idx, opts, _env, self) => self.renderToken(tokens, idx, opts));
+  // markdown-it always provides a default fence renderer; assert non-null so we
+  // don't carry an untestable defensive fallback.
+  const origFence = md.renderer.rules.fence as NonNullable<typeof md.renderer.rules.fence>;
 
   md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
     const token = tokens[idx];

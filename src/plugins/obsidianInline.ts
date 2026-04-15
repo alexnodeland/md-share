@@ -11,8 +11,8 @@ export const pluginObsidianInline = (md: MarkdownIt): void => {
     if (!silent) {
       const raw = state.src.slice(state.pos + 2, end);
       const parts = raw.split('|');
-      const target = parts[0]?.trim() ?? '';
-      const display = parts.length > 1 ? (parts[1]?.trim() ?? target) : target;
+      const target = parts[0]!.trim();
+      const display = parts.length > 1 ? parts[1]!.trim() : target;
       const token = state.push('wikilink', '', 0);
       token.content = display;
       token.meta = { target };
@@ -22,10 +22,9 @@ export const pluginObsidianInline = (md: MarkdownIt): void => {
   });
 
   md.renderer.rules.wikilink = (tokens, idx) => {
-    const token = tokens[idx];
-    const target = (token?.meta?.target as string | undefined) ?? '';
-    const content = token?.content ?? '';
-    return `<span class="wikilink" title="${md.utils.escapeHtml(target)}">${md.utils.escapeHtml(content)}</span>`;
+    const token = tokens[idx]!;
+    const target = token.meta.target as string;
+    return `<span class="wikilink" title="${md.utils.escapeHtml(target)}">${md.utils.escapeHtml(token.content)}</span>`;
   };
 
   md.inline.ruler.push('obsidian_highlight', (state, silent) => {
@@ -40,26 +39,22 @@ export const pluginObsidianInline = (md: MarkdownIt): void => {
     return true;
   });
 
-  md.renderer.rules.obsidian_highlight = (tokens, idx) => {
-    const content = tokens[idx]?.content ?? '';
-    return `<mark>${md.utils.escapeHtml(content)}</mark>`;
-  };
+  md.renderer.rules.obsidian_highlight = (tokens, idx) =>
+    `<mark>${md.utils.escapeHtml(tokens[idx]!.content)}</mark>`;
 
   md.inline.ruler.push('obsidian_tag', (state, silent) => {
     if (state.src[state.pos] !== '#') return false;
-    if (state.pos > 0 && MENTION_BOUNDARY_RE.test(state.src[state.pos - 1] ?? '')) return false;
+    if (state.pos > 0 && MENTION_BOUNDARY_RE.test(state.src[state.pos - 1]!)) return false;
     const match = state.src.slice(state.pos).match(TAG_RE);
     if (!match) return false;
     if (!silent) {
       const token = state.push('obsidian_tag', '', 0);
-      token.content = match[1] ?? '';
+      token.content = match[1]!;
     }
     state.pos += match[0].length;
     return true;
   });
 
-  md.renderer.rules.obsidian_tag = (tokens, idx) => {
-    const content = tokens[idx]?.content ?? '';
-    return `<span class="obsidian-tag">#${md.utils.escapeHtml(content)}</span>`;
-  };
+  md.renderer.rules.obsidian_tag = (tokens, idx) =>
+    `<span class="obsidian-tag">#${md.utils.escapeHtml(tokens[idx]!.content)}</span>`;
 };

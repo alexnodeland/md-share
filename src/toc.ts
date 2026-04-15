@@ -20,8 +20,8 @@ export const parseHeadings = (source: string): TocHeading[] => {
     if (inFence) continue;
     const match = line.match(HEADING_RE);
     if (!match) continue;
-    const [, hashes, rawText] = match;
-    if (!hashes || !rawText) continue;
+    const hashes = match[1] as string;
+    const rawText = match[2] as string;
     const text = rawText.replace(STRIP_RE, '').trim();
     const level = hashes.length as 2 | 3 | 4;
     headings.push({ level, text, slug: slugify(text) });

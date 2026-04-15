@@ -34,4 +34,28 @@ describe('addHeadingAnchors', () => {
     expect(html).toContain('<h2 id="two">');
     expect(html).toContain('<h3 id="three">');
   });
+
+  it('composes with an existing heading_open rule', () => {
+    const md = new MarkdownIt({ html: true });
+    md.renderer.rules.heading_open = (tokens, idx, opts, _env, self) =>
+      `<!--prior-->${self.renderToken(tokens, idx, opts)}`;
+    addHeadingAnchors(md);
+    const html = md.render('## Hello');
+    expect(html).toContain('<!--prior-->');
+    expect(html).toContain('id="hello"');
+  });
+
+  it('does not set id when there is no inline token following heading_open', () => {
+    const md = build();
+    const parsed = md.parse('## Head', {});
+    // Splice out the inline token so next is non-inline (heading_close)
+    const tokens = parsed.filter((t) => t.type !== 'inline');
+    let attrSetCalled = false;
+    tokens[0]!.attrSet = () => {
+      attrSetCalled = true;
+    };
+    const rule = md.renderer.rules.heading_open!;
+    rule(tokens, 0, md.options, {}, md.renderer);
+    expect(attrSetCalled).toBe(false);
+  });
 });

@@ -52,8 +52,66 @@ describe('atl_mention', () => {
     expect(html).not.toContain('atl-mention');
   });
 
+  it('does not trigger when @ is followed by non-username chars', () => {
+    const html = build().render('look at @!nope');
+    expect(html).not.toContain('atl-mention');
+  });
+
   it('escapes HTML in the username (defense in depth)', () => {
     const html = build().render('@abc');
     expect(html).toContain('atl-mention');
+  });
+});
+
+describe('silent mode', () => {
+  const getInlineRule = (md: MarkdownIt, name: string) => {
+    const rules = (
+      md.inline as unknown as { ruler: { __rules__: { name: string; fn: unknown }[] } }
+    ).ruler.__rules__;
+    return rules.find((r) => r.name === name)?.fn as
+      | ((state: unknown, silent: boolean) => boolean)
+      | undefined;
+  };
+
+  const makeState = (src: string) => {
+    let pushed = false;
+    const state = {
+      src,
+      pos: 0,
+      posMax: src.length,
+      push: () => {
+        pushed = true;
+        return { content: '', meta: {} };
+      },
+    };
+    return { state, wasPushed: () => pushed };
+  };
+
+  it('atl_status returns true without pushing when silent=true', () => {
+    const md = build();
+    const rule = getInlineRule(md, 'atl_status')!;
+    const { state, wasPushed } = makeState('{status:color=red|title=X}');
+    expect(rule(state, true)).toBe(true);
+    expect(wasPushed()).toBe(false);
+  });
+
+  it('atl_mention returns true without pushing when silent=true', () => {
+    const md = build();
+    const rule = getInlineRule(md, 'atl_mention')!;
+    const { state, wasPushed } = makeState('@user');
+    expect(rule(state, true)).toBe(true);
+    expect(wasPushed()).toBe(false);
+  });
+
+  it('atl_status with no color match uses default grey', () => {
+    const html = build().render('see {status:title=PENDING}');
+    expect(html).toContain('atl-status-grey');
+    expect(html).toContain('PENDING');
+  });
+
+  it('atl_status with no title match uses default STATUS', () => {
+    const html = build().render('see {status:color=red}');
+    expect(html).toContain('atl-status-red');
+    expect(html).toContain('>STATUS<');
   });
 });

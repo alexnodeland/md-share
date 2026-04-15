@@ -24,8 +24,8 @@ export const pluginAtlassianInline = (md: MarkdownIt): void => {
       const titleMatch = params.match(TITLE_RE);
       const token = state.push('atl_status', '', 0);
       token.meta = {
-        color: (colorMatch?.[1] ?? 'grey').toLowerCase(),
-        title: titleMatch?.[1] ?? 'STATUS',
+        color: (colorMatch ? colorMatch[1]! : 'grey').toLowerCase(),
+        title: titleMatch ? titleMatch[1]! : 'STATUS',
       } satisfies StatusMeta;
     }
     state.pos = end + 1;
@@ -33,26 +33,23 @@ export const pluginAtlassianInline = (md: MarkdownIt): void => {
   });
 
   md.renderer.rules.atl_status = (tokens, idx) => {
-    const meta = tokens[idx]?.meta as StatusMeta | undefined;
-    if (!meta) return '';
+    const meta = tokens[idx]!.meta as StatusMeta;
     return `<span class="atl-status atl-status-${meta.color}">${md.utils.escapeHtml(meta.title)}</span>`;
   };
 
   md.inline.ruler.push('atl_mention', (state, silent) => {
     if (state.src[state.pos] !== '@') return false;
-    if (state.pos > 0 && MENTION_BOUNDARY_RE.test(state.src[state.pos - 1] ?? '')) return false;
+    if (state.pos > 0 && MENTION_BOUNDARY_RE.test(state.src[state.pos - 1]!)) return false;
     const match = state.src.slice(state.pos).match(MENTION_RE);
     if (!match) return false;
     if (!silent) {
       const token = state.push('atl_mention', '', 0);
-      token.content = match[1] ?? '';
+      token.content = match[1]!;
     }
     state.pos += match[0].length;
     return true;
   });
 
-  md.renderer.rules.atl_mention = (tokens, idx) => {
-    const content = tokens[idx]?.content ?? '';
-    return `<span class="atl-mention">@${md.utils.escapeHtml(content)}</span>`;
-  };
+  md.renderer.rules.atl_mention = (tokens, idx) =>
+    `<span class="atl-mention">@${md.utils.escapeHtml(tokens[idx]!.content)}</span>`;
 };

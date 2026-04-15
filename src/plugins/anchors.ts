@@ -13,16 +13,13 @@ export const slugifyHeading = (text: string): string =>
     .replace(WHITESPACE_RE, '-');
 
 export const addHeadingAnchors = (md: MarkdownIt): void => {
-  const origRule =
-    md.renderer.rules.heading_open ??
-    ((tokens, idx, opts, _env, self) => self.renderToken(tokens, idx, opts));
+  const origRule = md.renderer.rules.heading_open;
 
   md.renderer.rules.heading_open = (tokens, idx, opts, env, self) => {
     const next = tokens[idx + 1];
-    const token = tokens[idx];
-    if (next?.type === 'inline' && token) {
-      token.attrSet('id', slugifyHeading(next.content));
+    if (next?.type === 'inline') {
+      tokens[idx]!.attrSet('id', slugifyHeading(next.content));
     }
-    return origRule(tokens, idx, opts, env, self);
+    return origRule ? origRule(tokens, idx, opts, env, self) : self.renderToken(tokens, idx, opts);
   };
 };

@@ -39,20 +39,21 @@ interface CalloutMeta {
   title: string;
 }
 
-const hasCalloutMeta = (token: Token | undefined): token is Token & { meta: CalloutMeta } =>
-  Boolean(token?.meta && (token.meta as Partial<CalloutMeta>).callout === true);
+const hasCalloutMeta = (token: Token): token is Token & { meta: CalloutMeta } =>
+  token.meta !== null &&
+  typeof token.meta === 'object' &&
+  (token.meta as Partial<CalloutMeta>).callout === true;
 
 export const pluginObsidianCallouts = (md: MarkdownIt): void => {
   md.core.ruler.before('inline', 'obsidian_callouts', (state) => {
     const tokens = state.tokens;
     for (let i = 0; i < tokens.length; i++) {
-      const open = tokens[i];
-      if (!open || open.type !== 'blockquote_open') continue;
+      const open = tokens[i]!;
+      if (open.type !== 'blockquote_open') continue;
 
       let inlineIdx = -1;
       for (let j = i + 1; j < tokens.length; j++) {
-        const token = tokens[j];
-        if (!token) continue;
+        const token = tokens[j]!;
         if (token.type === 'blockquote_close' && token.level === open.level) break;
         if (token.type === 'inline') {
           inlineIdx = j;
@@ -61,13 +62,12 @@ export const pluginObsidianCallouts = (md: MarkdownIt): void => {
       }
       if (inlineIdx < 0) continue;
 
-      const inline = tokens[inlineIdx];
-      if (!inline) continue;
+      const inline = tokens[inlineIdx]!;
       const match = inline.content.match(CALLOUT_HEADER_RE);
       if (!match) continue;
 
       const type = match[1]!.toLowerCase();
-      const rawTitle = match[2]?.trim() ?? '';
+      const rawTitle = match[2]!.trim();
       const title = rawTitle.length > 0 ? rawTitle : type.charAt(0).toUpperCase() + type.slice(1);
 
       inline.content = inline.content.replace(CALLOUT_STRIP_RE, '');
@@ -79,7 +79,7 @@ export const pluginObsidianCallouts = (md: MarkdownIt): void => {
   const origClose = md.renderer.rules.blockquote_close;
 
   md.renderer.rules.blockquote_open = (tokens, idx, opts, env, self) => {
-    const token = tokens[idx];
+    const token = tokens[idx]!;
     if (hasCalloutMeta(token)) {
       const { type, title } = token.meta;
       const icon = CALLOUT_ICONS[type] ?? 'ℹ';
@@ -89,10 +89,10 @@ export const pluginObsidianCallouts = (md: MarkdownIt): void => {
   };
 
   md.renderer.rules.blockquote_close = (tokens, idx, opts, env, self) => {
+    const closeLevel = tokens[idx]!.level;
     for (let j = idx - 1; j >= 0; j--) {
-      const token = tokens[j];
-      if (!token) continue;
-      if (token.type === 'blockquote_open' && token.level === tokens[idx]!.level) {
+      const token = tokens[j]!;
+      if (token.type === 'blockquote_open' && token.level === closeLevel) {
         if (hasCalloutMeta(token)) return '</div></div>';
         break;
       }

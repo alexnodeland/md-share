@@ -36,4 +36,13 @@ describe('pluginTaskList', () => {
     expect(html).toContain('Finish migration');
     expect(html).not.toContain('[x] Finish');
   });
+
+  it('composes with an existing list_item_open rule', () => {
+    const md = new MarkdownIt({ html: true });
+    md.renderer.rules.list_item_open = (tokens, idx, opts, _env, self) =>
+      `<!--prior-->${self.renderToken(tokens, idx, opts)}`;
+    pluginTaskList(md);
+    const html = md.render('- plain');
+    expect(html).toContain('<!--prior-->');
+  });
 });

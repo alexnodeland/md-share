@@ -43,8 +43,26 @@ describe('pluginObsidianCallouts', () => {
     expect(html).not.toContain('class="callout');
   });
 
+  it('leaves an empty blockquote (no inline content) alone', () => {
+    // `>` followed by nothing — a blockquote with no inline token inside.
+    const html = build().render('>\n');
+    expect(html).not.toContain('class="callout');
+  });
+
   it('escapes HTML in the title', () => {
     const html = build().render('> [!note] <script>\n> b');
     expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('composes with existing blockquote_open/close rules for plain blockquotes', () => {
+    const md = new MarkdownIt({ html: true });
+    md.renderer.rules.blockquote_open = (tokens, idx, opts, _env, self) =>
+      `<!--O-->${self.renderToken(tokens, idx, opts)}`;
+    md.renderer.rules.blockquote_close = (tokens, idx, opts, _env, self) =>
+      `${self.renderToken(tokens, idx, opts)}<!--C-->`;
+    pluginObsidianCallouts(md);
+    const html = md.render('> a plain quote');
+    expect(html).toContain('<!--O-->');
+    expect(html).toContain('<!--C-->');
   });
 });
