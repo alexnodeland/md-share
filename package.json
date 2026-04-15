@@ -15,7 +15,7 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check --write .",
-    "check:ci": "biome check .",
+    "check:ci": "biome check --error-on-warnings .",
     "verify": "npm run check:ci && npm run typecheck && npm run test",
     "prepare": "simple-git-hooks"
   },

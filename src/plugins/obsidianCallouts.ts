@@ -44,6 +44,24 @@ const hasCalloutMeta = (token: Token): token is Token & { meta: CalloutMeta } =>
   typeof token.meta === 'object' &&
   (token.meta as Partial<CalloutMeta>).callout === true;
 
+const findInlineTokenIndex = (tokens: readonly Token[], start: number, level: number): number => {
+  for (let j = start; j < tokens.length; j++) {
+    const token = tokens[j]!;
+    if (token.type === 'blockquote_close' && token.level === level) break;
+    if (token.type === 'inline') return j;
+  }
+  return -1;
+};
+
+const parseCalloutHeader = (content: string): { type: string; title: string } | null => {
+  const match = content.match(CALLOUT_HEADER_RE);
+  if (!match) return null;
+  const type = match[1]!.toLowerCase();
+  const rawTitle = match[2]!.trim();
+  const title = rawTitle.length > 0 ? rawTitle : type.charAt(0).toUpperCase() + type.slice(1);
+  return { type, title };
+};
+
 export const pluginObsidianCallouts = (md: MarkdownIt): void => {
   md.core.ruler.before('inline', 'obsidian_callouts', (state) => {
     const tokens = state.tokens;
@@ -51,27 +69,15 @@ export const pluginObsidianCallouts = (md: MarkdownIt): void => {
       const open = tokens[i]!;
       if (open.type !== 'blockquote_open') continue;
 
-      let inlineIdx = -1;
-      for (let j = i + 1; j < tokens.length; j++) {
-        const token = tokens[j]!;
-        if (token.type === 'blockquote_close' && token.level === open.level) break;
-        if (token.type === 'inline') {
-          inlineIdx = j;
-          break;
-        }
-      }
+      const inlineIdx = findInlineTokenIndex(tokens, i + 1, open.level);
       if (inlineIdx < 0) continue;
 
       const inline = tokens[inlineIdx]!;
-      const match = inline.content.match(CALLOUT_HEADER_RE);
-      if (!match) continue;
-
-      const type = match[1]!.toLowerCase();
-      const rawTitle = match[2]!.trim();
-      const title = rawTitle.length > 0 ? rawTitle : type.charAt(0).toUpperCase() + type.slice(1);
+      const parsed = parseCalloutHeader(inline.content);
+      if (!parsed) continue;
 
       inline.content = inline.content.replace(CALLOUT_STRIP_RE, '');
-      open.meta = { callout: true, type, title } satisfies CalloutMeta;
+      open.meta = { callout: true, ...parsed } satisfies CalloutMeta;
     }
   });
 

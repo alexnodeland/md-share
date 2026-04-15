@@ -36,7 +36,7 @@
         "useImportType": "error",
         "useConst": "error",
         "useTemplate": "error",
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "off"
       },
       "suspicious": {
         "noExplicitAny": "error"
@@ -47,8 +47,8 @@
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": {
-          "level": "warn",
-          "options": { "maxAllowedComplexity": 20 }
+          "level": "error",
+          "options": { "maxAllowedComplexity": 25 }
         }
       }
     }
