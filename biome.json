@@ -17,7 +17,6 @@
       "!**/node_modules",
       "!**/dist",
       "!**/coverage",
-      "!index.html",
       "!package-lock.json"
     ]
   },
@@ -36,7 +35,8 @@
         "useImportType": "error",
         "useConst": "error",
         "useTemplate": "error",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "noDescendingSpecificity": "off"
       },
       "suspicious": {
         "noExplicitAny": "error"
@@ -49,7 +49,8 @@
         "noExcessiveCognitiveComplexity": {
           "level": "error",
           "options": { "maxAllowedComplexity": 25 }
-        }
+        },
+        "noImportantStyles": "off"
       }
     }
   },
