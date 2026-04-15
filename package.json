@@ -11,7 +11,21 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "check:ci": "biome check .",
+    "verify": "npm run check:ci && npm run typecheck && npm run test",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged && npx tsc --noEmit"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,json,css}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
@@ -24,10 +38,13 @@
     "mermaid": "^11.14.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
     "@types/katex": "^0.16.8",
     "@types/markdown-it": "^14.1.2",
     "@vitest/coverage-v8": "^4.1.4",
     "happy-dom": "^20.9.0",
+    "lint-staged": "^16.4.0",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.8",
     "vitest": "^4.1.4"
