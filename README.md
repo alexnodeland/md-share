@@ -7,6 +7,7 @@
 _The document **is** the URL._
 
 <p>
+  <a href="https://github.com/alexnodeland/md-share/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/alexnodeland/md-share/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white">
   <img alt="Vite" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white">
   <img alt="Vitest" src="https://img.shields.io/badge/Vitest-4-6E9F18?logo=vitest&logoColor=white">
@@ -22,7 +23,7 @@ _The document **is** the URL._
 
 **Write → Share → Escape.** A lightweight markdown renderer that speaks six dialects, reads itself aloud, and compresses your whole document into a shareable URL. No backend. No account. No "session expired."
 
-[**Philosophy**](./PHILOSOPHY.md) · [**Contributing**](./CONTRIBUTING.md) · [**License**](./LICENSE)
+[**🌐 Live demo**](https://alexnodeland.github.io/md-share/) · [**Philosophy**](./PHILOSOPHY.md) · [**Contributing**](./CONTRIBUTING.md) · [**License**](./LICENSE)
 
 </div>
 
