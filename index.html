@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>md.render</title>
+<meta name="description" content="Render, share, and export Markdown — no server required.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@4/dist/markdown-it-footnote.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-deflist@3/dist/markdown-it-deflist.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  [data-theme="dark"]{
+    --bg:#0c0c0e;--bg-raised:#141416;--bg-input:#101012;--bg-hover:#1a1a1e;
+    --border:#232328;--border-focus:#3a3a42;--text:#e4e4e7;--text-dim:#636370;--text-xdim:#46464f;
+    --accent:#a78bfa;--accent-strong:#7c3aed;--accent-bg:rgba(167,139,250,0.07);
+    --danger:#f87171;--success:#34d399;--warn-color:#fbbf24;--info-color:#60a5fa;
+    --code-bg:#18181b;--preview-bg:#0c0c0e;
+    --rendered-text:#c8c8cd;--rendered-heading:#e4e4e7;--rendered-code-color:#a78bfa;
+    --rendered-table-header:#a78bfa;--rendered-td:#a1a1aa;--mermaid-theme:dark;
+  }
+  [data-theme="light"]{
+    --bg:#f8f8fa;--bg-raised:#ffffff;--bg-input:#ffffff;--bg-hover:#f0f0f3;
+    --border:#e0e0e5;--border-focus:#c0c0c8;--text:#1a1a2e;--text-dim:#6b6b80;--text-xdim:#9999aa;
+    --accent:#7c3aed;--accent-strong:#6d28d9;--accent-bg:rgba(124,58,237,0.06);
+    --danger:#dc2626;--success:#16a34a;--warn-color:#d97706;--info-color:#2563eb;
+    --code-bg:#f1f0f5;--preview-bg:#f8f8fa;
+    --rendered-text:#374151;--rendered-heading:#111827;--rendered-code-color:#7c3aed;
+    --rendered-table-header:#6d28d9;--rendered-td:#4b5563;--mermaid-theme:default;
+  }
+  :root{--radius:6px;--mono:'JetBrains Mono',monospace;--serif:'Source Serif 4',Georgia,serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);overflow:hidden;}
+
+.topbar{height:46px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(–border);background:var(–bg-raised);flex-shrink:0;gap:6px;}
+.logo{font-weight:700;font-size:14px;letter-spacing:-.5px;color:var(–accent);user-select:none;margin-right:4px;}
+.logo span{color:var(–text-dim);font-weight:400;}
+.sep{width:1px;height:20px;background:var(–border);margin:0 2px;flex-shrink:0;}
+select,button{font-family:var(–mono);font-size:11px;font-weight:500;padding:5px 10px;border-radius:var(–radius);border:1px solid var(–border);background:var(–bg-raised);color:var(–text-dim);cursor:pointer;transition:all .12s ease;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+select{appearance:none;padding-right:22px;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘10’ height=‘6’%3E%3Cpath d=‘M0 0l5 6 5-6z’ fill=’%2363636f’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center;}
+select:focus{outline:none;border-color:var(–accent);}
+button:hover{color:var(–text);border-color:var(–border-focus);background:var(–bg-hover);}
+button.primary{background:var(–accent-strong);border-color:var(–accent-strong);color:#fff;}
+button.primary:hover{filter:brightness(1.1);}
+button svg{width:13px;height:13px;flex-shrink:0;}
+button.icon-only{padding:5px 7px;}
+button.active-listen{color:var(–accent);border-color:var(–accent);}
+.spacer{flex:1;}
+.topbar-group{display:flex;gap:4px;align-items:center;}
+.view-toggle{display:flex;border:1px solid var(–border);border-radius:var(–radius);overflow:hidden;}
+.view-toggle button{border:none;border-radius:0;padding:5px 9px;font-size:10px;}
+.view-toggle button.active{background:var(–accent-strong);color:#fff;}
+.flavor-label{font-size:10px;color:var(–text-xdim);text-transform:uppercase;letter-spacing:.8px;margin-right:2px;}
+
+.main{display:flex;height:calc(100% - 46px);position:relative;}
+.main.has-audio-bar{height:calc(100% - 46px - 42px);}
+.editor-pane,.preview-pane{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;}
+.editor-pane{border-right:1px solid var(–border);}
+.pane-header{height:28px;display:flex;align-items:center;padding:0 12px;font-size:9px;text-transform:uppercase;letter-spacing:1.6px;color:var(–text-xdim);background:var(–bg);border-bottom:1px solid var(–border);flex-shrink:0;}
+.pane-header .shortcut{margin-left:auto;font-size:9px;opacity:.5;letter-spacing:0;text-transform:none;}
+textarea{flex:1;width:100%;resize:none;border:none;background:var(–bg-input);color:var(–text);font-family:var(–mono);font-size:13px;line-height:1.7;padding:16px;outline:none;tab-size:2;}
+textarea::placeholder{color:var(–text-xdim);}
+.preview-scroll{flex:1;overflow-y:auto;padding:32px;background:var(–preview-bg);}
+
+.drop-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);justify-content:center;align-items:center;}
+.drop-overlay.visible{display:flex;}
+.drop-overlay-inner{border:2px dashed var(–accent);border-radius:16px;padding:48px 64px;text-align:center;background:var(–bg-raised);color:var(–accent);font-size:14px;font-weight:600;}
+
+/* ── Audio bar ── */
+.audio-bar{
+display:none;height:42px;align-items:center;padding:0 14px;gap:8px;
+background:var(–bg-raised);border-top:1px solid var(–border);flex-shrink:0;
+}
+.audio-bar.visible{display:flex;}
+.audio-bar .ab-label{font-size:11px;color:var(–text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.audio-bar .ab-label strong{color:var(–accent);font-weight:600;}
+.audio-bar .ab-progress{flex:2;height:3px;background:var(–border);border-radius:2px;overflow:hidden;cursor:pointer;position:relative;}
+.audio-bar .ab-progress-fill{height:100%;background:var(–accent);border-radius:2px;transition:width .3s ease;}
+.audio-bar select{min-width:0;padding:3px 20px 3px 6px;font-size:10px;}
+.audio-bar button{padding:4px 8px;}
+.audio-bar button svg{width:12px;height:12px;}
+
+/* ── Speaking highlight ── */
+.speaking-highlight{
+outline:2px solid var(–accent);outline-offset:3px;border-radius:3px;
+transition:outline-color .2s ease;
+}
+
+/* ── Rendered ── */
+.rendered{max-width:780px;margin:0 auto;font-family:var(–serif);font-size:16px;line-height:1.78;color:var(–rendered-text);}
+.rendered h1,.rendered h2,.rendered h3,.rendered h4{font-family:var(–mono);color:var(–rendered-heading);margin:1.6em 0 .6em;line-height:1.3;}
+.rendered h1{font-size:1.8em;letter-spacing:-.5px;border-bottom:1px solid var(–border);padding-bottom:.3em;}
+.rendered h2{font-size:1.4em;letter-spacing:-.3px;}
+.rendered h3{font-size:1.12em;}
+.rendered p{margin:.75em 0;}
+.rendered a{color:var(–accent);text-decoration:underline;text-underline-offset:3px;}
+.rendered strong{color:var(–rendered-heading);font-weight:700;}
+.rendered blockquote{border-left:3px solid var(–accent-strong);padding:.5em 1em;margin:1em 0;background:var(–accent-bg);border-radius:0 var(–radius) var(–radius) 0;color:var(–text-dim);}
+.rendered code{font-family:var(–mono);font-size:.82em;background:var(–code-bg);padding:2px 6px;border-radius:3px;color:var(–rendered-code-color);}
+.rendered pre{background:var(–code-bg);border:1px solid var(–border);border-radius:var(–radius);padding:16px;overflow-x:auto;margin:1em 0;}
+.rendered pre code{background:none;padding:0;color:inherit;font-size:13px;}
+.rendered ul,.rendered ol{padding-left:1.5em;margin:.75em 0;}
+.rendered li{margin:.3em 0;}.rendered li::marker{color:var(–text-dim);}
+.rendered hr{border:none;border-top:1px solid var(–border);margin:2em 0;}
+.rendered img{max-width:100%;border-radius:var(–radius);margin:1em 0;}
+.rendered .task-list{list-style:none;padding-left:.2em;}
+.rendered .task-list li{display:flex;align-items:baseline;gap:6px;}
+.rendered .task-list input[type=“checkbox”]{accent-color:var(–accent);margin:0;flex-shrink:0;position:relative;top:1px;}
+.rendered table{width:100%;border-collapse:collapse;margin:1em 0;font-family:var(–mono);font-size:13px;}
+.rendered thead th{text-align:left;padding:10px 14px;border-bottom:2px solid var(–accent-strong);color:var(–rendered-table-header);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.8px;}
+.rendered td{padding:9px 14px;border-bottom:1px solid var(–border);color:var(–rendered-td);}
+.rendered tr:hover td{background:var(–accent-bg);}
+.rendered .footnotes{margin-top:2em;padding-top:1em;border-top:1px solid var(–border);font-size:.88em;color:var(–text-dim);}
+.rendered sup a{color:var(–accent);text-decoration:none;font-family:var(–mono);font-size:.8em;}
+.rendered dt{font-weight:700;color:var(–rendered-heading);margin-top:1em;}
+.rendered dd{margin-left:1.5em;margin-top:.2em;color:var(–text-dim);}
+.mermaid-container{margin:1.2em 0;padding:20px;background:var(–code-bg);border:1px solid var(–border);border-radius:var(–radius);text-align:center;overflow-x:auto;}
+.katex-display{margin:1em 0;overflow-x:auto;}.katex-error{color:var(–danger);font-size:13px;}
+
+/* ── Obsidian ── */
+.callout{margin:1em 0;border-radius:var(–radius);padding:14px 16px;border-left:4px solid;font-family:var(–serif);}
+.callout-title{font-family:var(–mono);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.callout-title .callout-icon{font-size:14px;}
+.callout-body p:first-child{margin-top:0;}
+.callout-note{border-color:var(–info-color);background:rgba(96,165,250,.08);}
+.callout-note .callout-title{color:var(–info-color);}
+.callout-tip,.callout-hint{border-color:var(–success);background:rgba(52,211,153,.08);}
+.callout-tip .callout-title,.callout-hint .callout-title{color:var(–success);}
+.callout-warning,.callout-caution,.callout-attention{border-color:var(–warn-color);background:rgba(251,191,36,.08);}
+.callout-warning .callout-title,.callout-caution .callout-title,.callout-attention .callout-title{color:var(–warn-color);}
+.callout-danger,.callout-error,.callout-bug,.callout-failure,.callout-fail,.callout-missing{border-color:var(–danger);background:rgba(248,113,113,.08);}
+.callout-danger .callout-title,.callout-error .callout-title,.callout-bug .callout-title,.callout-failure .callout-title,.callout-fail .callout-title,.callout-missing .callout-title{color:var(–danger);}
+.callout-info,.callout-todo{border-color:var(–info-color);background:rgba(96,165,250,.08);}
+.callout-info .callout-title,.callout-todo .callout-title{color:var(–info-color);}
+.callout-abstract,.callout-summary,.callout-tldr{border-color:var(–accent);background:var(–accent-bg);}
+.callout-abstract .callout-title,.callout-summary .callout-title,.callout-tldr .callout-title{color:var(–accent);}
+.callout-example{border-color:var(–accent);background:var(–accent-bg);}.callout-example .callout-title{color:var(–accent);}
+.callout-quote,.callout-cite{border-color:var(–text-dim);background:rgba(99,99,112,.08);}
+.callout-quote .callout-title,.callout-cite .callout-title{color:var(–text-dim);}
+.callout-success,.callout-check,.callout-done{border-color:var(–success);background:rgba(52,211,153,.08);}
+.callout-success .callout-title,.callout-check .callout-title,.callout-done .callout-title{color:var(–success);}
+.callout-question,.callout-help,.callout-faq{border-color:var(–warn-color);background:rgba(251,191,36,.08);}
+.callout-question .callout-title,.callout-help .callout-title,.callout-faq .callout-title{color:var(–warn-color);}
+.wikilink{color:var(–accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-weight:500;}
+mark,.obsidian-highlight{background:rgba(251,191,36,.25);color:var(–rendered-heading);padding:1px 3px;border-radius:2px;}
+.obsidian-tag{color:var(–accent);background:var(–accent-bg);padding:1px 6px;border-radius:10px;font-family:var(–mono);font-size:.82em;white-space:nowrap;}
+
+/* ── Atlassian ── */
+.atl-panel{margin:1em 0;border-radius:var(–radius);padding:14px 16px;border-left:4px solid;font-family:var(–serif);}
+.atl-panel-title{font-family:var(–mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.atl-panel-info{border-color:var(–info-color);background:rgba(96,165,250,.08);}.atl-panel-info .atl-panel-title{color:var(–info-color);}
+.atl-panel-note{border-color:var(–accent);background:var(–accent-bg);}.atl-panel-note .atl-panel-title{color:var(–accent);}
+.atl-panel-warning{border-color:var(–warn-color);background:rgba(251,191,36,.08);}.atl-panel-warning .atl-panel-title{color:var(–warn-color);}
+.atl-panel-tip{border-color:var(–success);background:rgba(52,211,153,.08);}.atl-panel-tip .atl-panel-title{color:var(–success);}
+.atl-panel-error{border-color:var(–danger);background:rgba(248,113,113,.08);}.atl-panel-error .atl-panel-title{color:var(–danger);}
+.atl-status{display:inline-block;font-family:var(–mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:2px 8px;border-radius:3px;color:#fff;}
+.atl-status-green{background:#22863a;}.atl-status-yellow{background:#b08800;}.atl-status-red{background:#cb2431;}.atl-status-blue{background:#0366d6;}.atl-status-grey,.atl-status-gray{background:#6a737d;}
+.atl-mention{color:var(–accent);background:var(–accent-bg);padding:1px 5px;border-radius:3px;font-family:var(–mono);font-size:.85em;font-weight:500;}
+details.atl-expand{margin:1em 0;border:1px solid var(–border);border-radius:var(–radius);overflow:hidden;}
+details.atl-expand summary{padding:10px 14px;cursor:pointer;font-family:var(–mono);font-size:13px;font-weight:600;color:var(–rendered-heading);background:var(–code-bg);}
+details.atl-expand summary:hover{background:var(–bg-hover);}
+details.atl-expand .expand-body{padding:12px 14px;}
+
+/* ── TOC ── */
+.toc-container{background:var(–accent-bg);border:1px solid var(–border);border-radius:var(–radius);padding:14px 18px;margin-bottom:1.5em;}
+.toc-container .toc-title{font-family:var(–mono);font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(–text-dim);margin-bottom:8px;}
+.toc-container ul{list-style:none;padding:0;}
+.toc-container li{font-family:var(–mono);font-size:12px;line-height:1.8;}
+.toc-container li a{color:var(–rendered-text);text-decoration:none;}
+.toc-container li a:hover{color:var(–accent);}
+.toc-container .toc-h2{padding-left:0;}.toc-container .toc-h3{padding-left:14px;}.toc-container .toc-h4{padding-left:28px;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;justify-content:center;align-items:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(–bg-raised);border:1px solid var(–border);border-radius:10px;width:540px;max-width:92vw;padding:22px;}
+.modal h3{font-size:14px;margin-bottom:12px;color:var(–text);}
+.url-box{width:100%;background:var(–bg-input);border:1px solid var(–border);border-radius:var(–radius);padding:10px 12px;color:var(–text-dim);font-family:var(–mono);font-size:11px;word-break:break-all;max-height:110px;overflow-y:auto;margin-bottom:10px;line-height:1.5;user-select:all;}
+.modal-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:12px;}
+.url-warn{font-size:11px;color:var(–text-dim);margin-bottom:10px;line-height:1.5;}.url-warn.over{color:var(–danger);}
+.dropdown{display:none;position:absolute;top:44px;background:var(–bg-raised);border:1px solid var(–border);border-radius:var(–radius);z-index:40;min-width:170px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.dropdown.open{display:block;}
+.dropdown button{width:100%;border:none;text-align:left;border-radius:4px;justify-content:flex-start;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(–bg-raised);border:1px solid var(–border);color:var(–text);font-family:var(–mono);font-size:12px;padding:10px 18px;border-radius:var(–radius);opacity:0;transition:all .3s ease;pointer-events:none;z-index:100;}
+.toast.visible{transform:translateX(-50%) translateY(0);opacity:1;}.toast.success{border-color:var(–success);}
+.readonly-banner{display:none;height:32px;align-items:center;justify-content:center;font-size:11px;letter-spacing:.4px;color:var(–accent);background:var(–accent-bg);border-bottom:1px solid rgba(167,139,250,.12);flex-shrink:0;}
+.readonly-banner.visible{display:flex;}
+kbd{font-family:var(–mono);font-size:9px;background:var(–bg);border:1px solid var(–border);border-radius:3px;padding:1px 4px;color:var(–text-xdim);}
+
+@media(max-width:700px){.editor-pane,.preview-pane{display:none;}.editor-pane.mobile-visible,.preview-pane.mobile-visible{display:flex;}.hide-mobile{display:none!important;}}
+@media(min-width:701px){.mobile-only{display:none!important;}}
+@media print{.topbar,.editor-pane,.pane-header,.readonly-banner,.audio-bar{display:none!important;}.preview-pane{flex:1!important;}.preview-scroll{padding:0!important;}body,html{background:#fff!important;}.rendered{color:#222!important;}.rendered h1,.rendered h2,.rendered h3{color:#000!important;}.rendered code{background:#f3f3f3!important;color:#6b21a8!important;}.rendered pre{background:#f8f8f8!important;border-color:#ddd!important;}.rendered pre code{color:#333!important;}.rendered thead th{color:#6b21a8!important;border-color:#6b21a8!important;}.rendered td{color:#333!important;border-color:#ddd!important;}.mermaid-container{background:#fff!important;border-color:#ddd!important;}.callout,.atl-panel{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(–border);border-radius:3px;}::-webkit-scrollbar-thumb:hover{background:var(–border-focus);}
+[data-theme=“dark”] .hljs{background:transparent!important;color:#abb2bf;}
+[data-theme=“light”] .hljs{background:transparent!important;color:#383a42;}
+</style>
+
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">md<span>.render</span></div>
+  <div class="sep"></div>
+  <span class="flavor-label hide-mobile">Flavor</span>
+  <select id="flavor-select" onchange="onFlavorChange()" title="Markdown flavor">
+    <option value="gfm" selected>GFM</option>
+    <option value="commonmark">CommonMark</option>
+    <option value="extended">Extended</option>
+    <option value="academic">Academic</option>
+    <option value="obsidian">Obsidian</option>
+    <option value="atlassian">Atlassian</option>
+  </select>
+  <div class="spacer"></div>
+  <div class="view-toggle mobile-only">
+    <button id="btn-edit-view" class="active" onclick="setMobileView('edit')">Edit</button>
+    <button id="btn-preview-view" onclick="setMobileView('preview')">View</button>
+  </div>
+  <div class="topbar-group">
+    <!-- Listen -->
+    <button id="listen-btn" onclick="toggleListen()" title="Listen to document">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+      <span class="hide-mobile">Listen</span>
+    </button>
+    <div class="sep hide-mobile"></div>
+    <button class="icon-only" onclick="toggleTheme()" title="Toggle theme">
+      <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button onclick="openShareModal()" title="Share (Ctrl+S)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      <span class="hide-mobile">Share</span>
+    </button>
+    <div style="position:relative;">
+      <button onclick="toggleDropdown('export-menu')" title="Export">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="hide-mobile">Export</span>
+      </button>
+      <div class="dropdown" id="export-menu" style="right:0;">
+        <button onclick="exportMarkdown()">↓ &ensp;Markdown (.md)</button>
+        <button onclick="exportHTML()">↓ &ensp;HTML snippet</button>
+        <button onclick="exportPNG()">↓ &ensp;PNG image</button>
+        <button onclick="exportPDF()">↓ &ensp;PDF (print)</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="readonly-banner" id="readonly-banner">Viewing a shared document — edit to make it yours</div>
+<div class="main" id="main-container">
+  <div class="editor-pane mobile-visible" id="editor-pane">
+    <div class="pane-header">Markdown<span class="shortcut hide-mobile"><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle</span></div>
+    <textarea id="editor" placeholder="Write or drop a .md file here…" spellcheck="false"></textarea>
+  </div>
+  <div class="preview-pane mobile-visible" id="preview-pane">
+    <div class="pane-header">Preview</div>
+    <div class="preview-scroll" id="preview-scroll">
+      <div class="rendered" id="preview"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Audio control bar -->
+
+<div class="audio-bar" id="audio-bar">
+  <button class="icon-only" onclick="audioSkipBack()" title="Previous section">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+  </button>
+  <button class="icon-only" id="audio-play-btn" onclick="audioTogglePlay()" title="Play / Pause">
+    <svg id="audio-icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <svg id="audio-icon-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+  </button>
+  <button class="icon-only" onclick="audioSkipForward()" title="Next section">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+  </button>
+  <button class="icon-only" onclick="audioStop()" title="Stop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+  </button>
+  <div class="ab-progress" onclick="audioSeek(event)" id="audio-progress">
+    <div class="ab-progress-fill" id="audio-progress-fill" style="width:0%"></div>
+  </div>
+  <div class="ab-label" id="audio-label"><strong>Ready</strong></div>
+  <select id="audio-speed" onchange="audioSetSpeed()" title="Speed">
+    <option value="0.75">0.75×</option>
+    <option value="1" selected>1×</option>
+    <option value="1.25">1.25×</option>
+    <option value="1.5">1.5×</option>
+    <option value="2">2×</option>
+  </select>
+</div>
+
+<div class="drop-overlay" id="drop-overlay"><div class="drop-overlay-inner">Drop .md file to load</div></div>
+<div class="modal-overlay" id="share-modal" onclick="closeShareModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Share this document</h3>
+    <div class="url-warn" id="url-warn"></div>
+    <div class="url-box" id="share-url"></div>
+    <div class="modal-actions">
+      <button onclick="closeShareModal()">Close</button>
+      <button class="primary" onclick="copyShareURL()">Copy URL</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  let currentFlavor='gfm',md=null,mermaidCounter=0,debounceTimer=null;
+
+  /* ═══ SHARED PLUGINS ═══ */
+
+  function pluginTaskList(md){
+    md.core.ruler.after('inline','task_lists',state=>{
+      for(let i=0;i<state.tokens.length;i++){
+        if(state.tokens[i].type!=='inline')continue;const c=state.tokens[i].content;
+        if(!/^\[([ xX])\]\s/.test(c))continue;const checked=c[1]!==' ';
+        state.tokens[i].content=c.slice(4);state.tokens[i].children=md.parseInline(state.tokens[i].content,state.env)[0]?.children||[];
+        for(let j=i-1;j>=0;j--){if(state.tokens[j].type==='list_item_open'){state.tokens[j].meta={checked};break;}}
+        for(let j=i-1;j>=0;j--){if(state.tokens[j].type==='bullet_list_open'){state.tokens[j].attrSet('class','task-list');break;}}
+      }
+    });
+    const orig=md.renderer.rules.list_item_open;
+    md.renderer.rules.list_item_open=(tokens,idx,opts,env,self)=>{
+      if(tokens[idx].meta?.checked!==undefined){const ck=tokens[idx].meta.checked?' checked disabled':' disabled';return `<li class="task-list-item"><input type="checkbox"${ck}> `;}
+      return orig?orig(tokens,idx,opts,env,self):self.renderToken(tokens,idx,opts);
+    };
+  }
+
+  function pluginKaTeX(md){
+    md.block.ruler.before('fence','math_block',(state,startLine,endLine,silent)=>{
+      const pos=state.bMarks[startLine]+state.tShift[startLine];
+      if(pos+2>state.eMarks[startLine]||state.src.slice(pos,pos+2)!=='$$')return false;
+      if(silent)return true;let nl=startLine,found=false;
+      while(++nl<endLine){if(state.src.slice(state.bMarks[nl]+state.tShift[nl],state.bMarks[nl]+state.tShift[nl]+2)==='$$'){found=true;break;}}
+      if(!found)return false;const t=state.push('math_block','div',0);
+      t.content=state.getLines(startLine+1,nl,state.tShift[startLine],false).trim();t.map=[startLine,nl+1];state.line=nl+1;return true;
+    });
+    md.renderer.rules.math_block=(tokens,idx)=>{try{return `<div class="katex-display">${katex.renderToString(tokens[idx].content,{displayMode:true,throwOnError:false})}</div>`;}catch(e){return `<pre class="katex-error">${md.utils.escapeHtml(tokens[idx].content)}</pre>`;}};
+
+```
+md.inline.ruler.after('escape','math_inline',(state,silent)=>{
+  if(state.src[state.pos]!=='$'||state.src[state.pos+1]==='$')return false;let end=state.pos+1;
+  while(end<state.posMax&&state.src[end]!=='$')end++;if(end>=state.posMax||end===state.pos+1)return false;
+  if(!silent){const t=state.push('math_inline','',0);t.content=state.src.slice(state.pos+1,end);}state.pos=end+1;return true;
+});
+md.renderer.rules.math_inline=(tokens,idx)=>{try{return katex.renderToString(tokens[idx].content,{displayMode:false,throwOnError:false});}catch(e){return `<code>${md.utils.escapeHtml(tokens[idx].content)}</code>`;}};
+```
+
+}
+
+/* ═══ OBSIDIAN PLUGINS ═══ */
+
+const CALLOUT_ICONS={note:‘ℹ’,tip:‘💡’,hint:‘💡’,warning:‘⚠’,caution:‘⚠’,attention:‘⚠’,danger:‘⛔’,error:‘⛔’,bug:‘🐛’,failure:‘❌’,fail:‘❌’,missing:‘❌’,info:‘ℹ’,todo:‘📋’,abstract:‘📄’,summary:‘📄’,tldr:‘📄’,example:‘📌’,quote:‘💬’,cite:‘💬’,success:‘✅’,check:‘✅’,done:‘✅’,question:‘❓’,help:‘❓’,faq:‘❓’};
+
+function pluginObsidianCallouts(md){
+md.core.ruler.after(‘block’,‘obsidian_callouts’,state=>{
+const tokens=state.tokens;
+for(let i=0;i<tokens.length;i++){
+if(tokens[i].type!==‘blockquote_open’)continue;let inlineIdx=-1;
+for(let j=i+1;j<tokens.length;j++){if(tokens[j].type===‘blockquote_close’&&tokens[j].level===tokens[i].level)break;if(tokens[j].type===‘inline’){inlineIdx=j;break;}}
+if(inlineIdx<0)continue;const m=tokens[inlineIdx].content.match(/^[!([\w-]+)]\s*(.*)/);if(!m)continue;
+const type=m[1].toLowerCase(),title=m[2]||type.charAt(0).toUpperCase()+type.slice(1);
+tokens[inlineIdx].content=tokens[inlineIdx].content.replace(/^[![\w-]+]\s*.*\n?/,’’);
+tokens[inlineIdx].children=md.parseInline(tokens[inlineIdx].content,state.env)[0]?.children||[];
+tokens[i].meta={callout:true,type,title};
+}
+});
+const origO=md.renderer.rules.blockquote_open,origC=md.renderer.rules.blockquote_close;
+md.renderer.rules.blockquote_open=(tokens,idx,opts,env,self)=>{
+if(tokens[idx].meta?.callout){const{type,title}=tokens[idx].meta;return `<div class="callout callout-${type}"><div class="callout-title"><span class="callout-icon">${CALLOUT_ICONS[type]||'ℹ'}</span> ${md.utils.escapeHtml(title)}</div><div class="callout-body">`;}
+return origO?origO(tokens,idx,opts,env,self):self.renderToken(tokens,idx,opts);
+};
+md.renderer.rules.blockquote_close=(tokens,idx,opts,env,self)=>{
+for(let j=idx-1;j>=0;j–){if(tokens[j].type===‘blockquote_open’&&tokens[j].level===tokens[idx].level){if(tokens[j].meta?.callout)return ‘</div></div>’;break;}}
+return origC?origC(tokens,idx,opts,env,self):self.renderToken(tokens,idx,opts);
+};
+}
+
+function pluginObsidianInline(md){
+md.inline.ruler.push(‘wikilink’,(state,silent)=>{if(state.src.slice(state.pos,state.pos+2)!==’[[’)return false;const end=state.src.indexOf(’]]’,state.pos+2);if(end<0)return false;if(!silent){const raw=state.src.slice(state.pos+2,end),parts=raw.split(’|’),t=state.push(‘wikilink’,’’,0);t.content=parts.length>1?parts[1].trim():parts[0].trim();t.meta={target:parts[0].trim()};}state.pos=end+2;return true;});
+md.renderer.rules.wikilink=(tokens,idx)=>`<span class="wikilink" title="${md.utils.escapeHtml(tokens[idx].meta.target)}">${md.utils.escapeHtml(tokens[idx].content)}</span>`;
+md.inline.ruler.push(‘highlight’,(state,silent)=>{if(state.src.slice(state.pos,state.pos+2)!==’==’)return false;const end=state.src.indexOf(’==’,state.pos+2);if(end<0)return false;if(!silent){const t=state.push(‘obsidian_highlight’,’’,0);t.content=state.src.slice(state.pos+2,end);}state.pos=end+2;return true;});
+md.renderer.rules.obsidian_highlight=(tokens,idx)=>`<mark>${md.utils.escapeHtml(tokens[idx].content)}</mark>`;
+md.inline.ruler.push(‘obsidian_tag’,(state,silent)=>{if(state.src[state.pos]!==’#’)return false;if(state.pos>0&&/\w/.test(state.src[state.pos-1]))return false;const m=state.src.slice(state.pos).match(/^#([\w][\w/-]*)/);if(!m)return false;if(!silent){const t=state.push(‘obsidian_tag’,’’,0);t.content=m[1];}state.pos+=m[0].length;return true;});
+md.renderer.rules.obsidian_tag=(tokens,idx)=>`<span class="obsidian-tag">#${md.utils.escapeHtml(tokens[idx].content)}</span>`;
+}
+
+function pluginObsidianComments(md){md.core.ruler.before(‘normalize’,‘strip_comments’,state=>{state.src=state.src.replace(/%%[\s\S]*?%%/g,’’);});}
+
+/* ═══ ATLASSIAN PLUGINS ═══ */
+
+function pluginAtlassianBlocks(md){
+md.core.ruler.before(‘normalize’,‘atl_blocks’,state=>{
+let src=state.src;
+for(const type of[‘info’,‘note’,‘warning’,‘tip’,‘error’]){const re=new RegExp(`\\{${type}(?::title=([^}]*))?\\}([\\s\\S]*?)\\{${type}\\}`,‘gi’);src=src.replace(re,(*,title,body)=>`\n<div class="atl-panel atl-panel-${type}"><div class="atl-panel-title">${title||type}</div>\n\n${body.trim()}\n\n</div>\n`);}
+src=src.replace(/{expand(?::([^}]*))?}([\s\S]*?){expand}/gi,(*,title,body)=>`\n<details class="atl-expand"><summary>${title||'Click to expand'}</summary><div class="expand-body">\n\n${body.trim()}\n\n</div></details>\n`);
+src=src.replace(/{code(?::(\w+))?}([\s\S]*?){code}/gi,(_,lang,code)=>`\n\```${lang||’’}\n${code.trim()}\n```\n`);
+state.src=src;
+});
+}
+
+function pluginAtlassianInline(md){
+md.inline.ruler.push(‘atl_status’,(state,silent)=>{if(state.src.slice(state.pos,state.pos+8)!==’{status:’)return false;const end=state.src.indexOf(’}’,state.pos);if(end<0)return false;const params=state.src.slice(state.pos+8,end);if(!silent){const t=state.push(‘atl_status’,’’,0);const cM=params.match(/color=(\w+)/i),tM=params.match(/title=([^|}]+)/i);t.meta={color:(cM?.[1]||‘grey’).toLowerCase(),title:tM?.[1]||‘STATUS’};}state.pos=end+1;return true;});
+md.renderer.rules.atl_status=(tokens,idx)=>{const{color,title}=tokens[idx].meta;return `<span class="atl-status atl-status-${color}">${md.utils.escapeHtml(title)}</span>`;};
+md.inline.ruler.push(‘atl_mention’,(state,silent)=>{if(state.src[state.pos]!==’@’)return false;if(state.pos>0&&/\w/.test(state.src[state.pos-1]))return false;const m=state.src.slice(state.pos).match(/^@([\w][\w.-]*)/);if(!m)return false;if(!silent){const t=state.push(‘atl_mention’,’’,0);t.content=m[1];}state.pos+=m[0].length;return true;});
+md.renderer.rules.atl_mention=(tokens,idx)=>`<span class="atl-mention">@${md.utils.escapeHtml(tokens[idx].content)}</span>`;
+}
+
+/* ═══ FLAVORS ═══ */
+
+const FLAVORS={
+commonmark:{label:‘CommonMark’,init(){return window.markdownit(‘commonmark’);}},
+gfm:{label:‘GitHub-Flavored’,init(){const m=window.markdownit({html:true,linkify:true});pluginTaskList(m);return m;}},
+extended:{label:‘Extended’,init(){const m=window.markdownit({html:true,linkify:true,typographer:true});m.use(window.markdownitFootnote);m.use(window.markdownitDeflist);pluginTaskList(m);return m;}},
+academic:{label:‘Academic’,init(){const m=window.markdownit({html:true,linkify:true,typographer:true});m.use(window.markdownitFootnote);m.use(window.markdownitDeflist);pluginTaskList(m);pluginKaTeX(m);return m;}},
+obsidian:{label:‘Obsidian’,init(){const m=window.markdownit({html:true,linkify:true,typographer:true});m.use(window.markdownitFootnote);m.use(window.markdownitDeflist);pluginTaskList(m);pluginKaTeX(m);pluginObsidianComments(m);pluginObsidianCallouts(m);pluginObsidianInline(m);return m;}},
+atlassian:{label:‘Atlassian’,init(){const m=window.markdownit({html:true,linkify:true});pluginTaskList(m);pluginAtlassianBlocks(m);pluginAtlassianInline(m);return m;}}
+};
+
+function applyHighlighting(m){m.options.highlight=(str,lang)=>{if(lang===‘mermaid’)return str;if(lang&&hljs.getLanguage(lang))try{return hljs.highlight(str,{language:lang}).value;}catch(*){}try{return hljs.highlightAuto(str).value;}catch(*){}return ‘’;};}
+function wrapMermaidFences(m){const orig=m.renderer.rules.fence||((t,i,o,e,s)=>s.renderToken(t,i,o));m.renderer.rules.fence=(tokens,idx,opts,env,self)=>{if(tokens[idx].info.trim().toLowerCase()===‘mermaid’){return `<div class="mermaid-container"><pre class="mermaid" id="mermaid-${mermaidCounter++}">${m.utils.escapeHtml(tokens[idx].content)}</pre></div>`;}return orig(tokens,idx,opts,env,self);};}
+function addHeadingAnchors(m){const orig=m.renderer.rules.heading_open||((t,i,o,e,s)=>s.renderToken(t,i,o));m.renderer.rules.heading_open=(tokens,idx,opts,env,self)=>{const next=tokens[idx+1];if(next?.type===‘inline’){const slug=next.content.replace(/[*_`[]#]/g,’’).trim().toLowerCase().replace(/[^\w\s-]/g,’’).replace(/\s+/g,’-’);tokens[idx].attrSet(‘id’,slug);}return orig(tokens,idx,opts,env,self);};}
+function buildMD(flavor){const m=FLAVORS[flavor].init();applyHighlighting(m);wrapMermaidFences(m);addHeadingAnchors(m);return m;}
+
+function generateTOC(src){const hs=[];let fence=false;for(const line of src.split(’\n’)){if(/^```/.test(line.trim())){fence=!fence;continue;}if(fence)continue;const m=line.match(/^(#{2,4})\s+(.+)/);if(m){const text=m[2].replace(/[*_`\[\]#]/g,'').trim();hs.push({level:m[1].length,text,slug:text.toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'-')});}}if(hs.length<3)return '';return '<div class="toc-container"><div class="toc-title">Contents</div><ul>'+hs.map(h=>`<li class="toc-h${h.level}"><a href="#${h.slug}">${h.text}</a></li>`).join(’’)+’</ul></div>’;}
+
+function initMermaid(theme){mermaid.initialize({startOnLoad:false,theme,themeVariables:theme===‘dark’?{primaryColor:’#7c3aed’,primaryTextColor:’#e4e4e7’,primaryBorderColor:’#3a3a42’,lineColor:’#636370’,secondaryColor:’#232328’,tertiaryColor:’#141416’,background:’#101012’,mainBkg:’#1a1a1e’,nodeBorder:’#3a3a42’,clusterBkg:’#141416’,clusterBorder:’#232328’,titleColor:’#e4e4e7’,edgeLabelBackground:’#141416’}:{primaryColor:’#7c3aed’,primaryTextColor:’#1a1a2e’},fontFamily:‘JetBrains Mono,monospace’,fontSize:13,flowchart:{curve:‘monotoneX’}});}
+
+async function renderPreview(){const src=document.getElementById(‘editor’).value;mermaidCounter=0;document.getElementById(‘preview’).innerHTML=generateTOC(src)+md.render(src);try{await mermaid.run({querySelector:’.mermaid’});}catch(_){}}
+function scheduleRender(){clearTimeout(debounceTimer);debounceTimer=setTimeout(renderPreview,180);}
+
+/* ═══════════════════════════════════════════════════════
+LISTEN MODE — DOM-to-Speech Engine
+═══════════════════════════════════════════════════════ */
+
+const synth = window.speechSynthesis;
+let audioChunks = [];   // {text, element}
+let audioIndex = -1;
+let audioPlaying = false;
+let audioActive = false;
+let currentUtterance = null;
+let audioSpeed = 1;
+
+/* ── DOM walker: convert rendered HTML to speakable chunks ── */
+function extractSpeakableChunks() {
+const root = document.getElementById(‘preview’);
+const chunks = [];
+
+```
+function walkChildren(parent) {
+  for (const node of parent.children) {
+    processElement(node);
+  }
+}
+
+function processElement(el) {
+  const tag = el.tagName?.toLowerCase();
+  const cls = el.className || '';
+
+  // Skip TOC entirely
+  if (cls.includes('toc-container')) return;
+
+  // Headings
+  if (/^h[1-6]$/.test(tag)) {
+    const level = tag[1];
+    const prefix = level === '1' ? '' : `Section: `;
+    chunks.push({ text: `${prefix}${el.textContent.trim()}.`, el });
+    return;
+  }
+
+  // Mermaid diagrams
+  if (cls.includes('mermaid-container')) {
+    chunks.push({ text: 'A diagram is shown here.', el });
+    return;
+  }
+
+  // KaTeX display math
+  if (cls.includes('katex-display')) {
+    chunks.push({ text: 'A mathematical equation is displayed.', el });
+    return;
+  }
+
+  // Code blocks
+  if (tag === 'pre' && el.querySelector('code')) {
+    const code = el.querySelector('code');
+    const langCls = [...code.classList].find(c => c.startsWith('language-'));
+    const lang = langCls ? langCls.replace('language-', '') : null;
+    chunks.push({ text: lang ? `A code block in ${lang}.` : 'A code block is shown.', el });
+    return;
+  }
+
+  // Tables — read them intelligently
+  if (tag === 'table') {
+    const headers = [...el.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    const rows = [...el.querySelectorAll('tbody tr')];
+    if (headers.length && rows.length) {
+      chunks.push({ text: `A table with columns: ${headers.join(', ')}.`, el });
+      rows.forEach((tr, ri) => {
+        const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+        const pairs = cells.map((c, ci) => headers[ci] ? `${headers[ci]}: ${c}` : c);
+        chunks.push({ text: `Row ${ri + 1}. ${pairs.join('. ')}.`, el: tr });
+      });
+    } else {
+      chunks.push({ text: 'A table is shown.', el });
+    }
+    return;
+  }
+
+  // Callouts (Obsidian)
+  if (cls.includes('callout')) {
+    const titleEl = el.querySelector('.callout-title');
+    const bodyEl = el.querySelector('.callout-body');
+    const title = titleEl ? titleEl.textContent.trim() : 'Note';
+    const body = bodyEl ? bodyEl.textContent.trim() : '';
+    chunks.push({ text: `${title}: ${body}`, el });
+    return;
+  }
+
+  // Atlassian panels
+  if (cls.includes('atl-panel')) {
+    const titleEl = el.querySelector('.atl-panel-title');
+    const title = titleEl ? titleEl.textContent.trim() : 'Panel';
+    const body = el.textContent.replace(title, '').trim();
+    chunks.push({ text: `${title} panel: ${body}`, el });
+    return;
+  }
+
+  // Expandable sections
+  if (tag === 'details') {
+    const summary = el.querySelector('summary')?.textContent.trim() || 'Expandable section';
+    const body = el.querySelector('.expand-body')?.textContent.trim() || '';
+    chunks.push({ text: `${summary}: ${body}`, el });
+    return;
+  }
+
+  // Paragraphs
+  if (tag === 'p') {
+    const text = el.textContent.trim();
+    if (text) chunks.push({ text, el });
+    return;
+  }
+
+  // Blockquotes (non-callout)
+  if (tag === 'blockquote') {
+    chunks.push({ text: `Quote: ${el.textContent.trim()}`, el });
+    return;
+  }
+
+  // Lists
+  if (tag === 'ul' || tag === 'ol') {
+    const items = [...el.querySelectorAll(':scope > li')];
+    if (items.length) {
+      const isTask = cls.includes('task-list');
+      items.forEach((li, idx) => {
+        let text = li.textContent.trim();
+        if (isTask) {
+          const cb = li.querySelector('input[type="checkbox"]');
+          const done = cb?.checked ? 'Done' : 'Not done';
+          text = `${done}: ${text}`;
+        } else if (tag === 'ol') {
+          text = `${idx + 1}. ${text}`;
+        }
+        chunks.push({ text, el: li });
+      });
+    }
+    return;
+  }
+
+  // Horizontal rule — pause
+  if (tag === 'hr') {
+    chunks.push({ text: '...', el });
+    return;
+  }
+
+  // Definition lists
+  if (tag === 'dl') {
+    for (const child of el.children) {
+      if (child.tagName === 'DT') chunks.push({ text: `${child.textContent.trim()}:`, el: child });
+      if (child.tagName === 'DD') chunks.push({ text: child.textContent.trim(), el: child });
+    }
+    return;
+  }
+
+  // Footnotes section
+  if (cls.includes('footnotes')) {
+    chunks.push({ text: 'Footnotes section.', el });
+    const items = el.querySelectorAll('li');
+    items.forEach(li => {
+      chunks.push({ text: li.textContent.trim(), el: li });
+    });
+    return;
+  }
+
+  // Generic container — recurse
+  if (el.children?.length) {
+    walkChildren(el);
+  } else {
+    const text = el.textContent?.trim();
+    if (text && text.length > 2) chunks.push({ text, el });
+  }
+}
+
+walkChildren(root);
+return chunks;
+```
+
+}
+
+/* ── Speak a single chunk ── */
+function speakChunk(index) {
+if (index < 0 || index >= audioChunks.length) {
+audioStop();
+return;
+}
+
+```
+// Clear previous highlight
+document.querySelectorAll('.speaking-highlight').forEach(el => el.classList.remove('speaking-highlight'));
+
+audioIndex = index;
+const chunk = audioChunks[index];
+
+// Highlight
+chunk.el?.classList.add('speaking-highlight');
+chunk.el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+// Update UI
+updateAudioUI();
+
+// Speak
+const utter = new SpeechSynthesisUtterance(chunk.text);
+utter.rate = audioSpeed;
+utter.onend = () => {
+  if (audioPlaying && audioIndex < audioChunks.length - 1) {
+    speakChunk(audioIndex + 1);
+  } else if (audioIndex >= audioChunks.length - 1) {
+    audioStop();
+  }
+};
+utter.onerror = () => {
+  if (audioPlaying) speakChunk(audioIndex + 1);
+};
+currentUtterance = utter;
+synth.speak(utter);
+```
+
+}
+
+function updateAudioUI() {
+const pct = audioChunks.length ? ((audioIndex + 1) / audioChunks.length * 100) : 0;
+document.getElementById(‘audio-progress-fill’).style.width = pct + ‘%’;
+const label = audioChunks[audioIndex]?.text || ‘’;
+const short = label.length > 80 ? label.slice(0, 80) + ‘…’ : label;
+document.getElementById(‘audio-label’).innerHTML = `<strong>${audioIndex + 1}/${audioChunks.length}</strong> &ensp;${short}`;
+document.getElementById(‘audio-icon-play’).style.display = audioPlaying ? ‘none’ : ‘’;
+document.getElementById(‘audio-icon-pause’).style.display = audioPlaying ? ‘’ : ‘none’;
+}
+
+/* ── Public controls ── */
+window.toggleListen = () => {
+if (audioActive) {
+audioStop();
+} else {
+audioStart();
+}
+};
+
+function audioStart() {
+synth.cancel();
+audioChunks = extractSpeakableChunks();
+if (!audioChunks.length) { showToast(‘Nothing to read’); return; }
+audioActive = true;
+audioPlaying = true;
+audioIndex = -1;
+document.getElementById(‘audio-bar’).classList.add(‘visible’);
+document.getElementById(‘main-container’).classList.add(‘has-audio-bar’);
+document.getElementById(‘listen-btn’).classList.add(‘active-listen’);
+speakChunk(0);
+}
+
+window.audioStop = () => {
+synth.cancel();
+audioPlaying = false;
+audioActive = false;
+audioIndex = -1;
+document.querySelectorAll(’.speaking-highlight’).forEach(el => el.classList.remove(‘speaking-highlight’));
+document.getElementById(‘audio-bar’).classList.remove(‘visible’);
+document.getElementById(‘main-container’).classList.remove(‘has-audio-bar’);
+document.getElementById(‘listen-btn’).classList.remove(‘active-listen’);
+document.getElementById(‘audio-progress-fill’).style.width = ‘0%’;
+document.getElementById(‘audio-label’).innerHTML = ‘<strong>Ready</strong>’;
+document.getElementById(‘audio-icon-play’).style.display = ‘’;
+document.getElementById(‘audio-icon-pause’).style.display = ‘none’;
+};
+
+window.audioTogglePlay = () => {
+if (!audioActive) return;
+if (audioPlaying) {
+synth.cancel();
+audioPlaying = false;
+updateAudioUI();
+} else {
+audioPlaying = true;
+speakChunk(audioIndex >= 0 ? audioIndex : 0);
+}
+};
+
+window.audioSkipForward = () => {
+if (!audioActive) return;
+synth.cancel();
+const next = Math.min(audioIndex + 1, audioChunks.length - 1);
+audioPlaying = true;
+speakChunk(next);
+};
+
+window.audioSkipBack = () => {
+if (!audioActive) return;
+synth.cancel();
+const prev = Math.max(audioIndex - 1, 0);
+audioPlaying = true;
+speakChunk(prev);
+};
+
+window.audioSetSpeed = () => {
+audioSpeed = parseFloat(document.getElementById(‘audio-speed’).value);
+if (audioPlaying) {
+synth.cancel();
+speakChunk(audioIndex >= 0 ? audioIndex : 0);
+}
+};
+
+window.audioSeek = (e) => {
+if (!audioActive || !audioChunks.length) return;
+const bar = document.getElementById(‘audio-progress’);
+const pct = (e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth;
+const idx = Math.floor(pct * audioChunks.length);
+synth.cancel();
+audioPlaying = true;
+speakChunk(Math.max(0, Math.min(idx, audioChunks.length - 1)));
+};
+
+/* ═══ UI HANDLERS ═══ */
+
+window.onFlavorChange=()=>{const prev=currentFlavor;const prevDef=DEFAULTS[prev]||DEFAULTS._base;const isDef=editorEl.value.trim()===prevDef.trim();currentFlavor=document.getElementById(‘flavor-select’).value;md=buildMD(currentFlavor);if(isDef){editorEl.value=DEFAULTS[currentFlavor]||DEFAULTS._base;}renderPreview();showToast(`Flavor: ${FLAVORS[currentFlavor].label}`);};
+window.toggleTheme=()=>{const next=document.documentElement.dataset.theme===‘dark’?‘light’:‘dark’;document.documentElement.dataset.theme=next;document.getElementById(‘icon-moon’).style.display=next===‘dark’?’’:‘none’;document.getElementById(‘icon-sun’).style.display=next===‘light’?’’:‘none’;initMermaid(next===‘dark’?‘dark’:‘default’);renderPreview();};
+
+const encodeDoc=t=>LZString.compressToEncodedURIComponent(t);const decodeDoc=t=>LZString.decompressFromEncodedURIComponent(t);
+function buildShareURL(){const src=document.getElementById(‘editor’).value;if(!src.trim())return location.origin+location.pathname;return location.origin+location.pathname+’?d=’+encodeDoc(src)+(currentFlavor!==‘gfm’?’&f=’+currentFlavor:’’);}
+
+window.openShareModal=()=>{const url=buildShareURL();const len=url.length;document.getElementById(‘share-url’).textContent=url;const w=document.getElementById(‘url-warn’);w.textContent=len>8000?`⚠ URL is ${len.toLocaleString()} chars — may exceed browser limits.`:`URL length: ${len.toLocaleString()} chars`;w.className=len>8000?‘url-warn over’:‘url-warn’;document.getElementById(‘share-modal’).classList.add(‘open’);};
+window.closeShareModal=e=>{if(e&&e.target!==e.currentTarget)return;document.getElementById(‘share-modal’).classList.remove(‘open’);};
+window.copyShareURL=()=>{navigator.clipboard.writeText(buildShareURL()).then(()=>showToast(‘URL copied’,true));closeShareModal();};
+
+window.exportMarkdown=()=>{closeAllDropdowns();dl(new Blob([document.getElementById(‘editor’).value],{type:‘text/markdown’}),‘document.md’);showToast(‘Markdown exported’,true);};
+window.exportHTML=()=>{closeAllDropdowns();dl(new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Document</title></head><body>${document.getElementById('preview').innerHTML}</body></html>`],{type:‘text/html’}),‘document.html’);showToast(‘HTML exported’,true);};
+window.exportPNG=async()=>{closeAllDropdowns();showToast(‘Rendering PNG…’);try{const c=await html2canvas(document.getElementById(‘preview’),{backgroundColor:getComputedStyle(document.documentElement).getPropertyValue(’–preview-bg’).trim(),scale:2,useCORS:true,logging:false});c.toBlob(b=>{dl(b,‘document.png’);showToast(‘PNG exported’,true);});}catch(e){showToast(‘PNG export failed’);}};
+window.exportPDF=()=>{closeAllDropdowns();window.print();};
+
+function dl(blob,name){const a=document.createElement(‘a’);a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+window.toggleDropdown=id=>{const el=document.getElementById(id),o=el.classList.contains(‘open’);closeAllDropdowns();if(!o)el.classList.add(‘open’);};
+function closeAllDropdowns(){document.querySelectorAll(’.dropdown’).forEach(d=>d.classList.remove(‘open’));}
+document.addEventListener(‘click’,e=>{if(!e.target.closest(’.dropdown’)&&!e.target.closest(’[onclick*=“toggleDropdown”]’))closeAllDropdowns();});
+function showToast(msg,ok){const t=document.getElementById(‘toast’);t.textContent=msg;t.className=‘toast visible’+(ok?’ success’:’’);clearTimeout(t._t);t._t=setTimeout(()=>t.className=‘toast’,2200);}
+window.setMobileView=v=>{document.getElementById(‘editor-pane’).classList.toggle(‘mobile-visible’,v===‘edit’);document.getElementById(‘preview-pane’).classList.toggle(‘mobile-visible’,v===‘preview’);document.getElementById(‘btn-edit-view’).classList.toggle(‘active’,v===‘edit’);document.getElementById(‘btn-preview-view’).classList.toggle(‘active’,v===‘preview’);};
+
+let dc=0;
+document.addEventListener(‘dragenter’,e=>{e.preventDefault();dc++;document.getElementById(‘drop-overlay’).classList.add(‘visible’);});
+document.addEventListener(‘dragleave’,e=>{e.preventDefault();if(–dc<=0){dc=0;document.getElementById(‘drop-overlay’).classList.remove(‘visible’);}});
+document.addEventListener(‘dragover’,e=>e.preventDefault());
+document.addEventListener(‘drop’,e=>{e.preventDefault();dc=0;document.getElementById(‘drop-overlay’).classList.remove(‘visible’);const f=e.dataTransfer?.files?.[0];if(f&&(f.name.endsWith(’.md’)||f.name.endsWith(’.markdown’)||f.name.endsWith(’.txt’)||f.type.startsWith(‘text/’))){const r=new FileReader();r.onload=ev=>{document.getElementById(‘editor’).value=ev.target.result;scheduleRender();showToast(`Loaded ${f.name}`,true);};r.readAsText(f);}else{showToast(‘Drop a .md or text file’);}});
+
+document.addEventListener(‘keydown’,e=>{const mod=e.ctrlKey||e.metaKey;if(mod&&e.key===‘s’){e.preventDefault();openShareModal();}if(mod&&e.key===‘e’&&!e.shiftKey){e.preventDefault();const ep=document.getElementById(‘editor-pane’);ep.style.display=ep.style.display===‘none’?’’:‘none’;}if(e.key===‘Escape’){closeShareModal();closeAllDropdowns();if(audioActive)audioStop();}});
+const editorEl=document.getElementById(‘editor’);
+editorEl.addEventListener(‘keydown’,e=>{if(e.key===‘Tab’){e.preventDefault();const s=editorEl.selectionStart;editorEl.value=editorEl.value.substring(0,s)+’  ’+editorEl.value.substring(editorEl.selectionEnd);editorEl.selectionStart=editorEl.selectionEnd=s+2;scheduleRender();}});
+editorEl.addEventListener(‘input’,()=>{scheduleRender();if(audioActive)audioStop();});
+
+/* ═══ DEFAULTS ═══ */
+
+const DEFAULTS={
+_base:`# md.render
+
+A lightweight markdown renderer — share via URL, no backend.
+
+## Features
+
+|Feature                     |Status|
+|----------------------------|------|
+|6 Markdown flavors          |✓     |
+|Mermaid diagrams            |✓     |
+|Syntax highlighting         |✓     |
+|Listen mode (TTS)           |✓     |
+|Share via compressed URL    |✓     |
+|Export MD / HTML / PNG / PDF|✓     |
+|Light & dark themes         |✓     |
+|Drag & drop .md files       |✓     |
+
+## How it works
+
+Write markdown on the left. The preview updates live. Hit **Share** to generate a URL with the entire document compressed into the query string — no server needed.
+
+> Try the **Listen** button to hear this document read aloud. Tables are read row-by-row, diagrams are announced, and code blocks are summarized.
+
+## Mermaid
+
+```mermaid
+graph TD
+A[Write Markdown] –> B{Pick Flavor}
+B –>|GFM| C[Tables + Tasks]
+B –>|Obsidian| D[Callouts + Wikilinks]
+B –>|Atlassian| E[Panels + Status]
+B –>|Academic| F[LaTeX Math]
+C & D & E & F –> G[Share or Listen]
+```
+
+## Code
+
+```rust
+fn fibonacci(n: u64) -> u64 {
+match n {
+0 => 0,
+1 => 1,
+_ => fibonacci(n - 1) + fibonacci(n - 2),
+}
+}
+```
+
+## Task list
+
+- [x] Multiple markdown flavors
+- [x] Mermaid + syntax highlighting
+- [x] Listen mode with smart TTS
+- [ ] World domination
+
+## Shortcuts
+
+|Key     |Action                    |
+|--------|--------------------------|
+|`Ctrl+S`|Share dialog              |
+|`Ctrl+E`|Toggle editor             |
+|`Esc`   |Close dialogs / stop audio|
+
+-----
+
+*Switch flavors above. Try **Obsidian** for callouts or **Atlassian** for status badges.*
+`, obsidian:`# Obsidian Flavor Demo
+
+## Callouts
+
+> [!note] This is a note
+> Notes are great for supplementary information.
+
+> [!tip] Pro tip
+> Try the Listen button — callouts are read as “Tip: content” naturally.
+
+> [!warning] Watch out
+> This is a warning callout.
+
+> [!danger] Critical
+> Something really important here.
+
+> [!question] FAQ
+> What flavors are supported? All six of them.
+
+## Wikilinks
+
+Link to other notes: [[My Other Note]] or with alias: [[My Other Note|click here]].
+
+## Highlights
+
+This is ==highlighted text== in your document.
+
+## Tags
+
+Organize with tags: #project/md-render #documentation #tools
+
+## Math
+
+Inline: $E = mc^2$
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+
+## Comments
+
+This is visible. %%This comment won’t render.%% This is also visible.
+
+```mermaid
+graph LR
+A[Obsidian Vault] –> B[md.render]
+B –> C[Shared URL]
+```
+`, atlassian:`# Atlassian Flavor Demo
+
+## Panels
+
+{info}
+This is an info panel for general information.
+{info}
+
+{note}
+A note panel — draws attention.
+{note}
+
+{warning}
+Warning panel for critical information.
+{warning}
+
+{tip}
+Tips provide helpful suggestions.
+{tip}
+
+{info:title=Release Notes}
+Version 2.0 includes six markdown flavors and listen mode.
+{info}
+
+## Status Badges
+
+Project: {status:color=Green|title=ON TRACK} Review: {status:color=Yellow|title=IN PROGRESS} Blocker: {status:color=Red|title=BLOCKED}
+
+## Mentions
+
+Assigned to @john.smith and reviewed by @jane.doe.
+
+## Expandable Sections
+
+{expand:Implementation Details}
+
+- Step 1: Configure the parser
+- Step 2: Add the plugins
+- Step 3: Profit
+  {expand}
+
+## Code
+
+{code:python}
+def process():
+return “done”
+{code}
+
+|Sprint   |Velocity|Status              |
+|---------|--------|--------------------|
+|Sprint 14|42 pts  |{status:color=Green |
+|Sprint 15|38 pts  |{status:color=Yellow|
+
+```mermaid
+graph LR
+A[Jira Ticket] –> B[Dev] –> C[Review] –> D[Deploy]
+```
+`};
+
+/* ═══ BOOT ═══ */
+
+const params=new URLSearchParams(location.search);const enc=params.get(‘d’),fp=params.get(‘f’);
+if(fp&&FLAVORS[fp]){currentFlavor=fp;document.getElementById(‘flavor-select’).value=fp;}
+initMermaid(‘dark’);md=buildMD(currentFlavor);
+
+if(enc){const decoded=decodeDoc(enc);if(decoded){editorEl.value=decoded;document.getElementById(‘readonly-banner’).classList.add(‘visible’);editorEl.addEventListener(‘input’,function h(){document.getElementById(‘readonly-banner’).classList.remove(‘visible’);history.replaceState(null,’’,location.pathname);editorEl.removeEventListener(‘input’,h);});}else{editorEl.value=DEFAULTS[currentFlavor]||DEFAULTS._base;}}
+else{editorEl.value=DEFAULTS[currentFlavor]||DEFAULTS._base;}
+renderPreview();
+})();
+</script>
+
+</body>
+</html>
