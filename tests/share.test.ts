@@ -33,28 +33,30 @@ describe('encodeDoc / decodeDoc', () => {
 
 describe('buildShareURL', () => {
   it('returns the base URL for empty source', () => {
-    expect(buildShareURL(loc, '', 'gfm', identityCompressor)).toBe('https://md.example/render/');
-  });
-
-  it('returns the base URL for whitespace-only source', () => {
-    expect(buildShareURL(loc, '   \n\t', 'gfm', identityCompressor)).toBe(
+    expect(buildShareURL(loc, '', 'commonmark', identityCompressor)).toBe(
       'https://md.example/render/',
     );
   });
 
-  it('omits the flavor param when flavor is gfm (the default)', () => {
-    const url = buildShareURL(loc, 'hello', 'gfm', identityCompressor);
+  it('returns the base URL for whitespace-only source', () => {
+    expect(buildShareURL(loc, '   \n\t', 'commonmark', identityCompressor)).toBe(
+      'https://md.example/render/',
+    );
+  });
+
+  it('omits the flavor param when flavor is commonmark (the default)', () => {
+    const url = buildShareURL(loc, 'hello', 'commonmark', identityCompressor);
     expect(url).toBe('https://md.example/render/?d=hello');
   });
 
-  it('includes the flavor param when flavor is not gfm', () => {
+  it('includes the flavor param when flavor is not commonmark', () => {
     const url = buildShareURL(loc, 'hello', 'obsidian', identityCompressor);
     expect(url).toBe('https://md.example/render/?d=hello&f=obsidian');
   });
 
   it('encodes via the compressor', () => {
-    const url = buildShareURL(loc, 'a b', 'commonmark', identityCompressor);
-    expect(url).toContain('?d=a%20b&f=commonmark');
+    const url = buildShareURL(loc, 'a b', 'gfm', identityCompressor);
+    expect(url).toContain('?d=a%20b&f=gfm');
   });
 });
 
