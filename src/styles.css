@@ -220,11 +220,11 @@ button.active-listen {
 
 .main {
   display: flex;
-  height: calc(100% - 46px);
+  height: calc(100% - 46px - 32px);
   position: relative;
 }
 .main.has-audio-bar {
-  height: calc(100% - 46px - 42px);
+  height: calc(100% - 46px - 42px - 32px);
 }
 .editor-pane,
 .preview-pane {
@@ -1122,6 +1122,11 @@ kbd {
 }
 .site-footer-link:hover {
   color: var(--text);
+}
+.site-footer-sym {
+  font-size: 13px;
+  vertical-align: -1px;
+  margin-right: 1px;
 }
 .site-footer-copy a {
   color: var(--text-dim);
