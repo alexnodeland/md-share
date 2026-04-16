@@ -90,11 +90,11 @@ const boot = (): void => {
     editor.value = defaultFor(state.flavor);
   }
 
-  const rerender = () => {
+  let rerender = () => {
     void renderPreview(state);
   };
 
-  initEditor({ onChange: rerender });
+  initEditor({ onChange: () => rerender() });
   initFlavorSelect({
     getCurrentFlavor: () => state.flavor,
     onChange: (next) => {
@@ -110,7 +110,7 @@ const boot = (): void => {
       rerender();
     },
   });
-  initMobileToggle({ onShowPreview: rerender });
+  initMobileToggle({ onShowPreview: () => rerender() });
   initDropdowns();
   initShareModal({
     compressor: lzStringCompressor,
@@ -133,13 +133,19 @@ const boot = (): void => {
   });
   initEditorToggle();
 
-  initListenBar({
+  const listenBar = initListenBar({
     synth: browserSynth,
     getChunks: () => {
       const preview = document.getElementById('preview');
       return preview ? extractSpeakableChunks(preview) : [];
     },
   });
+
+  const origRerender = rerender;
+  rerender = () => {
+    origRerender();
+    listenBar.onPreviewChange();
+  };
 
   rerender();
 };

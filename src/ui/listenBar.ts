@@ -8,6 +8,10 @@ export interface ListenBarDeps {
   getChunks: () => SpeechChunk[];
 }
 
+export interface ListenBarHandle {
+  onPreviewChange: () => void;
+}
+
 const MARKER_ID = 'speaking-marker';
 const PAD = 4;
 
@@ -27,6 +31,10 @@ const positionMarker = (marker: HTMLElement, chunk: SpeechChunk | undefined): vo
     return;
   }
   const rect = chunk.el.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) {
+    marker.style.opacity = '0';
+    return;
+  }
   marker.style.top = `${rect.top - PAD}px`;
   marker.style.left = `${rect.left - PAD}px`;
   marker.style.width = `${rect.width + PAD * 2}px`;
@@ -76,7 +84,7 @@ const updateUI = (
   positionMarker(marker, chunk);
 };
 
-export const initListenBar = ({ synth, getChunks }: ListenBarDeps): void => {
+export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHandle => {
   const listenBtn = document.getElementById('listen-btn');
   const playBtn = document.getElementById('audio-play-btn');
   const stopBtn = document.getElementById('audio-stop-btn');
@@ -85,6 +93,10 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): void => {
   const progress = document.getElementById('audio-progress');
   const speedSel = document.getElementById('audio-speed') as HTMLSelectElement | null;
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
+  const previewPane = document.getElementById('preview-pane');
+
+  const noop: ListenBarHandle = { onPreviewChange: () => {} };
+
   if (
     !listenBtn ||
     !playBtn ||
@@ -95,7 +107,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): void => {
     !speedSel ||
     !editor
   ) {
-    return;
+    return noop;
   }
 
   const marker = ensureMarker();
@@ -113,10 +125,15 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): void => {
   const repositionMarker = () => {
     if (!currentEl) return;
     const rect = currentEl.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      marker.style.opacity = '0';
+      return;
+    }
     marker.style.top = `${rect.top - PAD}px`;
     marker.style.left = `${rect.left - PAD}px`;
     marker.style.width = `${rect.width + PAD * 2}px`;
     marker.style.height = `${rect.height + PAD * 2}px`;
+    marker.style.opacity = '1';
   };
 
   const attachScrollListeners = () => {
@@ -127,6 +144,19 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): void => {
   const detachScrollListeners = () => {
     window.removeEventListener('scroll', repositionMarker, true);
     window.removeEventListener('resize', repositionMarker);
+  };
+
+  if (previewPane) {
+    new ResizeObserver(repositionMarker).observe(previewPane);
+  }
+
+  const rebindChunks = () => {
+    if (!player.getState().active) return;
+    const idx = player.getState().index;
+    activeChunks = getChunks();
+    const chunk = activeChunks[idx];
+    currentEl = chunk?.el ?? null;
+    repositionMarker();
   };
 
   const start = () => {
@@ -193,4 +223,6 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): void => {
       stopAll();
     }
   });
+
+  return { onPreviewChange: rebindChunks };
 };
