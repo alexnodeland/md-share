@@ -4,6 +4,16 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Render, share, and export Markdown — no server required.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexnodeland/md-share.git"
+  },
+  "homepage": "https://alexnodeland.github.io/md-share/",
+  "bugs": {
+    "url": "https://github.com/alexnodeland/md-share/issues"
+  },
+  "author": "Alex Nodeland (https://alexnodeland.github.io/alexnodeland/)",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

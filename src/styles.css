@@ -1092,3 +1092,42 @@ kbd {
   background: transparent !important;
   color: #383a42;
 }
+
+.site-footer {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-raised);
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-xdim);
+  letter-spacing: 0.3px;
+}
+.site-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+.site-footer-link svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.site-footer-link:hover {
+  color: var(--text);
+}
+.site-footer-copy a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+.site-footer-copy a:hover {
+  color: var(--accent);
+}
