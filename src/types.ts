@@ -1,10 +1,10 @@
-export type Flavor = 'gfm' | 'commonmark' | 'extended' | 'academic' | 'obsidian' | 'atlassian';
+export type Flavor = 'commonmark' | 'extended' | 'academic' | 'gfm' | 'obsidian' | 'atlassian';
 
 export const FLAVOR_NAMES = [
-  'gfm',
   'commonmark',
   'extended',
   'academic',
+  'gfm',
   'obsidian',
   'atlassian',
 ] as const satisfies readonly Flavor[];

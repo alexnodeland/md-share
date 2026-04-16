@@ -69,7 +69,7 @@ const initialTheme = (): Theme => {
 const boot = (): void => {
   const params = parseShareParams(window.location.search, lzStringCompressor);
   const theme = initialTheme();
-  const flavor: Flavor = params.flavor ?? 'gfm';
+  const flavor: Flavor = params.flavor ?? 'commonmark';
   const deps = createFlavorDeps(hljs, katex);
   const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
 

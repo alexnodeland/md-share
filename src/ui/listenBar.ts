@@ -92,6 +92,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   const backBtn = document.getElementById('audio-back-btn');
   const progress = document.getElementById('audio-progress');
   const speedSel = document.getElementById('audio-speed') as HTMLSelectElement | null;
+  const voiceSel = document.getElementById('audio-voice') as HTMLSelectElement | null;
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   const previewPane = document.getElementById('preview-pane');
 
@@ -105,6 +106,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
     !backBtn ||
     !progress ||
     !speedSel ||
+    !voiceSel ||
     !editor
   ) {
     return noop;
@@ -113,8 +115,10 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   const marker = ensureMarker();
   let activeChunks: SpeechChunk[] = [];
   let currentEl: Element | null = null;
+  let dragging = false;
 
   const refresh = () => {
+    if (dragging) return;
     const s = player.getState();
     updateUI(marker, s.active, s.playing, s.index, s.total, activeChunks);
     currentEl = activeChunks[s.index]?.el ?? null;
@@ -205,12 +209,104 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
     refresh();
   });
 
-  progress.addEventListener('click', (e) => {
-    const rect = progress.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / progress.offsetWidth;
-    player.seek(ratio);
+  const populateVoices = () => {
+    const voices = synth.getVoices();
+    const previous = voiceSel.value;
+    voiceSel.innerHTML = '';
+    const auto = document.createElement('option');
+    auto.value = '';
+    auto.textContent = 'Default voice';
+    voiceSel.appendChild(auto);
+    for (const v of voices) {
+      const opt = document.createElement('option');
+      opt.value = v.voiceURI;
+      opt.textContent = `${v.name} (${v.lang})`;
+      voiceSel.appendChild(opt);
+    }
+    if (previous && voices.some((v) => v.voiceURI === previous)) {
+      voiceSel.value = previous;
+    }
+  };
+
+  populateVoices();
+  synth.onVoicesChanged(populateVoices);
+
+  voiceSel.addEventListener('change', () => {
+    player.setVoice(voiceSel.value || null);
     refresh();
   });
+
+  const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+  const ratioFromEvent = (e: PointerEvent): number => {
+    const rect = progress.getBoundingClientRect();
+    return clamp01((e.clientX - rect.left) / rect.width);
+  };
+
+  const previewAt = (ratio: number): void => {
+    if (activeChunks.length === 0) return;
+    const idx = Math.min(
+      Math.max(Math.floor(ratio * activeChunks.length), 0),
+      activeChunks.length - 1,
+    );
+    const chunk = activeChunks[idx];
+    if (!chunk) return;
+    const fill = document.getElementById('audio-progress-fill');
+    if (fill) fill.style.width = `${((idx + 1) / activeChunks.length) * 100}%`;
+    const label = document.getElementById('audio-label');
+    if (label) {
+      const short = chunk.text.length > 80 ? `${chunk.text.slice(0, 80)}…` : chunk.text;
+      label.innerHTML = `<strong>${idx + 1}/${activeChunks.length}</strong> &ensp;${short}`;
+    }
+    if (chunk.el) {
+      const rect = chunk.el.getBoundingClientRect();
+      if (rect.width > 0 || rect.height > 0) {
+        marker.style.top = `${rect.top - PAD}px`;
+        marker.style.left = `${rect.left - PAD}px`;
+        marker.style.width = `${rect.width + PAD * 2}px`;
+        marker.style.height = `${rect.height + PAD * 2}px`;
+        marker.style.opacity = '1';
+        chunk.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+    currentEl = chunk.el;
+  };
+
+  progress.addEventListener('pointerdown', (e) => {
+    if (!player.getState().active) return;
+    dragging = true;
+    progress.setPointerCapture(e.pointerId);
+    previewAt(ratioFromEvent(e));
+  });
+
+  progress.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    previewAt(ratioFromEvent(e));
+  });
+
+  const endDrag = (e: PointerEvent) => {
+    if (!dragging) return;
+    dragging = false;
+    if (progress.hasPointerCapture(e.pointerId)) progress.releasePointerCapture(e.pointerId);
+    player.seek(ratioFromEvent(e));
+    refresh();
+  };
+  progress.addEventListener('pointerup', endDrag);
+  progress.addEventListener('pointercancel', endDrag);
+
+  if (previewPane) {
+    previewPane.addEventListener('click', (e) => {
+      if (!player.getState().active || dragging) return;
+      let el: Element | null = e.target as Element | null;
+      while (el && el !== previewPane) {
+        const idx = activeChunks.findIndex((c) => c.el === el);
+        if (idx !== -1) {
+          player.seekToIndex(idx);
+          return;
+        }
+        el = el.parentElement;
+      }
+    });
+  }
 
   editor.addEventListener('input', () => {
     if (player.getState().active) {

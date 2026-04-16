@@ -6,14 +6,24 @@ export interface Compressor {
 export interface SpeechUtterance {
   text: string;
   rate: number;
+  voiceURI: string | null;
   onend: (() => void) | null;
   onerror: (() => void) | null;
+}
+
+export interface SpeechVoice {
+  voiceURI: string;
+  name: string;
+  lang: string;
+  default: boolean;
 }
 
 export interface Synth {
   speak(utterance: SpeechUtterance): void;
   cancel(): void;
   createUtterance(text: string): SpeechUtterance;
+  getVoices(): SpeechVoice[];
+  onVoicesChanged(cb: () => void): () => void;
 }
 
 export interface Clipboard {

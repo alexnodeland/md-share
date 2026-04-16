@@ -15,7 +15,7 @@ export const buildShareURL = (
   const base = loc.origin + loc.pathname;
   if (!source.trim()) return base;
   const encoded = encodeDoc(compressor, source);
-  const flavorSuffix = flavor !== 'gfm' ? `&f=${flavor}` : '';
+  const flavorSuffix = flavor !== 'commonmark' ? `&f=${flavor}` : '';
   return `${base}?d=${encoded}${flavorSuffix}`;
 };
 

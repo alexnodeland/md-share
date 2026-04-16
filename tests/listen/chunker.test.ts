@@ -97,6 +97,15 @@ describe('extractSpeakableChunks', () => {
     expect(chunks[0]!.text).toBe('Note: ');
   });
 
+  it('falls back to "Note" when callout-title is present but empty', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot(
+        '<div class="callout"><div class="callout-title"></div><div class="callout-body">b</div></div>',
+      ),
+    );
+    expect(chunks[0]!.text).toBe('Note: b');
+  });
+
   it('renders atlassian panels as "Title panel: body"', () => {
     const chunks = extractSpeakableChunks(
       makeRoot(
@@ -123,6 +132,13 @@ describe('extractSpeakableChunks', () => {
   it('defaults summary to "Expandable section" when <summary> is missing', () => {
     const chunks = extractSpeakableChunks(makeRoot('<details></details>'));
     expect(chunks[0]!.text).toBe('Expandable section: ');
+  });
+
+  it('falls back to "Expandable section" when summary is present but empty', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<details><summary></summary><div class="expand-body">b</div></details>'),
+    );
+    expect(chunks[0]!.text).toBe('Expandable section: b');
   });
 
   it('emits paragraphs as plain text', () => {
@@ -174,12 +190,161 @@ describe('extractSpeakableChunks', () => {
     expect(chunks.map((c) => c.text)).toEqual(['Term:', 'Definition']);
   });
 
-  it('renders the footnotes section with a header and per-item chunks', () => {
+  it('ignores non-dt/dd children inside a <dl>', () => {
     const chunks = extractSpeakableChunks(
-      makeRoot('<section class="footnotes"><ol><li>note 1</li><li>note 2</li></ol></section>'),
+      makeRoot('<dl><dt>T</dt><span>stray</span><dd>D</dd></dl>'),
     );
-    expect(chunks[0]!.text).toBe('Footnotes section.');
-    expect(chunks.slice(1).map((c) => c.text)).toEqual(['note 1', 'note 2']);
+    expect(chunks.map((c) => c.text)).toEqual(['T:', 'D']);
+  });
+
+  it('skips the footnotes section entirely (content is read inline at refs)', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<section class="footnotes"><ol><li id="fn1">lonely</li></ol></section>'),
+    );
+    expect(chunks).toEqual([]);
+  });
+
+  it('inlines footnote refs as side chunks anchored to the host paragraph', () => {
+    const html =
+      '<p>See<sup class="footnote-ref"><a href="#fn1">[1]</a></sup>.</p>' +
+      '<section class="footnotes"><ol>' +
+      '<li id="fn1">Note content <a class="footnote-backref">↩</a></li>' +
+      '</ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['See.', 'Footnote: Note content.']);
+    expect(chunks[0]!.el).toBe(chunks[1]!.el);
+  });
+
+  it('preserves terminal punctuation in footnote content (no double period)', () => {
+    const html =
+      '<p>X<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></p>' +
+      '<section class="footnotes"><ol><li id="fn1">Done?</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks[1]!.text).toBe('Footnote: Done?');
+  });
+
+  it('drops footnote refs with no matching target', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<p>X<sup class="footnote-ref"><a href="#missing">[1]</a></sup></p>'),
+    );
+    expect(chunks.map((c) => c.text)).toEqual(['X']);
+  });
+
+  it('drops footnote refs with no href', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<p>X<sup class="footnote-ref"><a>[1]</a></sup></p>'),
+    );
+    expect(chunks.map((c) => c.text)).toEqual(['X']);
+  });
+
+  it('ignores empty footnotes (body is only the backref)', () => {
+    const html =
+      '<p>X<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></p>' +
+      '<section class="footnotes"><ol>' +
+      '<li id="fn1"><a class="footnote-backref">↩</a></li>' +
+      '</ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['X']);
+  });
+
+  it('replaces inline KaTeX with "inline equation"', () => {
+    const html =
+      '<p>Compute <span class="katex">' +
+      '<span class="katex-mathml">garbled</span>' +
+      '<span class="katex-html">garbled</span>' +
+      '</span> now.</p>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks[0]!.text).toBe('Compute inline equation now.');
+  });
+
+  it('skips elements with katex-display class when nested inline', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<p>Before <span class="katex-display">x^2</span> after</p>'),
+    );
+    expect(chunks[0]!.text).toBe('Before after');
+  });
+
+  it('ignores non-element non-text nodes (comments) during extraction', () => {
+    const root = document.createElement('div');
+    const p = document.createElement('p');
+    p.appendChild(document.createTextNode('a '));
+    p.appendChild(document.createComment('skip'));
+    p.appendChild(document.createTextNode('b'));
+    root.appendChild(p);
+    const chunks = extractSpeakableChunks(root);
+    expect(chunks[0]!.text).toBe('a b');
+  });
+
+  it('inlines footnote content inside headings', () => {
+    const html =
+      '<h2>Title<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></h2>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['Section: Title.', 'Footnote: note.']);
+  });
+
+  it('inlines footnote content inside table rows (anchored to tr)', () => {
+    const html =
+      '<table><thead><tr><th>H</th></tr></thead><tbody><tr><td>A' +
+      '<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></td></tr></tbody></table>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual([
+      'A table with columns: H.',
+      'Row 1. H: A.',
+      'Footnote: note.',
+    ]);
+  });
+
+  it('inlines footnote content inside list items', () => {
+    const html =
+      '<ul><li>One<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></li></ul>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['One', 'Footnote: note.']);
+  });
+
+  it('inlines footnote content inside blockquotes', () => {
+    const html =
+      '<blockquote>Q<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></blockquote>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['Quote: Q', 'Footnote: note.']);
+  });
+
+  it('inlines footnote content inside definition lists (keeps dt/dd ordering)', () => {
+    const html =
+      '<dl><dt>Term<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></dt><dd>Def</dd></dl>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['Term:', 'Footnote: note.', 'Def']);
+  });
+
+  it('inlines footnote content inside callouts', () => {
+    const html =
+      '<div class="callout"><div class="callout-title">T</div>' +
+      '<div class="callout-body">B<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></div></div>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['T: B', 'Footnote: note.']);
+  });
+
+  it('inlines footnote content inside details blocks', () => {
+    const html =
+      '<details><summary>S</summary><div class="expand-body">B' +
+      '<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></div></details>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['S: B', 'Footnote: note.']);
+  });
+
+  it('inlines footnote content inside atlassian panels', () => {
+    const html =
+      '<div class="atl-panel"><div class="atl-panel-title">INFO</div>Body' +
+      '<sup class="footnote-ref"><a href="#fn1">[1]</a></sup></div>' +
+      '<section class="footnotes"><ol><li id="fn1">note</li></ol></section>';
+    const chunks = extractSpeakableChunks(makeRoot(html));
+    expect(chunks.map((c) => c.text)).toEqual(['INFO panel: Body', 'Footnote: note.']);
   });
 
   it('recurses into generic containers', () => {

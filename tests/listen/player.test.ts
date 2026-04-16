@@ -8,23 +8,28 @@ interface SpokenUtterance extends SpeechUtterance {
 }
 
 const makeSynth = () => {
-  const log: { text: string; rate: number }[] = [];
+  const log: { text: string; rate: number; voiceURI: string | null }[] = [];
+  const utts: SpokenUtterance[] = [];
   let cancelled = 0;
   let last: SpokenUtterance | null = null;
   const synth: Synth = {
     createUtterance: (text) => ({
       text,
       rate: 1,
+      voiceURI: null,
       onend: null,
       onerror: null,
     }),
     speak: (u) => {
-      log.push({ text: u.text, rate: u.rate });
+      log.push({ text: u.text, rate: u.rate, voiceURI: u.voiceURI });
       last = u as SpokenUtterance;
+      utts.push(u as SpokenUtterance);
     },
     cancel: () => {
       cancelled++;
     },
+    getVoices: () => [],
+    onVoicesChanged: () => () => {},
   };
   return {
     synth,
@@ -32,6 +37,8 @@ const makeSynth = () => {
     cancels: () => cancelled,
     triggerEnd: () => last?.onend?.(),
     triggerError: () => last?.onerror?.(),
+    triggerEndAt: (i: number) => utts[i]?.onend?.(),
+    triggerErrorAt: (i: number) => utts[i]?.onerror?.(),
   };
 };
 
@@ -55,6 +62,7 @@ describe('createPlayer', () => {
       index: -1,
       total: 0,
       speed: 1,
+      voiceURI: null,
     });
   });
 
@@ -73,7 +81,7 @@ describe('createPlayer', () => {
     expect(s.playing).toBe(true);
     expect(s.index).toBe(0);
     expect(s.total).toBe(3);
-    expect(ctx.log).toEqual([{ text: 'one', rate: 1 }]);
+    expect(ctx.log).toEqual([{ text: 'one', rate: 1, voiceURI: null }]);
   });
 
   it('advances to the next chunk on utterance end', () => {
@@ -81,7 +89,7 @@ describe('createPlayer', () => {
     p.start(CHUNKS);
     ctx.triggerEnd();
     expect(p.getState().index).toBe(1);
-    expect(ctx.log.at(-1)).toEqual({ text: 'two', rate: 1 });
+    expect(ctx.log.at(-1)).toEqual({ text: 'two', rate: 1, voiceURI: null });
   });
 
   it('stops when the final utterance ends', () => {
@@ -206,11 +214,83 @@ describe('createPlayer', () => {
     expect(ctx.log).toHaveLength(0);
   });
 
+  it('seekToIndex jumps to the given chunk index', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(2);
+    expect(p.getState().index).toBe(2);
+    expect(ctx.log.at(-1)).toEqual({ text: 'three', rate: 1, voiceURI: null });
+  });
+
+  it('seekToIndex clamps out-of-range values', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(-5);
+    expect(p.getState().index).toBe(0);
+    p.seekToIndex(99);
+    expect(p.getState().index).toBe(2);
+  });
+
+  it('seekToIndex resumes playback after a pause', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.togglePlay();
+    expect(p.getState().playing).toBe(false);
+    p.seekToIndex(1);
+    expect(p.getState().playing).toBe(true);
+    expect(p.getState().index).toBe(1);
+  });
+
+  it('seekToIndex is a no-op when inactive', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.seekToIndex(1);
+    expect(ctx.log).toHaveLength(0);
+    expect(p.getState().active).toBe(false);
+  });
+
+  it('ignores onend from an utterance cancelled by seekToIndex', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(2);
+    expect(p.getState().index).toBe(2);
+    // Browsers fire the cancelled utterance's onend after cancel();
+    // the player must not treat it as a cue to advance past 2.
+    ctx.triggerEndAt(0);
+    expect(p.getState().index).toBe(2);
+    expect(ctx.log.at(-1)).toEqual({ text: 'three', rate: 1, voiceURI: null });
+  });
+
+  it('ignores onerror from an utterance cancelled by seekToIndex', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(1);
+    ctx.triggerErrorAt(0);
+    expect(p.getState().index).toBe(1);
+  });
+
+  it('ignores onend from an utterance cancelled by seek(ratio)', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seek(0.99);
+    expect(p.getState().index).toBe(2);
+    ctx.triggerEndAt(0);
+    expect(p.getState().index).toBe(2);
+  });
+
+  it('ignores onend from an utterance cancelled by pause', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.togglePlay();
+    ctx.triggerEndAt(0);
+    expect(p.getState().index).toBe(0);
+    expect(p.getState().playing).toBe(false);
+  });
+
   it('setSpeed while playing restarts the current chunk at the new rate', () => {
     const p = createPlayer({ synth: ctx.synth });
     p.start(CHUNKS);
     p.setSpeed(1.5);
-    expect(ctx.log.at(-1)).toEqual({ text: 'one', rate: 1.5 });
+    expect(ctx.log.at(-1)).toEqual({ text: 'one', rate: 1.5, voiceURI: null });
     expect(p.getState().speed).toBe(1.5);
   });
 
@@ -234,6 +314,7 @@ describe('createPlayer', () => {
       index: -1,
       total: 0,
       speed: 1,
+      voiceURI: null,
     });
     expect(ctx.cancels()).toBeGreaterThanOrEqual(1);
   });
@@ -248,6 +329,41 @@ describe('createPlayer', () => {
     p.stop();
     expect(states).toContain(true);
     expect(states.at(-1)).toBe(false);
+  });
+
+  it('setVoice while playing restarts the current chunk with the new voice', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.setVoice('alex');
+    expect(ctx.log.at(-1)).toEqual({ text: 'one', rate: 1, voiceURI: 'alex' });
+    expect(p.getState().voiceURI).toBe('alex');
+  });
+
+  it('setVoice while paused updates the stored voice without speaking', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.togglePlay();
+    const before = ctx.log.length;
+    p.setVoice('samantha');
+    expect(ctx.log.length).toBe(before);
+    expect(p.getState().voiceURI).toBe('samantha');
+  });
+
+  it('setVoice(null) clears the stored voice', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.setVoice('alex');
+    p.setVoice(null);
+    expect(ctx.log.at(-1)).toEqual({ text: 'one', rate: 1, voiceURI: null });
+    expect(p.getState().voiceURI).toBeNull();
+  });
+
+  it('setVoice before start leaves player inactive but stores voice for future start', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.setVoice('alex');
+    expect(p.getState().voiceURI).toBe('alex');
+    p.start(CHUNKS);
+    expect(ctx.log.at(-1)).toEqual({ text: 'one', rate: 1, voiceURI: 'alex' });
   });
 
   it('speakAt bails when target is out of range (start with no chunks -> stop)', () => {

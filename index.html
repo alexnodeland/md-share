@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>md-share</title>
     <meta name="description" content="Render, share, and export Markdown — no server required." />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap"
@@ -18,10 +19,10 @@
       <div class="sep"></div>
       <span class="flavor-label hide-mobile">Flavor</span>
       <select id="flavor-select" title="Markdown flavor">
-        <option value="gfm" selected>GFM</option>
-        <option value="commonmark">CommonMark</option>
+        <option value="commonmark" selected>CommonMark</option>
         <option value="extended">Extended</option>
         <option value="academic">Academic</option>
+        <option value="gfm">GitHub</option>
         <option value="obsidian">Obsidian</option>
         <option value="atlassian">Atlassian</option>
       </select>
@@ -96,17 +97,17 @@
     <div class="main" id="main-container">
       <div class="editor-pane mobile-visible" id="editor-pane">
         <div class="pane-header">
-          Markdown
+          Editor
+          <span class="shortcut hide-mobile"><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle</span>
           <select id="sample-select" class="sample-select" title="Load a sample document">
             <option value="" disabled selected>Samples</option>
-            <option value="gfm">GFM</option>
             <option value="commonmark">CommonMark</option>
             <option value="extended">Extended</option>
             <option value="academic">Academic</option>
+            <option value="gfm">GitHub</option>
             <option value="obsidian">Obsidian</option>
             <option value="atlassian">Atlassian</option>
           </select>
-          <span class="shortcut hide-mobile"><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle</span>
           <button type="button" id="btn-clear" class="pane-action" title="Clear editor">Clear</button>
         </div>
         <textarea id="editor" spellcheck="false"></textarea>
@@ -158,6 +159,7 @@
         <div class="ab-progress-fill" id="audio-progress-fill" style="width: 0%"></div>
       </div>
       <div class="ab-label" id="audio-label"><strong>Ready</strong></div>
+      <select id="audio-voice" title="Voice"></select>
       <select id="audio-speed" title="Speed">
         <option value="0.75">0.75×</option>
         <option value="1" selected>1×</option>
