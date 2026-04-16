@@ -28,7 +28,7 @@ Write markdown on the left. The preview updates live. Hit **Share** to generate 
 \`\`\`mermaid
 graph TD
 A[Write Markdown] --> B{Pick Flavor}
-B -->|GFM| C[Tables + Tasks]
+B -->|GitHub| C[Tables + Tasks]
 B -->|Obsidian| D[Callouts + Wikilinks]
 B -->|Atlassian| E[Panels + Status]
 B -->|Academic| F[LaTeX Math]
@@ -128,14 +128,14 @@ Tables, task lists, footnotes, definition lists, strikethrough, and math are **n
 
 const extended = `# Extended Flavor Demo
 
-Extended adds **footnotes**, **definition lists**, and **typographer** on top of CommonMark --- plus tables and task lists from GFM.
+Extended adds **footnotes**, **definition lists**, and **typographer** on top of CommonMark --- plus tables and task lists from GitHub.
 
 ## Footnotes
 
 The Markdown ecosystem is fragmented[^1], which is why md-share supports six flavors[^2].
 
 [^1]: See [Babelmark](https://babelmark.github.io/) to compare how different parsers handle the same input.
-[^2]: GFM, CommonMark, Extended, Academic, Obsidian, and Atlassian.
+[^2]: GitHub, CommonMark, Extended, Academic, Obsidian, and Atlassian.
 
 ## Definition lists
 
@@ -363,7 +363,7 @@ export const SAMPLES: Record<Flavor, string> = {
 };
 
 export const SAMPLE_LABELS: Record<Flavor, string> = {
-  gfm: 'GFM',
+  gfm: 'GitHub',
   commonmark: 'CommonMark',
   extended: 'Extended',
   academic: 'Academic',

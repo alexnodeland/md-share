@@ -37,7 +37,7 @@ _The document **is** the URL._
 
 ### 🪄 Six Markdown flavors
 Paste from the tool you already use — it just renders.
-- **GFM** · the default
+- **GitHub** · the default
 - **CommonMark** · strict
 - **Extended** · footnotes, deflists, typographer
 - **Academic** · Extended + KaTeX math
