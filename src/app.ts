@@ -111,7 +111,7 @@ const boot = (): void => {
       rerender();
     },
   });
-  initMobileToggle();
+  initMobileToggle({ onShowPreview: rerender });
   initDropdowns();
   initShareModal({
     compressor: lzStringCompressor,

@@ -1,6 +1,10 @@
 type View = 'edit' | 'preview';
 
-export const initMobileToggle = (): void => {
+export interface MobileToggleOptions {
+  onShowPreview?: () => void;
+}
+
+export const initMobileToggle = (opts: MobileToggleOptions = {}): void => {
   const btnEdit = document.getElementById('btn-edit-view');
   const btnPreview = document.getElementById('btn-preview-view');
   const editorPane = document.getElementById('editor-pane');
@@ -12,6 +16,7 @@ export const initMobileToggle = (): void => {
     previewPane.classList.toggle('mobile-visible', v === 'preview');
     btnEdit.classList.toggle('active', v === 'edit');
     btnPreview.classList.toggle('active', v === 'preview');
+    if (v === 'preview') opts.onShowPreview?.();
   };
 
   btnEdit.addEventListener('click', () => setView('edit'));

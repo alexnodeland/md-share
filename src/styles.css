@@ -164,6 +164,10 @@ button.active-listen {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  flex-shrink: 0;
+}
+.view-toggle button {
+  flex-shrink: 0;
 }
 .view-toggle button {
   border: none;
@@ -936,7 +940,7 @@ kbd {
   color: var(--text-xdim);
 }
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   .editor-pane,
   .preview-pane {
     display: none;
@@ -948,8 +952,26 @@ kbd {
   .hide-mobile {
     display: none !important;
   }
+  .view-toggle button {
+    padding: 6px 10px;
+    font-size: 11px;
+    background: var(--bg-raised);
+  }
+  .view-toggle button.active {
+    background: var(--accent-strong);
+  }
+  .topbar {
+    padding: 0 8px;
+    gap: 4px;
+  }
+  .topbar-group {
+    flex-shrink: 0;
+  }
+  .topbar-group button {
+    padding: 5px 6px;
+  }
 }
-@media (min-width: 701px) {
+@media (min-width: 901px) {
   .mobile-only {
     display: none !important;
   }

@@ -89,7 +89,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor
 - [ ] Export: Markdown / HTML / PNG / PDF all download or print
 - [ ] Theme toggle — mermaid re-renders with the matching theme
-- [ ] Mobile (resize <700px) — Edit/View toggle works
+- [ ] Mobile (resize <900px) — Edit/View toggle works
 - [ ] Keyboard: `Ctrl+S`, `Ctrl+E`, `Esc`, `Tab` in editor all behave
 
 Also: run `npm run build && npx serve dist` and repeat on the built static output. Then open `dist/index.html` directly via `file://` and confirm it still works.
