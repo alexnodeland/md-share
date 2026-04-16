@@ -92,6 +92,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   const backBtn = document.getElementById('audio-back-btn');
   const progress = document.getElementById('audio-progress');
   const speedSel = document.getElementById('audio-speed') as HTMLSelectElement | null;
+  const voiceSel = document.getElementById('audio-voice') as HTMLSelectElement | null;
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   const previewPane = document.getElementById('preview-pane');
 
@@ -105,6 +106,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
     !backBtn ||
     !progress ||
     !speedSel ||
+    !voiceSel ||
     !editor
   ) {
     return noop;
@@ -204,6 +206,33 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
 
   speedSel.addEventListener('change', () => {
     player.setSpeed(Number.parseFloat(speedSel.value));
+    refresh();
+  });
+
+  const populateVoices = () => {
+    const voices = synth.getVoices();
+    const previous = voiceSel.value;
+    voiceSel.innerHTML = '';
+    const auto = document.createElement('option');
+    auto.value = '';
+    auto.textContent = 'Default voice';
+    voiceSel.appendChild(auto);
+    for (const v of voices) {
+      const opt = document.createElement('option');
+      opt.value = v.voiceURI;
+      opt.textContent = `${v.name} (${v.lang})`;
+      voiceSel.appendChild(opt);
+    }
+    if (previous && voices.some((v) => v.voiceURI === previous)) {
+      voiceSel.value = previous;
+    }
+  };
+
+  populateVoices();
+  synth.onVoicesChanged(populateVoices);
+
+  voiceSel.addEventListener('change', () => {
+    player.setVoice(voiceSel.value || null);
     refresh();
   });
 

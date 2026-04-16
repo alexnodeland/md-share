@@ -7,6 +7,7 @@ export interface PlayerState {
   readonly index: number;
   readonly total: number;
   readonly speed: number;
+  readonly voiceURI: string | null;
 }
 
 export interface Player {
@@ -18,6 +19,7 @@ export interface Player {
   seek(ratio: number): void;
   seekToIndex(index: number): void;
   setSpeed(speed: number): void;
+  setVoice(voiceURI: string | null): void;
   getState(): PlayerState;
 }
 
@@ -34,6 +36,7 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
   let playing = false;
   let index = -1;
   let speed = 1;
+  let voiceURI: string | null = null;
   let liveUtterance: SpeechUtterance | null = null;
 
   const state = (): PlayerState => ({
@@ -42,6 +45,7 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     index,
     total: chunks.length,
     speed,
+    voiceURI,
   });
 
   const emit = () => onStateChange?.(state());
@@ -51,6 +55,7 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     const chunk = chunks[i]!;
     const utterance = synth.createUtterance(chunk.text);
     utterance.rate = speed;
+    utterance.voiceURI = voiceURI;
     utterance.onend = () => {
       if (!playing || utterance !== liveUtterance) return;
       if (index >= chunks.length - 1) stop();
@@ -136,6 +141,16 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     }
   };
 
+  const setVoice = (newVoiceURI: string | null): void => {
+    voiceURI = newVoiceURI;
+    if (playing) {
+      synth.cancel();
+      speakAt(index);
+    } else {
+      emit();
+    }
+  };
+
   return {
     start,
     stop,
@@ -145,6 +160,7 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     seek,
     seekToIndex,
     setSpeed,
+    setVoice,
     getState: state,
   };
 };
