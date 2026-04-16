@@ -38,9 +38,9 @@ _The document **is** the URL._
 ### 🪄 Six Markdown flavors
 Paste from the tool you already use — it just renders.
 - **CommonMark** · the default, strict
-- **GitHub** · tables, task lists, strikethrough
 - **Extended** · footnotes, deflists, typographer
 - **Academic** · Extended + KaTeX math
+- **GitHub** · tables, task lists, strikethrough
 - **Obsidian** · callouts, wikilinks, `==highlights==`, `#tags`
 - **Atlassian** · `{info}` panels, `{status}`, `{expand}`, `@mentions`
 

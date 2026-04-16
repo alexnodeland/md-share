@@ -24,9 +24,9 @@ export interface FlavorDeps {
 
 export const FLAVOR_LABELS: Record<Flavor, string> = {
   commonmark: 'CommonMark',
-  gfm: 'GitHub',
   extended: 'Extended',
   academic: 'Academic',
+  gfm: 'GitHub',
   obsidian: 'Obsidian',
   atlassian: 'Atlassian',
 };

@@ -13,7 +13,7 @@ If a request conflicts with PHILOSOPHY.md, surface the conflict before implement
 
 md-share: a zero-backend Markdown viewer/editor. The document *is* the URL (lz-string-compressed into `?d=`). Ships as static `index.html` + `assets/*.js`. No accounts, no server, no storage.
 
-Six flavors: GitHub (`gfm`), CommonMark, Extended, Academic (KaTeX), Obsidian, Atlassian.
+Six flavors: CommonMark, Extended, Academic (KaTeX), GitHub (`gfm`), Obsidian, Atlassian.
 
 ## Architecture (ports-and-adapters)
 

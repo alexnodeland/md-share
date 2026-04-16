@@ -354,19 +354,19 @@ A[Jira Ticket] --> B[Dev] --> C[Review] --> D[Deploy]
 `;
 
 export const SAMPLES: Record<Flavor, string> = {
-  gfm,
   commonmark,
   extended,
   academic,
+  gfm,
   obsidian,
   atlassian,
 };
 
 export const SAMPLE_LABELS: Record<Flavor, string> = {
-  gfm: 'GitHub',
   commonmark: 'CommonMark',
   extended: 'Extended',
   academic: 'Academic',
+  gfm: 'GitHub',
   obsidian: 'Obsidian',
   atlassian: 'Atlassian',
 };
