@@ -97,8 +97,8 @@ describe('obsidian tag', () => {
   });
 
   it('supports #nested/tag with slashes', () => {
-    const html = build().render('use #project/md-render tag');
-    expect(html).toContain('>#project/md-render<');
+    const html = build().render('use #project/md-share tag');
+    expect(html).toContain('>#project/md-share<');
   });
 
   it('does not treat #anchor in a word context as a tag (e.g. abc#def)', () => {

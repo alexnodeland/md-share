@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📝 md.render
+# 📝 md-share
 
 ### ✨ Render, share, and export Markdown — no server required ✨
 
@@ -102,68 +102,14 @@ Pure logic takes its dependencies as arguments. **100 %** coverage across statem
 ## 🚀 Quick start
 
 ```bash
-# clone
 git clone https://github.com/YOUR_USERNAME/md-share.git
 cd md-share
-
-# install
 npm install
-
-# dev server with hot reload
-npm run dev
-
-# run the full gate (Biome + tsc + Vitest)
-npm run verify
-
-# build a static site
-npm run build
-# → dist/ is deployable to any static host, or openable via file://
+npm run dev       # http://localhost:5173
+npm run build     # → dist/ (static, deployable anywhere, openable via file://)
 ```
 
----
-
-## 🧱 Architecture
-
-```
-src/
-├── app.ts                  ← composition root (the only impure file)
-├── styles.css              ← extracted from single-file original
-├── ports.ts                ← Synth · Clipboard · Compressor · Printer
-├── types.ts                ← Flavor · Chunk · ShareParams · Theme
-├── flavors.ts              ← buildMD(flavor, deps)
-├── share.ts                ← encodeDoc · decodeDoc · buildShareURL
-├── toc.ts                  ← generateTOC(src)
-├── theme.ts                ← mermaidThemeVars · mermaidThemeName
-├── defaults.ts             ← per-flavor default docs
-├── plugins/                ← 10 markdown-it plugins (one file each)
-├── listen/
-│   ├── chunker.ts          ← DOM → semantic speech chunks
-│   └── player.ts           ← pure state machine, Synth port injected
-├── adapters/               ← bind ports to browser APIs
-└── ui/                     ← DOM event wiring (excluded from coverage)
-```
-
-**Hexagonal / ports-and-adapters.** Pure functions + injected dependencies. The only file that touches `window`, `navigator`, or `document` at the module boundary is `src/app.ts`. Everything else is unit-testable with zero mocks.
-
----
-
-## 📋 Scripts
-
-| Command | What it does |
-|---|---|
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | `tsc --noEmit` + Vite static build → `dist/` |
-| `npm run preview` | Preview the production build |
-| `npm test` | Run Vitest once |
-| `npm run test:watch` | Vitest in watch mode |
-| `npm run test:coverage` | Vitest + v8 coverage (enforces 100 %) |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | Biome lint |
-| `npm run format` | Biome format (write) |
-| `npm run check` | Biome lint + format (write) |
-| `npm run verify` | The single gate: Biome (zero-warning) + tsc + Vitest |
-
-The `verify` script is what the pre-commit hook runs. If it fails, the commit is blocked — no suppressions, no `--no-verify` escape hatches.
+Full dev loop, scripts, architecture rules, and testing conventions live in [**CONTRIBUTING.md**](./CONTRIBUTING.md).
 
 ---
 
@@ -171,18 +117,13 @@ The `verify` script is what the pre-commit hook runs. If it fails, the commit is
 
 > A Markdown document should be trivially shareable, readable in any flavor, listenable, exportable, and owned by nobody but its author.
 
-See [**PHILOSOPHY.md**](./PHILOSOPHY.md) for the seven guiding principles and the 7-question checklist that gates new features.
+See [**PHILOSOPHY.md**](./PHILOSOPHY.md) for the seven principles and the 7-question checklist that gates new features.
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests welcome. Please read [**CONTRIBUTING.md**](./CONTRIBUTING.md) for the dev workflow, testing conventions, and the non-negotiable quality gate.
-
-Every PR must:
-- Pass `npm run verify` (Biome, tsc, Vitest — zero warnings)
-- Keep **100 %** coverage on the pure modules
-- Answer the 7-question philosophy check for any user-facing change
+Pull requests welcome — see [**CONTRIBUTING.md**](./CONTRIBUTING.md) for the workflow and quality gate.
 
 ---
 

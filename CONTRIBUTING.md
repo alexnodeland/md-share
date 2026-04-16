@@ -1,4 +1,4 @@
-# Contributing to md.render
+# Contributing to md-share
 
 Thanks for wanting to help. This project has a clear philosophy (see [PHILOSOPHY.md](./PHILOSOPHY.md)) and a clear quality bar. Read both below before opening a PR.
 

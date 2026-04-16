@@ -1,4 +1,4 @@
-# md.render — Philosophy
+# md-share — Philosophy
 
 North-star reference. When a feature decision is ambiguous, it should answer to these principles.
 
@@ -16,83 +16,39 @@ Implication: features that would require server state (collaboration, persistenc
 
 ## 2. Meet writers where they already are
 
-There is no One True Markdown. The app speaks six dialects:
+There is no One True Markdown. People paste notes from the tool they already use — and it *just renders*. No reformatting tax, no "export to standard Markdown first."
 
-- **GFM** — default, what most people paste.
-- **CommonMark** — the spec, strict.
-- **Extended** — footnotes, deflists, typographer.
-- **Academic** — Extended + KaTeX.
-- **Obsidian** — callouts, wikilinks, `==highlights==`, `#tags`, `%%comments%%`, math.
-- **Atlassian** — `{info}` panels, `{status}`, `{expand}`, `@mentions`, `{code}`.
-
-People paste notes from the tool they already use and it *just renders*. No reformatting tax, no "export to standard Markdown first."
-
-Implication: when adding a flavor or plugin, the test is "does this unlock content that a real writer already has sitting in another app?"
+Implication: when adding a flavor or plugin, the test is "does this unlock content that a real writer already has sitting in another app?" (Current flavors and what each covers live in the README.)
 
 ## 3. Render, share, escape
 
-The app is a **pass-through, not a silo.** Exports are first-class, not buried:
+The app is a **pass-through, not a silo.** Users can always leave with their content intact, in the format of their choice. We earn re-use by being useful, not by trapping them.
 
-- Markdown (`.md`) — the source.
-- HTML snippet — paste anywhere.
-- PNG — for chat, slides, screenshots.
-- PDF — via print CSS, properly themed.
-
-Users can always leave with their content intact. We earn re-use by being useful, not by trapping them.
+Implication: every rendered document must have an export path that preserves it. A new feature that can't be exported is a feature that traps.
 
 ## 4. Accessibility as a feature, not a checkbox
 
-**Listen mode is semantic, not dumb `speak(innerText)`.** The DOM walker narrates structure:
+**If a sighted user sees structure, a listening user should hear structure.** Listen mode is not `speak(innerText)` — a DOM walker narrates semantics: tables read row-by-row with column pairs, code blocks announce their language without reading source, diagrams and math get described. Speaking highlights and scrolls the corresponding element.
 
-- Headings → `"Section: <title>"`
-- Tables → `"A table with columns X, Y, Z"` then `"Row 1. Name: Alice. Status: Done."`
-- Code blocks → `"A code block in rust"` (not the code itself)
-- Diagrams → `"A diagram is shown here"`
-- Math → `"A mathematical equation is displayed"`
-- Callouts → `"Tip: <body>"`, `"Warning: <body>"`
-- Task lists → `"Done: <item>"` / `"Not done: <item>"`
-- Lists, blockquotes, expands, footnotes, deflists — each handled on its own terms.
-
-Speaking chunk highlights and scrolls the corresponding element. Skip forward/back, seek, 0.75×–2× speed.
-
-This is the principle: **if a sighted user sees structure, a listening user should hear structure.** Never flatten.
+Implication: never flatten. When adding a block-level feature, decide what it *sounds* like before shipping it.
 
 ## 5. Live, low-friction editing
 
-Editing should feel weightless:
+Editing should feel weightless. Viewing a shared link shows a **read-only banner**; typing silently forks it (removes the banner, strips the query string). Shared docs are *suggestions*, not contracts.
 
-- Split pane, 180ms debounced render.
-- Drag-and-drop `.md` / `.markdown` / `.txt` anywhere on the window.
-- `Ctrl+S` → share dialog (not "save to cloud").
-- `Ctrl+E` → toggle editor pane for distraction-free reading.
-- `Esc` → close any modal, stop audio.
-- Tab inserts two spaces, doesn't leave the textarea.
-- Mobile: Edit/View toggle instead of cramped split.
-
-Viewing a shared link shows a **read-only banner** — "Viewing a shared document — edit to make it yours." Typing silently forks it (removes the banner, strips the query string). Shared docs are *suggestions*, not contracts.
+Implication: the write → share loop is the core path. New UI must not add modal steps, confirmations, or "save" ceremony to it. (Exact shortcuts and interactions live in the README.)
 
 ## 6. Opinionated aesthetics
 
-A tool with a voice, not neutral chrome:
-
-- JetBrains Mono for UI and code, Source Serif 4 for prose.
-- Violet accent (`#a78bfa` / `#7c3aed`), carefully tuned dark and light tokens.
-- Mermaid themed to match both modes.
-- Callouts, panels, status badges all share the same palette — nothing looks bolted on.
-- Print CSS strips chrome and re-colors for paper.
+A tool with a voice, not neutral chrome. One typographic system for UI, prose, and code; one accent; one palette that callouts, panels, status badges, and Mermaid all share; print CSS that re-colors for paper.
 
 Design isn't decoration; it's the difference between a tool you use and a tool you *want* to use.
 
+Implication: new components inherit the existing design tokens. Nothing should look bolted on.
+
 ## 7. Testable by construction
 
-Product principles 1–6 don't survive contact with real users unless the code stays honest. The architecture reflects that:
-
-- **Pure logic is pure.** Plugins, the share-URL codec, the TOC generator, the DOM-to-speech chunker, and the listen-mode state machine take their dependencies as arguments. They touch no globals, no `window`, no `document` at the module boundary. They are tested against `markdown-it` instances or `happy-dom` fixtures with zero mocks.
-- **Ports isolate the browser.** The things we can't test — `SpeechSynthesis`, `navigator.clipboard`, `window.print`, `html2canvas`, `LZString`, `mermaid.run` — live behind explicit `Synth`, `Clipboard`, `Printer`, `Compressor` ports. A handful of adapters in `src/adapters/` bind them to real APIs. `src/app.ts` is the only file that wires adapters to pure modules.
-- **100% coverage on the pure modules, no asterisks.** Statements, branches, functions, and lines — all four at 100%, enforced by `vitest.config.ts` thresholds. The modules that are deliberately excluded (`app.ts`, `adapters/**`, `ui/**`) are listed with a justification; their correctness is verified by manual smoke tests, not by tests that assert `addEventListener` was called.
-- **Zero-warning lifecycle.** Biome + `tsc --noEmit` + Vitest run on every commit through `simple-git-hooks`. `npm run verify` is the single gate. No suppressions, no "nits."
-
-This is why refactoring is safe, why adding a flavor is a 30-line plugin file plus ~10 tests, and why the migration from single-file HTML to modules didn't regress a single user-facing feature.
+Product principles 1–6 don't survive contact with real users unless the code stays honest. Pure logic is pure; browser APIs live behind ports; one composition root wires them together; 100% coverage on pure modules is enforced; every commit passes a zero-warning gate. (Architecture rules and the gate itself live in [CONTRIBUTING.md](./CONTRIBUTING.md).)
 
 A corollary: **defaults are test content.** During the TS migration we discovered the single-file `index.html` had accumulated smart-quote and en-dash corruption from a copy-paste round-trip — enough that the default Mermaid diagrams would not parse and every CSS variable was silently unresolved (`var(–border)` instead of `var(--border)`). Philosophy #2 (*meet writers where they are*) means: the default docs are the first rendering most users see. They're not decoration; they're the implicit promise that "this thing works."
 

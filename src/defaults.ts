@@ -1,6 +1,6 @@
 import type { Flavor } from './types.ts';
 
-const base = `# md.render
+const base = `# md-share
 
 A lightweight markdown renderer — share via URL, no backend.
 
@@ -96,7 +96,7 @@ This is ==highlighted text== in your document.
 
 ## Tags
 
-Organize with tags: #project/md-render #documentation #tools
+Organize with tags: #project/md-share #documentation #tools
 
 ## Math
 
@@ -112,7 +112,7 @@ This is visible. %%This comment won't render.%% This is also visible.
 
 \`\`\`mermaid
 graph LR
-A[Obsidian Vault] --> B[md.render]
+A[Obsidian Vault] --> B[md-share]
 B --> C[Shared URL]
 \`\`\`
 `;
