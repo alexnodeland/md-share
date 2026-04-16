@@ -187,17 +187,13 @@ button.active-listen {
   margin-right: 2px;
 }
 .sample-select {
-  font-size: 9px;
   color: var(--text-xdim);
-  background: transparent;
+  background-color: transparent;
   border-color: transparent;
-  padding: 2px 16px 2px 4px;
   margin-left: auto;
   letter-spacing: 0;
   text-transform: none;
-  background-position: right 2px center;
   min-width: 0;
-  max-width: 100px;
 }
 .sample-select:hover {
   border-color: var(--border);
@@ -352,8 +348,6 @@ textarea::placeholder {
 }
 .audio-bar select {
   min-width: 0;
-  padding: 3px 20px 3px 6px;
-  font-size: 10px;
 }
 .audio-bar button {
   padding: 4px 8px;
