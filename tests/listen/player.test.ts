@@ -9,6 +9,7 @@ interface SpokenUtterance extends SpeechUtterance {
 
 const makeSynth = () => {
   const log: { text: string; rate: number }[] = [];
+  const utts: SpokenUtterance[] = [];
   let cancelled = 0;
   let last: SpokenUtterance | null = null;
   const synth: Synth = {
@@ -21,6 +22,7 @@ const makeSynth = () => {
     speak: (u) => {
       log.push({ text: u.text, rate: u.rate });
       last = u as SpokenUtterance;
+      utts.push(u as SpokenUtterance);
     },
     cancel: () => {
       cancelled++;
@@ -32,6 +34,8 @@ const makeSynth = () => {
     cancels: () => cancelled,
     triggerEnd: () => last?.onend?.(),
     triggerError: () => last?.onerror?.(),
+    triggerEndAt: (i: number) => utts[i]?.onend?.(),
+    triggerErrorAt: (i: number) => utts[i]?.onerror?.(),
   };
 };
 
@@ -204,6 +208,78 @@ describe('createPlayer', () => {
     const p = createPlayer({ synth: ctx.synth });
     p.seek(0.5);
     expect(ctx.log).toHaveLength(0);
+  });
+
+  it('seekToIndex jumps to the given chunk index', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(2);
+    expect(p.getState().index).toBe(2);
+    expect(ctx.log.at(-1)).toEqual({ text: 'three', rate: 1 });
+  });
+
+  it('seekToIndex clamps out-of-range values', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(-5);
+    expect(p.getState().index).toBe(0);
+    p.seekToIndex(99);
+    expect(p.getState().index).toBe(2);
+  });
+
+  it('seekToIndex resumes playback after a pause', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.togglePlay();
+    expect(p.getState().playing).toBe(false);
+    p.seekToIndex(1);
+    expect(p.getState().playing).toBe(true);
+    expect(p.getState().index).toBe(1);
+  });
+
+  it('seekToIndex is a no-op when inactive', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.seekToIndex(1);
+    expect(ctx.log).toHaveLength(0);
+    expect(p.getState().active).toBe(false);
+  });
+
+  it('ignores onend from an utterance cancelled by seekToIndex', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(2);
+    expect(p.getState().index).toBe(2);
+    // Browsers fire the cancelled utterance's onend after cancel();
+    // the player must not treat it as a cue to advance past 2.
+    ctx.triggerEndAt(0);
+    expect(p.getState().index).toBe(2);
+    expect(ctx.log.at(-1)).toEqual({ text: 'three', rate: 1 });
+  });
+
+  it('ignores onerror from an utterance cancelled by seekToIndex', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seekToIndex(1);
+    ctx.triggerErrorAt(0);
+    expect(p.getState().index).toBe(1);
+  });
+
+  it('ignores onend from an utterance cancelled by seek(ratio)', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.seek(0.99);
+    expect(p.getState().index).toBe(2);
+    ctx.triggerEndAt(0);
+    expect(p.getState().index).toBe(2);
+  });
+
+  it('ignores onend from an utterance cancelled by pause', () => {
+    const p = createPlayer({ synth: ctx.synth });
+    p.start(CHUNKS);
+    p.togglePlay();
+    ctx.triggerEndAt(0);
+    expect(p.getState().index).toBe(0);
+    expect(p.getState().playing).toBe(false);
   });
 
   it('setSpeed while playing restarts the current chunk at the new rate', () => {

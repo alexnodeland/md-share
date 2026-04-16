@@ -1,4 +1,4 @@
-import type { Synth } from '../ports.ts';
+import type { SpeechUtterance, Synth } from '../ports.ts';
 import type { SpeechChunk } from '../types.ts';
 
 export interface PlayerState {
@@ -16,6 +16,7 @@ export interface Player {
   skipForward(): void;
   skipBack(): void;
   seek(ratio: number): void;
+  seekToIndex(index: number): void;
   setSpeed(speed: number): void;
   getState(): PlayerState;
 }
@@ -33,6 +34,7 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
   let playing = false;
   let index = -1;
   let speed = 1;
+  let liveUtterance: SpeechUtterance | null = null;
 
   const state = (): PlayerState => ({
     active,
@@ -50,13 +52,14 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     const utterance = synth.createUtterance(chunk.text);
     utterance.rate = speed;
     utterance.onend = () => {
-      if (!playing) return;
+      if (!playing || utterance !== liveUtterance) return;
       if (index >= chunks.length - 1) stop();
       else speakAt(index + 1);
     };
     utterance.onerror = () => {
-      if (playing) speakAt(index + 1);
+      if (playing && utterance === liveUtterance) speakAt(index + 1);
     };
+    liveUtterance = utterance;
     synth.speak(utterance);
     emit();
   };
@@ -76,6 +79,7 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     active = false;
     playing = false;
     index = -1;
+    liveUtterance = null;
     emit();
   };
 
@@ -84,6 +88,7 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     if (playing) {
       synth.cancel();
       playing = false;
+      liveUtterance = null;
       emit();
     } else {
       playing = true;
@@ -113,6 +118,14 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     speakAt(target);
   };
 
+  const seekToIndex = (i: number): void => {
+    if (!active || chunks.length === 0) return;
+    const target = clamp(i, 0, chunks.length - 1);
+    synth.cancel();
+    playing = true;
+    speakAt(target);
+  };
+
   const setSpeed = (newSpeed: number): void => {
     speed = newSpeed;
     if (playing) {
@@ -123,5 +136,15 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     }
   };
 
-  return { start, stop, togglePlay, skipForward, skipBack, seek, setSpeed, getState: state };
+  return {
+    start,
+    stop,
+    togglePlay,
+    skipForward,
+    skipBack,
+    seek,
+    seekToIndex,
+    setSpeed,
+    getState: state,
+  };
 };
