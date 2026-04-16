@@ -1,8 +1,8 @@
 import hljs from 'highlight.js';
 import katex from 'katex';
 import { describe, expect, it } from 'vitest';
-import { DEFAULTS } from '../src/defaults.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS } from '../src/flavors.ts';
+import { SAMPLES } from '../src/samples.ts';
 import { FLAVOR_NAMES } from '../src/types.ts';
 
 const deps = () => createFlavorDeps(hljs, katex);
@@ -16,7 +16,7 @@ describe('buildMD', () => {
 
   it.each(FLAVOR_NAMES)('renders the default document for flavor=%s without throwing', (flavor) => {
     const md = buildMD(flavor, deps());
-    const src = DEFAULTS[flavor];
+    const src = SAMPLES[flavor];
     expect(() => md.render(src)).not.toThrow();
   });
 

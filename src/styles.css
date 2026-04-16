@@ -186,6 +186,23 @@ button.active-listen {
   letter-spacing: 0.8px;
   margin-right: 2px;
 }
+.sample-select {
+  font-size: 9px;
+  color: var(--text-xdim);
+  background: transparent;
+  border-color: transparent;
+  padding: 2px 16px 2px 4px;
+  margin-left: 8px;
+  letter-spacing: 0;
+  text-transform: none;
+  background-position: right 2px center;
+  min-width: 0;
+  max-width: 100px;
+}
+.sample-select:hover {
+  border-color: var(--border);
+  background: var(--bg-raised);
+}
 
 .main {
   display: flex;
@@ -218,6 +235,7 @@ button.active-listen {
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  overflow: hidden;
 }
 .pane-header .shortcut {
   margin-left: auto;

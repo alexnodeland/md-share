@@ -5,9 +5,9 @@ import { browserClipboard } from './adapters/clipboard.ts';
 import { lzStringCompressor } from './adapters/compressor.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
-import { defaultFor } from './defaults.ts';
-import { buildMD, createFlavorDeps, type FlavorDeps } from './flavors.ts';
+import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
+import { isSampleContent, sampleFor } from './samples.ts';
 import { parseShareParams } from './share.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
@@ -20,6 +20,7 @@ import { initExportMenu } from './ui/exportMenu.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
+import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
 import { initShareModal } from './ui/share.ts';
 import { initThemeToggle } from './ui/themeToggle.ts';
 import './styles.css';
@@ -31,6 +32,7 @@ interface AppState {
   theme: Theme;
   md: MarkdownIt;
   deps: FlavorDeps;
+  activeSample: Flavor | null;
 }
 
 const initMermaid = (theme: Theme): void => {
@@ -68,7 +70,7 @@ const boot = (): void => {
   const theme = initialTheme();
   const flavor: Flavor = params.flavor ?? 'gfm';
   const deps = createFlavorDeps(hljs, katex);
-  const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps };
+  const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
 
   initMermaid(state.theme);
   setFlavorSelectValue(state.flavor);
@@ -77,8 +79,13 @@ const boot = (): void => {
   const banner = document.getElementById('readonly-banner');
   if (!editor) return;
 
+  const updatePlaceholder = () => {
+    editor.placeholder = `⌘V to paste ${FLAVOR_LABELS[state.flavor]} markdown…`;
+  };
+
   if (params.source !== null) {
     editor.value = params.source;
+    state.activeSample = isSampleContent(params.source);
     banner?.classList.add('visible');
     const clearBanner = () => {
       banner?.classList.remove('visible');
@@ -86,20 +93,38 @@ const boot = (): void => {
       editor.removeEventListener('input', clearBanner);
     };
     editor.addEventListener('input', clearBanner);
-  } else {
-    editor.value = defaultFor(state.flavor);
   }
+  setSampleSelectValue(state.activeSample);
+  updatePlaceholder();
 
   let rerender = () => {
     void renderPreview(state);
   };
 
-  initEditor({ onChange: () => rerender() });
+  initEditor({
+    onChange: () => {
+      if (state.activeSample !== null) {
+        const match = isSampleContent(editor.value);
+        if (match !== state.activeSample) {
+          state.activeSample = match;
+          setSampleSelectValue(match);
+        }
+      }
+      rerender();
+    },
+  });
   initFlavorSelect({
-    getCurrentFlavor: () => state.flavor,
     onChange: (next) => {
       state.flavor = next;
       state.md = buildMD(next, state.deps);
+      updatePlaceholder();
+      rerender();
+    },
+  });
+  initSampleSelect({
+    onSelect: (key) => {
+      state.activeSample = key;
+      editor.value = sampleFor(key);
       rerender();
     },
   });
