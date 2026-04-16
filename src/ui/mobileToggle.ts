@@ -2,6 +2,7 @@ type View = 'edit' | 'preview';
 
 export interface MobileToggleOptions {
   onShowPreview?: () => void;
+  initialView?: View;
 }
 
 export const initMobileToggle = (opts: MobileToggleOptions = {}): void => {
@@ -21,4 +22,6 @@ export const initMobileToggle = (opts: MobileToggleOptions = {}): void => {
 
   btnEdit.addEventListener('click', () => setView('edit'));
   btnPreview.addEventListener('click', () => setView('preview'));
+
+  if (opts.initialView) setView(opts.initialView);
 };

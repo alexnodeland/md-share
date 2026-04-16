@@ -12,6 +12,7 @@ import { parseShareParams } from './share.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
 import type { Flavor, Theme } from './types.ts';
+import { initClearButton } from './ui/clearButton.ts';
 import { initDropdowns } from './ui/dropdown.ts';
 import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
@@ -128,6 +129,15 @@ const boot = (): void => {
       rerender();
     },
   });
+  initClearButton({
+    onClear: () => {
+      editor.value = '';
+      state.activeSample = null;
+      setSampleSelectValue(null);
+      editor.dispatchEvent(new Event('input'));
+      rerender();
+    },
+  });
   initThemeToggle({
     onChange: (next) => {
       state.theme = next;
@@ -135,7 +145,10 @@ const boot = (): void => {
       rerender();
     },
   });
-  initMobileToggle({ onShowPreview: () => rerender() });
+  initMobileToggle({
+    onShowPreview: () => rerender(),
+    initialView: params.source !== null ? 'preview' : undefined,
+  });
   initDropdowns();
   initShareModal({
     compressor: lzStringCompressor,
