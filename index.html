@@ -97,9 +97,18 @@
       <div class="editor-pane mobile-visible" id="editor-pane">
         <div class="pane-header">
           Markdown
+          <select id="sample-select" class="sample-select" title="Load a sample document">
+            <option value="" disabled selected>Samples</option>
+            <option value="gfm">GFM</option>
+            <option value="commonmark">CommonMark</option>
+            <option value="extended">Extended</option>
+            <option value="academic">Academic</option>
+            <option value="obsidian">Obsidian</option>
+            <option value="atlassian">Atlassian</option>
+          </select>
           <span class="shortcut hide-mobile"><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle</span>
         </div>
-        <textarea id="editor" placeholder="Write or drop a .md file here…" spellcheck="false"></textarea>
+        <textarea id="editor" spellcheck="false"></textarea>
       </div>
       <div class="preview-pane" id="preview-pane">
         <div class="pane-header">Preview</div>
