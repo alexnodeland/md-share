@@ -14,12 +14,12 @@ export interface ShareDeps {
 }
 
 export const initShareModal = (deps: ShareDeps): void => {
-  const modal = document.getElementById('share-modal');
-  const urlBox = document.getElementById('share-url');
+  const modal = document.getElementById('link-modal');
+  const urlBox = document.getElementById('link-url');
   const warn = document.getElementById('url-warn');
-  const openBtn = document.getElementById('btn-share');
-  const closeBtn = document.getElementById('btn-share-close');
-  const copyBtn = document.getElementById('btn-share-copy');
+  const openBtn = document.getElementById('btn-link');
+  const closeBtn = document.getElementById('btn-link-close');
+  const copyBtn = document.getElementById('btn-link-copy');
   if (!modal || !urlBox || !warn || !openBtn || !closeBtn || !copyBtn) return;
 
   const buildURL = () =>
