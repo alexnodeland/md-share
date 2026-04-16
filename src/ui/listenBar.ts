@@ -1,29 +1,48 @@
-import type { Player, PlayerState } from '../listen/player.ts';
+import { createPlayer } from '../listen/player.ts';
+import type { Synth } from '../ports.ts';
 import type { SpeechChunk } from '../types.ts';
 import { showToast } from './toast.ts';
 
-const HIGHLIGHT_CLASS = 'speaking-highlight';
-
 export interface ListenBarDeps {
-  player: Player;
+  synth: Synth;
   getChunks: () => SpeechChunk[];
-  stopOnEdit: () => void;
 }
 
-const clearHighlights = (): void => {
-  for (const el of document.querySelectorAll(`.${HIGHLIGHT_CLASS}`)) {
-    el.classList.remove(HIGHLIGHT_CLASS);
+const MARKER_ID = 'speaking-marker';
+const PAD = 4;
+
+const ensureMarker = (): HTMLElement => {
+  let m = document.getElementById(MARKER_ID);
+  if (!m) {
+    m = document.createElement('div');
+    m.id = MARKER_ID;
+    document.body.appendChild(m);
   }
+  return m;
 };
 
-const highlightChunk = (chunk: SpeechChunk | undefined): void => {
-  clearHighlights();
-  if (!chunk?.el) return;
-  chunk.el.classList.add(HIGHLIGHT_CLASS);
-  chunk.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+const positionMarker = (marker: HTMLElement, chunk: SpeechChunk | undefined): void => {
+  if (!chunk?.el) {
+    marker.style.opacity = '0';
+    return;
+  }
+  const rect = chunk.el.getBoundingClientRect();
+  marker.style.top = `${rect.top - PAD}px`;
+  marker.style.left = `${rect.left - PAD}px`;
+  marker.style.width = `${rect.width + PAD * 2}px`;
+  marker.style.height = `${rect.height + PAD * 2}px`;
+  marker.style.opacity = '1';
+  chunk.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 };
 
-const updateUI = (state: PlayerState, chunks: readonly SpeechChunk[]): void => {
+const updateUI = (
+  marker: HTMLElement,
+  active: boolean,
+  playing: boolean,
+  index: number,
+  total: number,
+  chunks: readonly SpeechChunk[],
+): void => {
   const bar = document.getElementById('audio-bar');
   const mainContainer = document.getElementById('main-container');
   const listenBtn = document.getElementById('listen-btn');
@@ -33,12 +52,12 @@ const updateUI = (state: PlayerState, chunks: readonly SpeechChunk[]): void => {
   const iconPause = document.getElementById('audio-icon-pause');
   if (!bar || !mainContainer || !listenBtn || !fill || !label || !iconPlay || !iconPause) return;
 
-  bar.classList.toggle('visible', state.active);
-  mainContainer.classList.toggle('has-audio-bar', state.active);
-  listenBtn.classList.toggle('active-listen', state.active);
+  bar.classList.toggle('visible', active);
+  mainContainer.classList.toggle('has-audio-bar', active);
+  listenBtn.classList.toggle('active-listen', active);
 
-  if (!state.active) {
-    clearHighlights();
+  if (!active) {
+    marker.style.opacity = '0';
     fill.style.width = '0%';
     label.innerHTML = '<strong>Ready</strong>';
     iconPlay.style.display = '';
@@ -46,18 +65,18 @@ const updateUI = (state: PlayerState, chunks: readonly SpeechChunk[]): void => {
     return;
   }
 
-  const pct = state.total > 0 ? ((state.index + 1) / state.total) * 100 : 0;
+  const pct = total > 0 ? ((index + 1) / total) * 100 : 0;
   fill.style.width = `${pct}%`;
-  const chunk = chunks[state.index];
+  const chunk = chunks[index];
   const text = chunk?.text ?? '';
   const short = text.length > 80 ? `${text.slice(0, 80)}…` : text;
-  label.innerHTML = `<strong>${state.index + 1}/${state.total}</strong> &ensp;${short}`;
-  iconPlay.style.display = state.playing ? 'none' : '';
-  iconPause.style.display = state.playing ? '' : 'none';
-  highlightChunk(chunk);
+  label.innerHTML = `<strong>${index + 1}/${total}</strong> &ensp;${short}`;
+  iconPlay.style.display = playing ? 'none' : '';
+  iconPause.style.display = playing ? '' : 'none';
+  positionMarker(marker, chunk);
 };
 
-export const initListenBar = ({ player, getChunks, stopOnEdit }: ListenBarDeps): void => {
+export const initListenBar = ({ synth, getChunks }: ListenBarDeps): void => {
   const listenBtn = document.getElementById('listen-btn');
   const playBtn = document.getElementById('audio-play-btn');
   const stopBtn = document.getElementById('audio-stop-btn');
@@ -79,9 +98,36 @@ export const initListenBar = ({ player, getChunks, stopOnEdit }: ListenBarDeps):
     return;
   }
 
+  const marker = ensureMarker();
   let activeChunks: SpeechChunk[] = [];
+  let currentEl: Element | null = null;
 
-  const refresh = () => updateUI(player.getState(), activeChunks);
+  const refresh = () => {
+    const s = player.getState();
+    updateUI(marker, s.active, s.playing, s.index, s.total, activeChunks);
+    currentEl = activeChunks[s.index]?.el ?? null;
+  };
+
+  const player = createPlayer({ synth, onStateChange: refresh });
+
+  const repositionMarker = () => {
+    if (!currentEl) return;
+    const rect = currentEl.getBoundingClientRect();
+    marker.style.top = `${rect.top - PAD}px`;
+    marker.style.left = `${rect.left - PAD}px`;
+    marker.style.width = `${rect.width + PAD * 2}px`;
+    marker.style.height = `${rect.height + PAD * 2}px`;
+  };
+
+  const attachScrollListeners = () => {
+    window.addEventListener('scroll', repositionMarker, { capture: true, passive: true });
+    window.addEventListener('resize', repositionMarker, { passive: true });
+  };
+
+  const detachScrollListeners = () => {
+    window.removeEventListener('scroll', repositionMarker, true);
+    window.removeEventListener('resize', repositionMarker);
+  };
 
   const start = () => {
     const chunks = getChunks();
@@ -90,27 +136,31 @@ export const initListenBar = ({ player, getChunks, stopOnEdit }: ListenBarDeps):
       return;
     }
     activeChunks = chunks;
+    attachScrollListeners();
     player.start(chunks);
+    refresh();
+  };
+
+  const stopAll = () => {
+    player.stop();
+    detachScrollListeners();
+    currentEl = null;
     refresh();
   };
 
   listenBtn.addEventListener('click', () => {
     if (player.getState().active) {
-      player.stop();
+      stopAll();
     } else {
       start();
     }
-    refresh();
   });
 
   playBtn.addEventListener('click', () => {
     player.togglePlay();
     refresh();
   });
-  stopBtn.addEventListener('click', () => {
-    player.stop();
-    refresh();
-  });
+  stopBtn.addEventListener('click', stopAll);
   fwdBtn.addEventListener('click', () => {
     player.skipForward();
     refresh();
@@ -134,16 +184,13 @@ export const initListenBar = ({ player, getChunks, stopOnEdit }: ListenBarDeps):
 
   editor.addEventListener('input', () => {
     if (player.getState().active) {
-      stopOnEdit();
-      player.stop();
-      refresh();
+      stopAll();
     }
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && player.getState().active) {
-      player.stop();
-      refresh();
+      stopAll();
     }
   });
 };

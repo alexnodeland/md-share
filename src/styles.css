@@ -328,11 +328,20 @@ textarea::placeholder {
 }
 
 /* ── Speaking highlight ── */
-.speaking-highlight {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: 3px;
-  transition: outline-color 0.2s ease;
+#speaking-marker {
+  position: fixed;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  opacity: 0;
+  transition:
+    top 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    left 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    width 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 180ms ease;
+  z-index: 5;
 }
 
 /* ── Rendered ── */

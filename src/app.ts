@@ -8,7 +8,6 @@ import { browserSynth } from './adapters/speechSynth.ts';
 import { defaultFor } from './defaults.ts';
 import { buildMD, createFlavorDeps, type FlavorDeps } from './flavors.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
-import { createPlayer } from './listen/player.ts';
 import { parseShareParams } from './share.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
@@ -134,15 +133,11 @@ const boot = (): void => {
   });
   initEditorToggle();
 
-  const player = createPlayer({ synth: browserSynth });
   initListenBar({
-    player,
+    synth: browserSynth,
     getChunks: () => {
       const preview = document.getElementById('preview');
       return preview ? extractSpeakableChunks(preview) : [];
-    },
-    stopOnEdit: () => {
-      /* player.stop() handled inside listenBar */
     },
   });
 
