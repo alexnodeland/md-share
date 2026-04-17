@@ -15,6 +15,9 @@ export interface ListenBarHandle {
 const MARKER_ID = 'speaking-marker';
 const PAD = 4;
 
+const scrollBehavior = (): ScrollBehavior =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
 const ensureMarker = (): HTMLElement => {
   let m = document.getElementById(MARKER_ID);
   if (!m) {
@@ -40,7 +43,7 @@ const positionMarker = (marker: HTMLElement, chunk: SpeechChunk | undefined): vo
   marker.style.width = `${rect.width + PAD * 2}px`;
   marker.style.height = `${rect.height + PAD * 2}px`;
   marker.style.opacity = '1';
-  chunk.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  chunk.el.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
 };
 
 const updateUI = (
@@ -273,7 +276,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
         marker.style.width = `${rect.width + PAD * 2}px`;
         marker.style.height = `${rect.height + PAD * 2}px`;
         marker.style.opacity = '1';
-        chunk.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        chunk.el.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
       }
     }
     currentEl = chunk.el;
