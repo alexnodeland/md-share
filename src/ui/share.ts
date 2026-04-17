@@ -43,16 +43,28 @@ export const initShareModal = (deps: ShareDeps): void => {
     return { text: `URL length: ${n} chars`, cls: 'url-warn' };
   };
 
+  let previousFocus: HTMLElement | null = null;
+
+  const focusables = (): HTMLElement[] => [copyBtn as HTMLElement, closeBtn as HTMLElement];
+
   const open = () => {
     const url = buildURL();
     urlBox.textContent = url;
     const { text, cls } = describeLength(url.length);
     warn.textContent = text;
     warn.className = cls;
+    previousFocus = (document.activeElement as HTMLElement) ?? null;
     modal.classList.add('open');
+    copyBtn.focus();
   };
 
-  const close = () => modal.classList.remove('open');
+  const close = () => {
+    modal.classList.remove('open');
+    previousFocus?.focus?.();
+    previousFocus = null;
+  };
+
+  const isOpen = () => modal.classList.contains('open');
 
   openBtn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
@@ -67,8 +79,24 @@ export const initShareModal = (deps: ShareDeps): void => {
       .finally(close);
   });
 
+  modal.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || !isOpen()) return;
+    const items = focusables();
+    if (items.length === 0) return;
+    const first = items[0]!;
+    const last = items[items.length - 1]!;
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') close();
+    if (e.key === 'Escape' && isOpen()) close();
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       open();
