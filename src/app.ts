@@ -6,6 +6,7 @@ import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
+import { parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { isSampleContent, sampleFor } from './samples.ts';
 import { parseShareParams } from './share.ts';
@@ -94,7 +95,9 @@ const renderPreview = async (state: AppState): Promise<void> => {
   const scrollTop = scroller?.scrollTop ?? 0;
   state.deps.mermaidCounter.reset();
   try {
-    preview.innerHTML = generateTOC(src) + state.md.render(src);
+    const { meta, body } = parseFrontmatter(src);
+    const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
+    preview.innerHTML = front + generateTOC(body) + state.md.render(body);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     preview.replaceChildren(renderError(message));
@@ -327,6 +330,7 @@ const boot = (): void => {
 
   ensureKatexFor(state.flavor);
   rerender();
+  if (params.source === null && editor.value === '') editor.focus();
   registerServiceWorker();
 };
 
