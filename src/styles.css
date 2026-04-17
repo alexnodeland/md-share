@@ -905,6 +905,9 @@ details.atl-expand .expand-body {
   margin-bottom: 10px;
   line-height: 1.5;
 }
+.url-warn.soft {
+  color: var(--accent);
+}
 .url-warn.over {
   color: var(--danger);
 }
@@ -1020,7 +1023,9 @@ kbd {
   .editor-pane,
   .pane-header,
   .readonly-banner,
-  .audio-bar {
+  .audio-bar,
+  #speaking-marker,
+  #toast {
     display: none !important;
   }
   .preview-pane {
