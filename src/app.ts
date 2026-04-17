@@ -74,13 +74,34 @@ const loadMermaid = (): Promise<Mermaid> => {
   return mermaidPending;
 };
 
+const renderError = (message: string): HTMLElement => {
+  const strong = document.createElement('strong');
+  strong.textContent = 'Could not render preview';
+  const pre = document.createElement('pre');
+  pre.textContent = message;
+  const container = document.createElement('div');
+  container.className = 'render-error';
+  container.append(strong, pre);
+  return container;
+};
+
 const renderPreview = async (state: AppState): Promise<void> => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   const preview = document.getElementById('preview');
+  const scroller = document.getElementById('preview-scroll');
   if (!editor || !preview) return;
   const src = editor.value;
+  const scrollTop = scroller?.scrollTop ?? 0;
   state.deps.mermaidCounter.reset();
-  preview.innerHTML = generateTOC(src) + state.md.render(src);
+  try {
+    preview.innerHTML = generateTOC(src) + state.md.render(src);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    preview.replaceChildren(renderError(message));
+    if (scroller) scroller.scrollTop = scrollTop;
+    return;
+  }
+  if (scroller) scroller.scrollTop = scrollTop;
   if (!preview.querySelector('.mermaid')) return;
   try {
     const m = await loadMermaid();
