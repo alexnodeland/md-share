@@ -11,7 +11,14 @@ const currentTheme = (): Theme => {
 };
 
 const applyTheme = (theme: Theme): void => {
-  document.documentElement.dataset.theme = theme;
+  const html = document.documentElement;
+  html.classList.add('theme-switching');
+  html.dataset.theme = theme;
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      html.classList.remove('theme-switching');
+    });
+  });
   const moon = document.getElementById('icon-moon');
   const sun = document.getElementById('icon-sun');
   if (moon) moon.style.display = theme === 'dark' ? '' : 'none';

@@ -7,6 +7,7 @@ import mdFootnote from 'markdown-it-footnote';
 import { addHeadingAnchors } from './plugins/anchors.ts';
 import { pluginAtlassianBlocks } from './plugins/atlassianBlocks.ts';
 import { pluginAtlassianInline } from './plugins/atlassianInline.ts';
+import { addCodeLangLabels } from './plugins/codeLang.ts';
 import { applyHighlighting } from './plugins/highlighting.ts';
 import { pluginKaTeX } from './plugins/katex.ts';
 import { createMermaidCounter, type MermaidCounter, wrapMermaidFences } from './plugins/mermaid.ts';
@@ -72,6 +73,7 @@ export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
   applyFlavorPlugins(md, flavor, deps);
   applyHighlighting(md, deps.highlighter, deps.onUnknownLanguage);
   wrapMermaidFences(md, deps.mermaidCounter);
+  addCodeLangLabels(md);
   addHeadingAnchors(md);
   applySafeLinks(md);
   return md;
