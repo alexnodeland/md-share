@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas';
 import { deriveFilename } from '../filename.ts';
 import type { Printer } from '../ports.ts';
 import { closeAllDropdowns } from './dropdown.ts';
@@ -51,6 +50,7 @@ export const initExportMenu = (deps: ExportDeps): void => {
       return;
     }
     try {
+      const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(preview, {
         backgroundColor: getComputedStyle(document.documentElement)
           .getPropertyValue('--preview-bg')
