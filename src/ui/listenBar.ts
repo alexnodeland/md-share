@@ -323,8 +323,21 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && player.getState().active) {
+    if (!player.getState().active) return;
+    if (e.key === 'Escape') {
       stopAll();
+      return;
+    }
+    const target = e.target as HTMLElement | null;
+    if (target?.matches?.('input, textarea, select, [contenteditable="true"]')) return;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      player.skipForward();
+      refresh();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      player.skipBack();
+      refresh();
     }
   });
 
