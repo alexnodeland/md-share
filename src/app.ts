@@ -27,6 +27,7 @@ import { initHeadingLinks } from './ui/headingLinks.ts';
 import { initHelpModal } from './ui/helpModal.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
+import { initPaneDivider } from './ui/paneDivider.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
 import { initScrollSync } from './ui/scrollSync.ts';
 import { initShareModal } from './ui/share.ts';
@@ -317,6 +318,11 @@ const boot = (): void => {
   initHelpModal();
   const previewScroll = document.getElementById('preview-scroll');
   if (previewScroll) initScrollSync({ editor, preview: previewScroll });
+  const mainContainer = document.getElementById('main-container');
+  const paneDivider = document.getElementById('pane-divider');
+  if (mainContainer && paneDivider) {
+    initPaneDivider({ container: mainContainer, divider: paneDivider, storage: browserStorage });
+  }
   initHeadingLinks({ clipboard: browserClipboard });
   initTaskToggle({
     onToggle: (line) => {
