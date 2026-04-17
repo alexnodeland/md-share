@@ -39,6 +39,7 @@ interface AppState {
 const initMermaid = (theme: Theme): void => {
   mermaid.initialize({
     startOnLoad: false,
+    securityLevel: 'strict',
     theme: mermaidThemeName(theme),
     themeVariables: mermaidThemeVars(theme),
     fontFamily: 'JetBrains Mono,monospace',
