@@ -21,6 +21,7 @@ export interface FlavorDeps {
   highlighter: typeof hljs;
   katex: typeof katexNs;
   mermaidCounter: MermaidCounter;
+  onUnknownLanguage?: (lang: string) => void;
 }
 
 export const FLAVOR_LABELS: Record<Flavor, string> = {
@@ -69,15 +70,20 @@ const applyFlavorPlugins = (md: MarkdownIt, flavor: Flavor, deps: FlavorDeps): v
 export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
   const md = createBase(flavor);
   applyFlavorPlugins(md, flavor, deps);
-  applyHighlighting(md, deps.highlighter);
+  applyHighlighting(md, deps.highlighter, deps.onUnknownLanguage);
   wrapMermaidFences(md, deps.mermaidCounter);
   addHeadingAnchors(md);
   applySafeLinks(md);
   return md;
 };
 
-export const createFlavorDeps = (highlighter: typeof hljs, katex: typeof katexNs): FlavorDeps => ({
+export const createFlavorDeps = (
+  highlighter: typeof hljs,
+  katex: typeof katexNs,
+  onUnknownLanguage?: (lang: string) => void,
+): FlavorDeps => ({
   highlighter,
   katex,
   mermaidCounter: createMermaidCounter(),
+  onUnknownLanguage,
 });

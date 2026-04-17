@@ -1,4 +1,4 @@
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import katex from 'katex';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { lzStringCompressor } from './adapters/compressor.ts';
@@ -103,11 +103,50 @@ const registerServiceWorker = (): void => {
   });
 };
 
+type LanguageModule = { default: Parameters<typeof hljs.registerLanguage>[1] };
+type LanguageLoader = () => Promise<LanguageModule>;
+
+const languageLoaders = import.meta.glob<LanguageModule>([
+  '/node_modules/highlight.js/lib/languages/*.js',
+  '!/node_modules/highlight.js/lib/languages/*.js.js',
+  '!/node_modules/highlight.js/lib/languages/{xml,bash,c,cpp,csharp,css,markdown,diff,ruby,go,graphql,ini,java,javascript,json,kotlin,less,lua,makefile,perl,objectivec,php,php-template,plaintext,python,python-repl,r,rust,scss,shell,sql,swift,yaml,typescript,vbnet,wasm}.js',
+]) as Record<string, LanguageLoader>;
+
+const loaderFor = (lang: string): LanguageLoader | undefined =>
+  languageLoaders[`/node_modules/highlight.js/lib/languages/${lang}.js`];
+
+const pendingLanguages = new Set<string>();
+const unknownLanguages = new Set<string>();
+
+const createLazyHighlighter = (onReady: () => void) => (lang: string) => {
+  if (hljs.getLanguage(lang) || pendingLanguages.has(lang) || unknownLanguages.has(lang)) return;
+  const loader = loaderFor(lang);
+  if (!loader) {
+    unknownLanguages.add(lang);
+    return;
+  }
+  pendingLanguages.add(lang);
+  loader()
+    .then((mod) => {
+      hljs.registerLanguage(lang, mod.default);
+      onReady();
+    })
+    .catch(() => {
+      unknownLanguages.add(lang);
+    })
+    .finally(() => {
+      pendingLanguages.delete(lang);
+    });
+};
+
 const boot = (): void => {
   const params = parseShareParams(window.location.search, lzStringCompressor);
   const theme = initialTheme();
   const flavor: Flavor = params.flavor ?? 'commonmark';
-  const deps = createFlavorDeps(hljs, katex);
+  const ensureLanguage = createLazyHighlighter(() => {
+    rerender();
+  });
+  const deps = createFlavorDeps(hljs, katex, ensureLanguage);
   const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
 
   setMermaidTheme(state.theme);
