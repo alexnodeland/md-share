@@ -36,6 +36,11 @@ describe('parseHeadings', () => {
     const src = ['## Out', '  ```', '## Hidden', '  ```', '## Back'].join('\n');
     expect(parseHeadings(src).map((h) => h.text)).toEqual(['Out', 'Back']);
   });
+
+  it('deduplicates slugs by appending -2, -3, … so anchor links stay unique', () => {
+    const src = ['## Same', '## Same', '## Same'].join('\n');
+    expect(parseHeadings(src).map((h) => h.slug)).toEqual(['same', 'same-2', 'same-3']);
+  });
 });
 
 describe('renderTOC', () => {

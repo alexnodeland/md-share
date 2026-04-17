@@ -1,6 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import { describe, expect, it } from 'vitest';
-import { addHeadingAnchors, slugifyHeading } from '../../src/plugins/anchors.ts';
+import { addHeadingAnchors, slugifyHeading, uniqueSlug } from '../../src/plugins/anchors.ts';
 
 const build = () => {
   const md = new MarkdownIt({ html: true });
@@ -19,6 +19,27 @@ describe('slugifyHeading', () => {
 
   it('preserves existing dashes', () => {
     expect(slugifyHeading('foo-bar baz')).toBe('foo-bar-baz');
+  });
+});
+
+describe('uniqueSlug', () => {
+  it('returns the base slug the first time', () => {
+    const used = new Map<string, number>();
+    expect(uniqueSlug('x', used)).toBe('x');
+  });
+
+  it('appends -2, -3 for repeated bases', () => {
+    const used = new Map<string, number>();
+    uniqueSlug('x', used);
+    expect(uniqueSlug('x', used)).toBe('x-2');
+    expect(uniqueSlug('x', used)).toBe('x-3');
+  });
+
+  it('tracks each base independently', () => {
+    const used = new Map<string, number>();
+    expect(uniqueSlug('a', used)).toBe('a');
+    expect(uniqueSlug('b', used)).toBe('b');
+    expect(uniqueSlug('a', used)).toBe('a-2');
   });
 });
 
@@ -43,6 +64,21 @@ describe('addHeadingAnchors', () => {
     const html = md.render('## Hello');
     expect(html).toContain('<!--prior-->');
     expect(html).toContain('id="hello"');
+  });
+
+  it('deduplicates collisions by appending -2, -3, …', () => {
+    const html = build().render('## Same\n## Same\n## Same');
+    expect(html).toContain('<h2 id="same">');
+    expect(html).toContain('<h2 id="same-2">');
+    expect(html).toContain('<h2 id="same-3">');
+  });
+
+  it('resets the slug counter per-render (fresh env each call)', () => {
+    const md = build();
+    const first = md.render('## Same');
+    const second = md.render('## Same');
+    expect(first).toContain('<h2 id="same">');
+    expect(second).toContain('<h2 id="same">');
   });
 
   it('does not set id when there is no inline token following heading_open', () => {

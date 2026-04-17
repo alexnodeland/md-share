@@ -9,8 +9,15 @@ const WHITESPACE_RE = /\s+/g;
 const slugify = (text: string): string =>
   text.toLowerCase().replace(NON_SLUG_RE, '').replace(WHITESPACE_RE, '-');
 
+const uniqueSlug = (base: string, used: Map<string, number>): string => {
+  const n = used.get(base) ?? 0;
+  used.set(base, n + 1);
+  return n === 0 ? base : `${base}-${n + 1}`;
+};
+
 export const parseHeadings = (source: string): TocHeading[] => {
   const headings: TocHeading[] = [];
+  const used = new Map<string, number>();
   let inFence = false;
   for (const line of source.split('\n')) {
     if (FENCE_RE.test(line.trim())) {
@@ -24,7 +31,7 @@ export const parseHeadings = (source: string): TocHeading[] => {
     const rawText = match[2] as string;
     const text = rawText.replace(STRIP_RE, '').trim();
     const level = hashes.length as 2 | 3 | 4;
-    headings.push({ level, text, slug: slugify(text) });
+    headings.push({ level, text, slug: uniqueSlug(slugify(text), used) });
   }
   return headings;
 };
