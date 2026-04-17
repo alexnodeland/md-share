@@ -16,6 +16,20 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css" />
+    <script>
+      (() => {
+        try {
+          const stored = window.localStorage.getItem('md-share:theme');
+          const theme =
+            stored === 'dark' || stored === 'light'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.dataset.theme = theme;
+        } catch {}
+      })();
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#preview">Skip to content</a>

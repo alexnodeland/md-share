@@ -4,6 +4,11 @@ export const isTheme = (x: unknown): x is Theme => x === 'dark' || x === 'light'
 
 export const toggleTheme = (current: Theme): Theme => (current === 'dark' ? 'light' : 'dark');
 
+export const resolveInitialTheme = (stored: string | null, prefersDark: boolean): Theme => {
+  if (isTheme(stored)) return stored;
+  return prefersDark ? 'dark' : 'light';
+};
+
 export interface MermaidThemeVars {
   primaryColor: string;
   primaryTextColor: string;

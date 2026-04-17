@@ -2,6 +2,7 @@ import hljs from 'highlight.js';
 import katex from 'katex';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { lzStringCompressor } from './adapters/compressor.ts';
+import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
@@ -85,6 +86,8 @@ const renderPreview = async (state: AppState): Promise<void> => {
     console.warn('Mermaid render error:', err);
   }
 };
+
+const THEME_STORAGE_KEY = 'md-share:theme';
 
 const initialTheme = (): Theme => {
   const value = document.documentElement.dataset.theme;
@@ -175,6 +178,7 @@ const boot = (): void => {
   initThemeToggle({
     onChange: (next) => {
       state.theme = next;
+      browserStorage.set(THEME_STORAGE_KEY, next);
       setMermaidTheme(next);
       rerender();
     },
