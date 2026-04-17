@@ -1,5 +1,10 @@
 import type { Clipboard } from '../ports.ts';
 
 export const browserClipboard: Clipboard = {
-  write: (text) => navigator.clipboard.writeText(text),
+  write: (text) => {
+    if (!navigator.clipboard?.writeText) {
+      return Promise.reject(new Error('Clipboard API unavailable'));
+    }
+    return navigator.clipboard.writeText(text);
+  },
 };

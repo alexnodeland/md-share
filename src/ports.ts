@@ -24,6 +24,7 @@ export interface Synth {
   createUtterance(text: string): SpeechUtterance;
   getVoices(): SpeechVoice[];
   onVoicesChanged(cb: () => void): () => void;
+  isSupported(): boolean;
 }
 
 export interface Clipboard {
