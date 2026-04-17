@@ -49,6 +49,23 @@ describe('addHeadingAnchors', () => {
     expect(html).toContain('<h2 id="my-section">');
   });
 
+  it('emits a heading-anchor link pointing at the slug', () => {
+    const html = build().render('## My Section');
+    expect(html).toContain(
+      '<h2 id="my-section"><a class="heading-anchor" href="#my-section" aria-label="Copy link to this heading">',
+    );
+    expect(html).toContain('class="heading-anchor-icon"');
+  });
+
+  it('does not emit an anchor link when the heading has no id', () => {
+    const md = build();
+    const parsed = md.parse('## Head', {});
+    const tokens = parsed.filter((t) => t.type !== 'inline');
+    const rule = md.renderer.rules.heading_open!;
+    const out = rule(tokens, 0, md.options, {}, md.renderer);
+    expect(out).not.toContain('heading-anchor');
+  });
+
   it('applies to all heading levels', () => {
     const html = build().render('# One\n## Two\n### Three');
     expect(html).toContain('<h1 id="one">');

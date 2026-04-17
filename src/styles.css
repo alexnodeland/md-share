@@ -317,8 +317,29 @@ textarea::placeholder {
   scroll-behavior: smooth;
 }
 
-#preview :is(h1, h2, h3, h4, h5, h6)[id] {
-  cursor: pointer;
+#preview :is(h1, h2, h3, h4, h5, h6) {
+  position: relative;
+}
+#preview a.heading-anchor {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  color: var(--text-xdim);
+  text-decoration: none;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+#preview :is(h1, h2, h3, h4, h5, h6):hover a.heading-anchor,
+#preview a.heading-anchor:focus-visible {
+  opacity: 1;
+}
+#preview a.heading-anchor:hover {
+  color: var(--accent);
 }
 
 .rendered > .frontmatter {
