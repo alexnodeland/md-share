@@ -32,7 +32,10 @@ const speakableText = (
     if (node.nodeType !== Node.ELEMENT_NODE) return;
     const child = node as Element;
     const cls = child.classList;
-    if (cls.contains('katex-display')) return;
+    if (cls.contains('katex-display')) {
+      parts.push(' display equation ');
+      return;
+    }
     if (cls.contains('katex')) {
       parts.push(' inline equation ');
       return;
@@ -158,6 +161,16 @@ const chunksFromDefinitionList = (el: Element, fm: FootnoteMap): SpeechChunk[] =
   return out;
 };
 
+const describeMermaid = (el: Element): string => {
+  if (el.querySelector('.error-icon, [aria-roledescription="error"]')) {
+    return 'A diagram failed to render.';
+  }
+  if (/syntax error/i.test(String(el.textContent))) {
+    return 'A diagram failed to render.';
+  }
+  return 'A diagram is shown here.';
+};
+
 const processElement = (el: Element, out: SpeechChunk[], fm: FootnoteMap): void => {
   const tag = el.tagName.toLowerCase();
   const classes = el.classList;
@@ -173,7 +186,7 @@ const processElement = (el: Element, out: SpeechChunk[], fm: FootnoteMap): void 
   }
 
   if (classes.contains('mermaid-container')) {
-    out.push({ text: 'A diagram is shown here.', el });
+    out.push({ text: describeMermaid(el), el });
     return;
   }
 

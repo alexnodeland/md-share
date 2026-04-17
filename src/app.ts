@@ -1,28 +1,35 @@
-import hljs from 'highlight.js';
-import katex from 'katex';
-import mermaid from 'mermaid';
+import hljs from 'highlight.js/lib/common';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { lzStringCompressor } from './adapters/compressor.ts';
+import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
+import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
+import { parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { isSampleContent, sampleFor } from './samples.ts';
 import { parseShareParams } from './share.ts';
+import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
 import type { Flavor, Theme } from './types.ts';
 import { initClearButton } from './ui/clearButton.ts';
+import { initCodeCopyButtons } from './ui/codeCopyButtons.ts';
 import { initDropdowns } from './ui/dropdown.ts';
 import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
 import { initEditorToggle } from './ui/editorToggle.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
+import { initHeadingLinks } from './ui/headingLinks.ts';
+import { initHelpModal } from './ui/helpModal.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
 import { initShareModal } from './ui/share.ts';
+import { initStats } from './ui/stats.ts';
+import { initTaskToggle } from './ui/taskToggle.ts';
 import { initThemeToggle } from './ui/themeToggle.ts';
 import './styles.css';
 
@@ -36,44 +43,167 @@ interface AppState {
   activeSample: Flavor | null;
 }
 
-const initMermaid = (theme: Theme): void => {
-  mermaid.initialize({
+type Mermaid = typeof import('mermaid').default;
+
+const mermaidConfig = (theme: Theme) =>
+  ({
     startOnLoad: false,
+    securityLevel: 'strict' as const,
     theme: mermaidThemeName(theme),
     themeVariables: mermaidThemeVars(theme),
     fontFamily: 'JetBrains Mono,monospace',
     fontSize: 13,
-    flowchart: { curve: 'monotoneX' },
-  });
+    flowchart: { curve: 'monotoneX' as const },
+  }) satisfies Parameters<Mermaid['initialize']>[0];
+
+let mermaidMod: Mermaid | null = null;
+let mermaidPending: Promise<Mermaid> | null = null;
+let mermaidTheme: Theme = 'dark';
+
+const setMermaidTheme = (theme: Theme): void => {
+  mermaidTheme = theme;
+  if (mermaidMod) mermaidMod.initialize(mermaidConfig(theme));
+};
+
+const loadMermaid = (): Promise<Mermaid> => {
+  if (mermaidMod) return Promise.resolve(mermaidMod);
+  if (!mermaidPending) {
+    mermaidPending = import('mermaid').then((m) => {
+      mermaidMod = m.default;
+      mermaidMod.initialize(mermaidConfig(mermaidTheme));
+      return mermaidMod;
+    });
+  }
+  return mermaidPending;
+};
+
+const renderError = (message: string): HTMLElement => {
+  const strong = document.createElement('strong');
+  strong.textContent = 'Could not render preview';
+  const pre = document.createElement('pre');
+  pre.textContent = message;
+  const container = document.createElement('div');
+  container.className = 'render-error';
+  container.append(strong, pre);
+  return container;
 };
 
 const renderPreview = async (state: AppState): Promise<void> => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   const preview = document.getElementById('preview');
+  const scroller = document.getElementById('preview-scroll');
   if (!editor || !preview) return;
   const src = editor.value;
+  const scrollTop = scroller?.scrollTop ?? 0;
   state.deps.mermaidCounter.reset();
-  preview.innerHTML = generateTOC(src) + state.md.render(src);
   try {
-    await mermaid.run({ querySelector: '.mermaid' });
-  } catch {
-    /* mermaid syntax errors are shown in-place; ignore */
+    const { meta, body } = parseFrontmatter(src);
+    const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
+    preview.innerHTML = front + generateTOC(body) + state.md.render(body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    preview.replaceChildren(renderError(message));
+    if (scroller) scroller.scrollTop = scrollTop;
+    return;
+  }
+  if (scroller) scroller.scrollTop = scrollTop;
+  if (!preview.querySelector('.mermaid')) return;
+  try {
+    const m = await loadMermaid();
+    await m.run({ querySelector: '.mermaid' });
+  } catch (err) {
+    console.warn('Mermaid render error:', err);
   }
 };
+
+const THEME_STORAGE_KEY = 'md-share:theme';
+const FLAVOR_STORAGE_KEY = 'md-share:flavor';
 
 const initialTheme = (): Theme => {
   const value = document.documentElement.dataset.theme;
   return isTheme(value) ? value : 'dark';
 };
 
+const registerServiceWorker = (): void => {
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+};
+
+type LanguageModule = { default: Parameters<typeof hljs.registerLanguage>[1] };
+type LanguageLoader = () => Promise<LanguageModule>;
+
+const languageLoaders = import.meta.glob<LanguageModule>([
+  '/node_modules/highlight.js/lib/languages/*.js',
+  '!/node_modules/highlight.js/lib/languages/*.js.js',
+  '!/node_modules/highlight.js/lib/languages/{xml,bash,c,cpp,csharp,css,markdown,diff,ruby,go,graphql,ini,java,javascript,json,kotlin,less,lua,makefile,perl,objectivec,php,php-template,plaintext,python,python-repl,r,rust,scss,shell,sql,swift,yaml,typescript,vbnet,wasm}.js',
+]) as Record<string, LanguageLoader>;
+
+const loaderFor = (lang: string): LanguageLoader | undefined =>
+  languageLoaders[`/node_modules/highlight.js/lib/languages/${lang}.js`];
+
+type Katex = typeof import('katex').default;
+let katexMod: Katex | null = null;
+let katexPending: Promise<Katex> | null = null;
+
+const loadKatex = (): Promise<Katex> => {
+  if (katexMod) return Promise.resolve(katexMod);
+  if (!katexPending) {
+    katexPending = import('katex').then((m) => {
+      katexMod = m.default;
+      return katexMod;
+    });
+  }
+  return katexPending;
+};
+
+const pendingLanguages = new Set<string>();
+const unknownLanguages = new Set<string>();
+
+const createLazyHighlighter = (onReady: () => void) => (lang: string) => {
+  if (hljs.getLanguage(lang) || pendingLanguages.has(lang) || unknownLanguages.has(lang)) return;
+  const loader = loaderFor(lang);
+  if (!loader) {
+    unknownLanguages.add(lang);
+    return;
+  }
+  pendingLanguages.add(lang);
+  loader()
+    .then((mod) => {
+      hljs.registerLanguage(lang, mod.default);
+      onReady();
+    })
+    .catch(() => {
+      unknownLanguages.add(lang);
+    })
+    .finally(() => {
+      pendingLanguages.delete(lang);
+    });
+};
+
 const boot = (): void => {
   const params = parseShareParams(window.location.search, lzStringCompressor);
   const theme = initialTheme();
-  const flavor: Flavor = params.flavor ?? 'commonmark';
-  const deps = createFlavorDeps(hljs, katex);
+  const flavor = resolveInitialFlavor(params.flavor, browserStorage.get(FLAVOR_STORAGE_KEY));
+  const ensureLanguage = createLazyHighlighter(() => {
+    rerender();
+  });
+  const deps = createFlavorDeps(hljs, null, ensureLanguage);
   const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
 
-  initMermaid(state.theme);
+  const ensureKatexFor = (f: Flavor): void => {
+    if (!flavorNeedsKatex(f) || deps.katex) return;
+    void loadKatex().then((k) => {
+      deps.katex = k;
+      state.md = buildMD(state.flavor, deps);
+      rerender();
+    });
+  };
+
+  setMermaidTheme(state.theme);
   setFlavorSelectValue(state.flavor);
 
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
@@ -118,6 +248,8 @@ const boot = (): void => {
     onChange: (next) => {
       state.flavor = next;
       state.md = buildMD(next, state.deps);
+      browserStorage.set(FLAVOR_STORAGE_KEY, next);
+      ensureKatexFor(next);
       updatePlaceholder();
       rerender();
     },
@@ -141,7 +273,8 @@ const boot = (): void => {
   initThemeToggle({
     onChange: (next) => {
       state.theme = next;
-      initMermaid(next);
+      browserStorage.set(THEME_STORAGE_KEY, next);
+      setMermaidTheme(next);
       rerender();
     },
   });
@@ -160,7 +293,13 @@ const boot = (): void => {
   initExportMenu({
     printer: browserPrinter,
     getSource: () => editor.value,
-    getPreviewHTML: () => document.getElementById('preview')?.innerHTML ?? '',
+    getPreviewHTML: () => {
+      const el = document.getElementById('preview');
+      if (!el) return '';
+      const clone = el.cloneNode(true) as HTMLElement;
+      for (const btn of clone.querySelectorAll('.copy-code')) btn.remove();
+      return clone.innerHTML;
+    },
     getPreviewElement: () => document.getElementById('preview'),
   });
   initDropZone({
@@ -170,6 +309,18 @@ const boot = (): void => {
     },
   });
   initEditorToggle();
+  initHelpModal();
+  initHeadingLinks({ clipboard: browserClipboard });
+  initTaskToggle({
+    onToggle: (line) => {
+      const next = toggleTaskAtLine(editor.value, line);
+      if (next === editor.value) return;
+      editor.value = next;
+      editor.dispatchEvent(new Event('input'));
+    },
+  });
+  const decorateCopyButtons = initCodeCopyButtons({ clipboard: browserClipboard });
+  const updateStats = initStats({ getSource: () => editor.value });
 
   const listenBar = initListenBar({
     synth: browserSynth,
@@ -182,10 +333,15 @@ const boot = (): void => {
   const origRerender = rerender;
   rerender = () => {
     origRerender();
+    decorateCopyButtons();
     listenBar.onPreviewChange();
+    updateStats();
   };
 
+  ensureKatexFor(state.flavor);
   rerender();
+  if (params.source === null && editor.value === '') editor.focus();
+  registerServiceWorker();
 };
 
 boot();

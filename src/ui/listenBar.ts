@@ -15,6 +15,9 @@ export interface ListenBarHandle {
 const MARKER_ID = 'speaking-marker';
 const PAD = 4;
 
+const scrollBehavior = (): ScrollBehavior =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
 const ensureMarker = (): HTMLElement => {
   let m = document.getElementById(MARKER_ID);
   if (!m) {
@@ -40,7 +43,7 @@ const positionMarker = (marker: HTMLElement, chunk: SpeechChunk | undefined): vo
   marker.style.width = `${rect.width + PAD * 2}px`;
   marker.style.height = `${rect.height + PAD * 2}px`;
   marker.style.opacity = '1';
-  chunk.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  chunk.el.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
 };
 
 const updateUI = (
@@ -140,19 +143,23 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
     marker.style.opacity = '1';
   };
 
+  let resizeObserver: ResizeObserver | null = null;
+
   const attachScrollListeners = () => {
     window.addEventListener('scroll', repositionMarker, { capture: true, passive: true });
     window.addEventListener('resize', repositionMarker, { passive: true });
+    if (previewPane && !resizeObserver) {
+      resizeObserver = new ResizeObserver(repositionMarker);
+      resizeObserver.observe(previewPane);
+    }
   };
 
   const detachScrollListeners = () => {
     window.removeEventListener('scroll', repositionMarker, true);
     window.removeEventListener('resize', repositionMarker);
+    resizeObserver?.disconnect();
+    resizeObserver = null;
   };
-
-  if (previewPane) {
-    new ResizeObserver(repositionMarker).observe(previewPane);
-  }
 
   const rebindChunks = () => {
     if (!player.getState().active) return;
@@ -164,6 +171,10 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   };
 
   const start = () => {
+    if (!synth.isSupported()) {
+      showToast('Listen mode is unsupported in this browser');
+      return;
+    }
     const chunks = getChunks();
     if (chunks.length === 0) {
       showToast('Nothing to read');
@@ -265,7 +276,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
         marker.style.width = `${rect.width + PAD * 2}px`;
         marker.style.height = `${rect.height + PAD * 2}px`;
         marker.style.opacity = '1';
-        chunk.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        chunk.el.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
       }
     }
     currentEl = chunk.el;
@@ -315,8 +326,21 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && player.getState().active) {
+    if (!player.getState().active) return;
+    if (e.key === 'Escape') {
       stopAll();
+      return;
+    }
+    const target = e.target as HTMLElement | null;
+    if (target?.matches?.('input, textarea, select, [contenteditable="true"]')) return;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      player.skipForward();
+      refresh();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      player.skipBack();
+      refresh();
     }
   });
 

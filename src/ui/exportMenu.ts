@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import { deriveFilename } from '../filename.ts';
 import type { Printer } from '../ports.ts';
 import { closeAllDropdowns } from './dropdown.ts';
 import { showToast } from './toast.ts';
@@ -27,15 +27,17 @@ export const initExportMenu = (deps: ExportDeps): void => {
 
   btnMd.addEventListener('click', () => {
     closeAllDropdowns();
-    download(new Blob([deps.getSource()], { type: 'text/markdown' }), 'document.md');
+    const source = deps.getSource();
+    download(new Blob([source], { type: 'text/markdown' }), deriveFilename(source, 'md'));
     showToast('Markdown exported', true);
   });
 
   btnHtml.addEventListener('click', () => {
     closeAllDropdowns();
+    const source = deps.getSource();
     const body = deps.getPreviewHTML();
     const doc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Document</title></head><body>${body}</body></html>`;
-    download(new Blob([doc], { type: 'text/html' }), 'document.html');
+    download(new Blob([doc], { type: 'text/html' }), deriveFilename(source, 'html'));
     showToast('HTML exported', true);
   });
 
@@ -48,6 +50,7 @@ export const initExportMenu = (deps: ExportDeps): void => {
       return;
     }
     try {
+      const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(preview, {
         backgroundColor: getComputedStyle(document.documentElement)
           .getPropertyValue('--preview-bg')
@@ -58,7 +61,7 @@ export const initExportMenu = (deps: ExportDeps): void => {
       });
       canvas.toBlob((blob) => {
         if (blob) {
-          download(blob, 'document.png');
+          download(blob, deriveFilename(deps.getSource(), 'png'));
           showToast('PNG exported', true);
         }
       });

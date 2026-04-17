@@ -24,6 +24,7 @@ export interface Synth {
   createUtterance(text: string): SpeechUtterance;
   getVoices(): SpeechVoice[];
   onVoicesChanged(cb: () => void): () => void;
+  isSupported(): boolean;
 }
 
 export interface Clipboard {
@@ -37,4 +38,9 @@ export interface Printer {
 export interface Location {
   origin: string;
   pathname: string;
+}
+
+export interface Storage {
+  get(key: string): string | null;
+  set(key: string, value: string): void;
 }

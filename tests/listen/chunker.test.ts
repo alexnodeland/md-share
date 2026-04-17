@@ -40,6 +40,27 @@ describe('extractSpeakableChunks', () => {
     expect(chunks[0]!.text).toBe('A diagram is shown here.');
   });
 
+  it('announces failed mermaid renders via the error-icon marker', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<div class="mermaid-container"><svg><g class="error-icon"></g></svg></div>'),
+    );
+    expect(chunks[0]!.text).toBe('A diagram failed to render.');
+  });
+
+  it('announces failed mermaid renders via the aria-roledescription marker', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<div class="mermaid-container"><svg aria-roledescription="error"></svg></div>'),
+    );
+    expect(chunks[0]!.text).toBe('A diagram failed to render.');
+  });
+
+  it('announces failed mermaid renders detected from a "Syntax error" text body', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<div class="mermaid-container">Syntax error in graph</div>'),
+    );
+    expect(chunks[0]!.text).toBe('A diagram failed to render.');
+  });
+
   it('describes katex-display equations without reading LaTeX', () => {
     const chunks = extractSpeakableChunks(makeRoot('<div class="katex-display">x^2</div>'));
     expect(chunks[0]!.text).toBe('A mathematical equation is displayed.');
@@ -257,11 +278,11 @@ describe('extractSpeakableChunks', () => {
     expect(chunks[0]!.text).toBe('Compute inline equation now.');
   });
 
-  it('skips elements with katex-display class when nested inline', () => {
+  it('narrates inline katex-display as "display equation"', () => {
     const chunks = extractSpeakableChunks(
       makeRoot('<p>Before <span class="katex-display">x^2</span> after</p>'),
     );
-    expect(chunks[0]!.text).toBe('Before after');
+    expect(chunks[0]!.text).toBe('Before display equation after');
   });
 
   it('ignores non-element non-text nodes (comments) during extraction', () => {

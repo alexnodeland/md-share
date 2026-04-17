@@ -30,6 +30,7 @@ const makeSynth = () => {
     },
     getVoices: () => [],
     onVoicesChanged: () => () => {},
+    isSupported: () => true,
   };
   return {
     synth,
