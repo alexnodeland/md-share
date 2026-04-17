@@ -20,6 +20,9 @@ const renderExpand = (md: MarkdownIt, title: string | undefined, body: string): 
 const renderCodeFence = (lang: string | undefined, code: string): string =>
   `\n\`\`\`${lang ?? ''}\n${code.trim()}\n\`\`\`\n`;
 
+// Requires the MarkdownIt instance to be constructed with `html: true`:
+// this plugin rewrites `{info}…{info}` etc. into raw HTML before the
+// tokenizer runs, so the enclosing <div>s would otherwise be escaped.
 export const pluginAtlassianBlocks = (md: MarkdownIt): void => {
   md.core.ruler.before('normalize', 'atl_blocks', (state) => {
     let src = state.src;
