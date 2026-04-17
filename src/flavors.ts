@@ -13,6 +13,7 @@ import { createMermaidCounter, type MermaidCounter, wrapMermaidFences } from './
 import { pluginObsidianCallouts } from './plugins/obsidianCallouts.ts';
 import { pluginObsidianComments } from './plugins/obsidianComments.ts';
 import { pluginObsidianInline } from './plugins/obsidianInline.ts';
+import { applySafeLinks } from './plugins/safeLinks.ts';
 import { pluginTaskList } from './plugins/taskList.ts';
 import type { Flavor } from './types.ts';
 
@@ -71,6 +72,7 @@ export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
   applyHighlighting(md, deps.highlighter);
   wrapMermaidFences(md, deps.mermaidCounter);
   addHeadingAnchors(md);
+  applySafeLinks(md);
   return md;
 };
 
