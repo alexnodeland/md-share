@@ -56,8 +56,8 @@ const renderPreview = async (state: AppState): Promise<void> => {
   preview.innerHTML = generateTOC(src) + state.md.render(src);
   try {
     await mermaid.run({ querySelector: '.mermaid' });
-  } catch {
-    /* mermaid syntax errors are shown in-place; ignore */
+  } catch (err) {
+    console.warn('Mermaid render error:', err);
   }
 };
 
