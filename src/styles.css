@@ -607,6 +607,9 @@ textarea::placeholder {
   position: relative;
   top: 1px;
 }
+.rendered .task-list input[type="checkbox"][data-task-line] {
+  cursor: pointer;
+}
 .rendered table {
   width: 100%;
   border-collapse: collapse;

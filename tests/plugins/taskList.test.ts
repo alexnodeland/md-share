@@ -9,15 +9,18 @@ const build = () => {
 };
 
 describe('pluginTaskList', () => {
-  it('renders checked task items with checked+disabled input', () => {
+  it('renders task items with interactive checkboxes carrying the source line', () => {
     const html = build().render('- [x] done\n- [ ] todo');
-    expect(html).toContain('<li class="task-list-item"><input type="checkbox" checked disabled>');
-    expect(html).toContain('<li class="task-list-item"><input type="checkbox" disabled>');
+    expect(html).toContain(
+      '<li class="task-list-item"><input type="checkbox" checked data-task-line="0">',
+    );
+    expect(html).toContain('<li class="task-list-item"><input type="checkbox" data-task-line="1">');
+    expect(html).not.toContain('disabled');
   });
 
   it('accepts uppercase X as checked', () => {
     const html = build().render('- [X] shout');
-    expect(html).toContain('checked disabled');
+    expect(html).toContain('checked data-task-line="0"');
   });
 
   it('adds task-list class to the enclosing ul', () => {
@@ -35,6 +38,19 @@ describe('pluginTaskList', () => {
     const html = build().render('- [x] Finish migration');
     expect(html).toContain('Finish migration');
     expect(html).not.toContain('[x] Finish');
+  });
+
+  it('omits data-task-line when source map information is unavailable', () => {
+    const md = new MarkdownIt({ html: true });
+    pluginTaskList(md);
+    md.core.ruler.after('task_lists', 'strip_line', (state) => {
+      for (const token of state.tokens) {
+        if (token.type === 'list_item_open' && token.meta) token.meta.line = undefined;
+      }
+    });
+    const html = md.render('- [x] thing');
+    expect(html).toContain('<input type="checkbox" checked>');
+    expect(html).not.toContain('data-task-line');
   });
 
   it('composes with an existing list_item_open rule', () => {

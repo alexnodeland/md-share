@@ -20,7 +20,7 @@ export const pluginTaskList = (md: MarkdownIt): void => {
       for (let j = i - 1; j >= 0; j--) {
         const prev = state.tokens[j];
         if (prev?.type === 'list_item_open') {
-          prev.meta = { checked };
+          prev.meta = { checked, line: prev.map?.[0] };
           break;
         }
       }
@@ -37,10 +37,11 @@ export const pluginTaskList = (md: MarkdownIt): void => {
   const origRule = md.renderer.rules.list_item_open;
   md.renderer.rules.list_item_open = (tokens, idx, opts, env, self) => {
     const token = tokens[idx] as Token | undefined;
-    const checked = token?.meta?.checked;
-    if (checked !== undefined) {
-      const attrs = checked ? ' checked disabled' : ' disabled';
-      return `<li class="task-list-item"><input type="checkbox"${attrs}> `;
+    const meta = token?.meta as { checked?: boolean; line?: number } | undefined;
+    if (meta?.checked !== undefined) {
+      const checkedAttr = meta.checked ? ' checked' : '';
+      const lineAttr = typeof meta.line === 'number' ? ` data-task-line="${meta.line}"` : '';
+      return `<li class="task-list-item"><input type="checkbox"${checkedAttr}${lineAttr}> `;
     }
     return origRule ? origRule(tokens, idx, opts, env, self) : self.renderToken(tokens, idx, opts);
   };

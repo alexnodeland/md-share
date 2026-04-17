@@ -10,6 +10,7 @@ import { parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { isSampleContent, sampleFor } from './samples.ts';
 import { parseShareParams } from './share.ts';
+import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
 import type { Flavor, Theme } from './types.ts';
@@ -28,6 +29,7 @@ import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
 import { initShareModal } from './ui/share.ts';
 import { initStats } from './ui/stats.ts';
+import { initTaskToggle } from './ui/taskToggle.ts';
 import { initThemeToggle } from './ui/themeToggle.ts';
 import './styles.css';
 
@@ -309,6 +311,14 @@ const boot = (): void => {
   initEditorToggle();
   initHelpModal();
   initHeadingLinks({ clipboard: browserClipboard });
+  initTaskToggle({
+    onToggle: (line) => {
+      const next = toggleTaskAtLine(editor.value, line);
+      if (next === editor.value) return;
+      editor.value = next;
+      editor.dispatchEvent(new Event('input'));
+    },
+  });
   const decorateCopyButtons = initCodeCopyButtons({ clipboard: browserClipboard });
   const updateStats = initStats({ getSource: () => editor.value });
 
