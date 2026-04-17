@@ -13,6 +13,7 @@ import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
 import type { Flavor, Theme } from './types.ts';
 import { initClearButton } from './ui/clearButton.ts';
+import { initCodeCopyButtons } from './ui/codeCopyButtons.ts';
 import { initDropdowns } from './ui/dropdown.ts';
 import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
@@ -266,7 +267,13 @@ const boot = (): void => {
   initExportMenu({
     printer: browserPrinter,
     getSource: () => editor.value,
-    getPreviewHTML: () => document.getElementById('preview')?.innerHTML ?? '',
+    getPreviewHTML: () => {
+      const el = document.getElementById('preview');
+      if (!el) return '';
+      const clone = el.cloneNode(true) as HTMLElement;
+      for (const btn of clone.querySelectorAll('.copy-code')) btn.remove();
+      return clone.innerHTML;
+    },
     getPreviewElement: () => document.getElementById('preview'),
   });
   initDropZone({
@@ -278,6 +285,7 @@ const boot = (): void => {
   initEditorToggle();
   initHelpModal();
   initHeadingLinks({ clipboard: browserClipboard });
+  const decorateCopyButtons = initCodeCopyButtons({ clipboard: browserClipboard });
   const updateStats = initStats({ getSource: () => editor.value });
 
   const listenBar = initListenBar({
@@ -291,6 +299,7 @@ const boot = (): void => {
   const origRerender = rerender;
   rerender = () => {
     origRerender();
+    decorateCopyButtons();
     listenBar.onPreviewChange();
     updateStats();
   };
