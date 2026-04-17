@@ -24,6 +24,7 @@ import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
 import { initShareModal } from './ui/share.ts';
+import { initStats } from './ui/stats.ts';
 import { initThemeToggle } from './ui/themeToggle.ts';
 import './styles.css';
 
@@ -248,6 +249,7 @@ const boot = (): void => {
   });
   initEditorToggle();
   initHelpModal();
+  const updateStats = initStats({ getSource: () => editor.value });
 
   const listenBar = initListenBar({
     synth: browserSynth,
@@ -261,6 +263,7 @@ const boot = (): void => {
   rerender = () => {
     origRerender();
     listenBar.onPreviewChange();
+    updateStats();
   };
 
   rerender();
