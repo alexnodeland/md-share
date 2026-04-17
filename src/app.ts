@@ -68,6 +68,15 @@ const initialTheme = (): Theme => {
   return isTheme(value) ? value : 'dark';
 };
 
+const registerServiceWorker = (): void => {
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+};
+
 const boot = (): void => {
   const params = parseShareParams(window.location.search, lzStringCompressor);
   const theme = initialTheme();
@@ -189,6 +198,7 @@ const boot = (): void => {
   };
 
   rerender();
+  registerServiceWorker();
 };
 
 boot();
