@@ -19,7 +19,7 @@ import type { Flavor } from './types.ts';
 
 export interface FlavorDeps {
   highlighter: typeof hljs;
-  katex: typeof katexNs;
+  katex: typeof katexNs | null;
   mermaidCounter: MermaidCounter;
   onUnknownLanguage?: (lang: string) => void;
 }
@@ -51,7 +51,7 @@ const applyFlavorPlugins = (md: MarkdownIt, flavor: Flavor, deps: FlavorDeps): v
 
   pluginTaskList(md);
 
-  if (flavor === 'academic' || flavor === 'obsidian') {
+  if ((flavor === 'academic' || flavor === 'obsidian') && deps.katex) {
     pluginKaTeX(md, deps.katex);
   }
 
@@ -79,7 +79,7 @@ export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
 
 export const createFlavorDeps = (
   highlighter: typeof hljs,
-  katex: typeof katexNs,
+  katex: typeof katexNs | null,
   onUnknownLanguage?: (lang: string) => void,
 ): FlavorDeps => ({
   highlighter,

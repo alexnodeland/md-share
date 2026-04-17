@@ -1,11 +1,10 @@
 import hljs from 'highlight.js/lib/common';
-import katex from 'katex';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { lzStringCompressor } from './adapters/compressor.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
-import { resolveInitialFlavor } from './flavor.ts';
+import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { isSampleContent, sampleFor } from './samples.ts';
@@ -119,6 +118,21 @@ const languageLoaders = import.meta.glob<LanguageModule>([
 const loaderFor = (lang: string): LanguageLoader | undefined =>
   languageLoaders[`/node_modules/highlight.js/lib/languages/${lang}.js`];
 
+type Katex = typeof import('katex').default;
+let katexMod: Katex | null = null;
+let katexPending: Promise<Katex> | null = null;
+
+const loadKatex = (): Promise<Katex> => {
+  if (katexMod) return Promise.resolve(katexMod);
+  if (!katexPending) {
+    katexPending = import('katex').then((m) => {
+      katexMod = m.default;
+      return katexMod;
+    });
+  }
+  return katexPending;
+};
+
 const pendingLanguages = new Set<string>();
 const unknownLanguages = new Set<string>();
 
@@ -150,8 +164,17 @@ const boot = (): void => {
   const ensureLanguage = createLazyHighlighter(() => {
     rerender();
   });
-  const deps = createFlavorDeps(hljs, katex, ensureLanguage);
+  const deps = createFlavorDeps(hljs, null, ensureLanguage);
   const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
+
+  const ensureKatexFor = (f: Flavor): void => {
+    if (!flavorNeedsKatex(f) || deps.katex) return;
+    void loadKatex().then((k) => {
+      deps.katex = k;
+      state.md = buildMD(state.flavor, deps);
+      rerender();
+    });
+  };
 
   setMermaidTheme(state.theme);
   setFlavorSelectValue(state.flavor);
@@ -199,6 +222,7 @@ const boot = (): void => {
       state.flavor = next;
       state.md = buildMD(next, state.deps);
       browserStorage.set(FLAVOR_STORAGE_KEY, next);
+      ensureKatexFor(next);
       updatePlaceholder();
       rerender();
     },
@@ -271,6 +295,7 @@ const boot = (): void => {
     updateStats();
   };
 
+  ensureKatexFor(state.flavor);
   rerender();
   registerServiceWorker();
 };

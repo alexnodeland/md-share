@@ -5,3 +5,6 @@ export const resolveInitialFlavor = (shared: Flavor | null, stored: string | nul
   if (isFlavor(stored)) return stored;
   return 'commonmark';
 };
+
+export const flavorNeedsKatex = (flavor: Flavor): boolean =>
+  flavor === 'academic' || flavor === 'obsidian';
