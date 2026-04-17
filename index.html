@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'self'"
+    />
     <title>md-share</title>
     <meta name="description" content="Render, share, and export Markdown — no server required." />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
@@ -14,7 +18,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css" />
   </head>
   <body>
-    <div class="topbar">
+    <a class="skip-link" href="#preview">Skip to content</a>
+    <header class="topbar" role="banner" aria-label="Toolbar">
       <div class="logo">md<span>-share</span></div>
       <div class="sep"></div>
       <span class="flavor-label hide-mobile">Flavor</span>
@@ -90,12 +95,12 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="readonly-banner" id="readonly-banner">
+    </header>
+    <div class="readonly-banner" id="readonly-banner" role="status">
       Viewing a shared document — edit to make it yours
     </div>
-    <div class="main" id="main-container">
-      <div class="editor-pane mobile-visible" id="editor-pane">
+    <main class="main" id="main-container">
+      <section class="editor-pane mobile-visible" id="editor-pane" aria-label="Editor">
         <div class="pane-header">
           Editor
           <span class="shortcut hide-mobile"><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle</span>
@@ -110,17 +115,17 @@
           </select>
           <button type="button" id="btn-clear" class="pane-action" title="Clear editor">Clear</button>
         </div>
-        <textarea id="editor" spellcheck="false"></textarea>
-      </div>
-      <div class="preview-pane" id="preview-pane">
+        <textarea id="editor" spellcheck="false" aria-label="Markdown source"></textarea>
+      </section>
+      <section class="preview-pane" id="preview-pane" aria-label="Rendered preview">
         <div class="pane-header">Preview</div>
         <div class="preview-scroll" id="preview-scroll">
-          <div class="rendered" id="preview"></div>
+          <div class="rendered" id="preview" tabindex="-1"></div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
-    <div class="audio-bar" id="audio-bar">
+    <div class="audio-bar" id="audio-bar" role="region" aria-label="Listen controls">
       <button type="button" id="audio-back-btn" class="icon-only" title="Previous section">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="19 20 9 12 19 4 19 20" />
