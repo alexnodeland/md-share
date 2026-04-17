@@ -70,6 +70,13 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
         </button>
+        <button type="button" id="btn-help" class="icon-only" title="Keyboard shortcuts (?)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </button>
         <button type="button" id="btn-link" title="Share (Ctrl+S)">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
@@ -199,6 +206,26 @@
 
     <div class="drop-overlay" id="drop-overlay">
       <div class="drop-overlay-inner">Drop .md file to load</div>
+    </div>
+    <div class="modal-overlay" id="help-modal">
+      <div class="modal">
+        <h3>Keyboard shortcuts</h3>
+        <dl class="help-shortcuts">
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>S</kbd></dt>
+          <dd>Open share dialog</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>E</kbd></dt>
+          <dd>Toggle editor pane</dd>
+          <dt><kbd>?</kbd></dt>
+          <dd>Show this help</dd>
+          <dt><kbd>Esc</kbd></dt>
+          <dd>Close dialog · stop listen mode</dd>
+          <dt><kbd>←</kbd> · <kbd>→</kbd></dt>
+          <dd>Previous · next chunk in listen mode</dd>
+        </dl>
+        <div class="modal-actions">
+          <button type="button" id="btn-help-close" class="primary">Close</button>
+        </div>
+      </div>
     </div>
     <div class="modal-overlay" id="link-modal">
       <div class="modal">

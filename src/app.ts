@@ -19,6 +19,7 @@ import { initEditor } from './ui/editor.ts';
 import { initEditorToggle } from './ui/editorToggle.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
+import { initHelpModal } from './ui/helpModal.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
@@ -171,6 +172,7 @@ const boot = (): void => {
     },
   });
   initEditorToggle();
+  initHelpModal();
 
   const listenBar = initListenBar({
     synth: browserSynth,
