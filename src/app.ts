@@ -1,6 +1,5 @@
 import hljs from 'highlight.js';
 import katex from 'katex';
-import mermaid from 'mermaid';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { lzStringCompressor } from './adapters/compressor.ts';
 import { browserPrinter } from './adapters/printer.ts';
@@ -37,16 +36,38 @@ interface AppState {
   activeSample: Flavor | null;
 }
 
-const initMermaid = (theme: Theme): void => {
-  mermaid.initialize({
+type Mermaid = typeof import('mermaid').default;
+
+const mermaidConfig = (theme: Theme) =>
+  ({
     startOnLoad: false,
-    securityLevel: 'strict',
+    securityLevel: 'strict' as const,
     theme: mermaidThemeName(theme),
     themeVariables: mermaidThemeVars(theme),
     fontFamily: 'JetBrains Mono,monospace',
     fontSize: 13,
-    flowchart: { curve: 'monotoneX' },
-  });
+    flowchart: { curve: 'monotoneX' as const },
+  }) satisfies Parameters<Mermaid['initialize']>[0];
+
+let mermaidMod: Mermaid | null = null;
+let mermaidPending: Promise<Mermaid> | null = null;
+let mermaidTheme: Theme = 'dark';
+
+const setMermaidTheme = (theme: Theme): void => {
+  mermaidTheme = theme;
+  if (mermaidMod) mermaidMod.initialize(mermaidConfig(theme));
+};
+
+const loadMermaid = (): Promise<Mermaid> => {
+  if (mermaidMod) return Promise.resolve(mermaidMod);
+  if (!mermaidPending) {
+    mermaidPending = import('mermaid').then((m) => {
+      mermaidMod = m.default;
+      mermaidMod.initialize(mermaidConfig(mermaidTheme));
+      return mermaidMod;
+    });
+  }
+  return mermaidPending;
 };
 
 const renderPreview = async (state: AppState): Promise<void> => {
@@ -56,8 +77,10 @@ const renderPreview = async (state: AppState): Promise<void> => {
   const src = editor.value;
   state.deps.mermaidCounter.reset();
   preview.innerHTML = generateTOC(src) + state.md.render(src);
+  if (!preview.querySelector('.mermaid')) return;
   try {
-    await mermaid.run({ querySelector: '.mermaid' });
+    const m = await loadMermaid();
+    await m.run({ querySelector: '.mermaid' });
   } catch (err) {
     console.warn('Mermaid render error:', err);
   }
@@ -84,7 +107,7 @@ const boot = (): void => {
   const deps = createFlavorDeps(hljs, katex);
   const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
 
-  initMermaid(state.theme);
+  setMermaidTheme(state.theme);
   setFlavorSelectValue(state.flavor);
 
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
@@ -152,7 +175,7 @@ const boot = (): void => {
   initThemeToggle({
     onChange: (next) => {
       state.theme = next;
-      initMermaid(next);
+      setMermaidTheme(next);
       rerender();
     },
   });
