@@ -4,9 +4,9 @@ export interface EditorDeps {
   onChange: () => void;
 }
 
-export const initEditor = ({ onChange }: EditorDeps): void => {
+export const initEditor = ({ onChange }: EditorDeps): (() => void) => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
-  if (!editor) return;
+  if (!editor) return () => {};
 
   let debounceTimer: number | undefined;
   const scheduleChange = () => {
@@ -14,7 +14,7 @@ export const initEditor = ({ onChange }: EditorDeps): void => {
     debounceTimer = window.setTimeout(onChange, RENDER_DEBOUNCE_MS);
   };
 
-  editor.addEventListener('keydown', (e) => {
+  const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Tab') {
       e.preventDefault();
       const s = editor.selectionStart;
@@ -22,7 +22,14 @@ export const initEditor = ({ onChange }: EditorDeps): void => {
       editor.selectionStart = editor.selectionEnd = s + 2;
       scheduleChange();
     }
-  });
+  };
 
+  editor.addEventListener('keydown', onKeyDown);
   editor.addEventListener('input', scheduleChange);
+
+  return () => {
+    if (debounceTimer !== undefined) window.clearTimeout(debounceTimer);
+    editor.removeEventListener('keydown', onKeyDown);
+    editor.removeEventListener('input', scheduleChange);
+  };
 };
