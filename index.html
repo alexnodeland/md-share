@@ -65,6 +65,30 @@
           </svg>
           <span class="hide-mobile">Listen</span>
         </button>
+        <button type="button" id="btn-link" title="Share (Ctrl+S)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+          <span class="hide-mobile">Share</span>
+        </button>
+        <div style="position: relative">
+          <button type="button" data-dropdown="export-menu" title="Export">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span class="hide-mobile">Export</span>
+          </button>
+          <div class="dropdown" id="export-menu" style="right: 0">
+            <button type="button" id="btn-export-md">↓ &ensp;Markdown (.md)</button>
+            <button type="button" id="btn-export-html">↓ &ensp;HTML snippet</button>
+            <button type="button" id="btn-export-png">↓ &ensp;PNG image</button>
+            <button type="button" id="btn-export-pdf">↓ &ensp;PDF (print)</button>
+          </div>
+        </div>
         <div class="sep hide-mobile"></div>
         <button type="button" id="btn-theme" class="icon-only" title="Toggle theme">
           <svg aria-hidden="true" id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -90,37 +114,13 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
         </button>
-        <button type="button" id="btn-help" class="icon-only" title="Keyboard shortcuts (?)">
+        <button type="button" id="btn-help" class="icon-only hide-mobile" title="Keyboard shortcuts (?)">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         </button>
-        <button type="button" id="btn-link" title="Share (Ctrl+S)">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-            <polyline points="16 6 12 2 8 6" />
-            <line x1="12" y1="2" x2="12" y2="15" />
-          </svg>
-          <span class="hide-mobile">Share</span>
-        </button>
-        <div style="position: relative">
-          <button type="button" data-dropdown="export-menu" title="Export">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span class="hide-mobile">Export</span>
-          </button>
-          <div class="dropdown" id="export-menu" style="right: 0">
-            <button type="button" id="btn-export-md">↓ &ensp;Markdown (.md)</button>
-            <button type="button" id="btn-export-html">↓ &ensp;HTML snippet</button>
-            <button type="button" id="btn-export-png">↓ &ensp;PNG image</button>
-            <button type="button" id="btn-export-pdf">↓ &ensp;PDF (print)</button>
-          </div>
-        </div>
       </div>
     </header>
     <div class="readonly-banner" id="readonly-banner" role="status">
