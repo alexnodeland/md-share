@@ -4,6 +4,7 @@ import { lzStringCompressor } from './adapters/compressor.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
+import { highlightMarkdownSource } from './editorHighlight.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
@@ -27,6 +28,7 @@ import { initHelpModal } from './ui/helpModal.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
+import { initScrollSync } from './ui/scrollSync.ts';
 import { initShareModal } from './ui/share.ts';
 import { initStats } from './ui/stats.ts';
 import { initTaskToggle } from './ui/taskToggle.ts';
@@ -243,6 +245,7 @@ const boot = (): void => {
       }
       rerender();
     },
+    highlightSource: (s) => highlightMarkdownSource(s, hljs),
   });
   initFlavorSelect({
     onChange: (next) => {
@@ -258,6 +261,7 @@ const boot = (): void => {
     onSelect: (key) => {
       state.activeSample = key;
       editor.value = sampleFor(key);
+      editor.dispatchEvent(new Event('input'));
       rerender();
     },
   });
@@ -305,11 +309,14 @@ const boot = (): void => {
   initDropZone({
     onText: (text) => {
       editor.value = text;
+      editor.dispatchEvent(new Event('input'));
       rerender();
     },
   });
   initEditorToggle();
   initHelpModal();
+  const previewScroll = document.getElementById('preview-scroll');
+  if (previewScroll) initScrollSync({ editor, preview: previewScroll });
   initHeadingLinks({ clipboard: browserClipboard });
   initTaskToggle({
     onToggle: (line) => {

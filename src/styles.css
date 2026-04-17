@@ -292,22 +292,54 @@ button.active-listen {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-textarea {
+.editor-surface-wrap {
   flex: 1;
-  width: 100%;
-  resize: none;
-  border: none;
+  position: relative;
   background: var(--bg-input);
-  color: var(--text);
+  overflow: hidden;
+}
+.editor-surface {
   font-family: var(--mono);
   font-size: 13px;
   line-height: 1.7;
   padding: 16px;
-  outline: none;
   tab-size: 2;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  letter-spacing: normal;
 }
-textarea::placeholder {
+#editor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  border: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  outline: none;
+  z-index: 1;
+  overflow: auto;
+}
+#editor::selection {
+  background: var(--accent-bg);
+  color: var(--text);
+}
+#editor::placeholder {
   color: var(--text-xdim);
+  opacity: 1;
+}
+.editor-mirror {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--text);
+  background: transparent;
 }
 .preview-scroll {
   flex: 1;
@@ -552,6 +584,22 @@ textarea::placeholder {
   overflow-x: auto;
   margin: 1em 0;
   position: relative;
+}
+.rendered pre[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-xdim);
+  pointer-events: none;
+}
+.rendered pre[data-lang] {
+  padding-top: 26px;
 }
 .rendered pre code {
   background: none;
@@ -1242,6 +1290,52 @@ kbd {
   .rendered pre code {
     color: #333 !important;
   }
+  .rendered .hljs-keyword,
+  .rendered .hljs-selector-tag,
+  .rendered .hljs-literal,
+  .rendered .hljs-tag,
+  .rendered .hljs-selector-class,
+  .rendered .hljs-selector-id {
+    color: #6b21a8 !important;
+  }
+  .rendered .hljs-built_in,
+  .rendered .hljs-type,
+  .rendered .hljs-class .hljs-title,
+  .rendered .hljs-doctag {
+    color: #5b1fa0 !important;
+  }
+  .rendered .hljs-string,
+  .rendered .hljs-attr,
+  .rendered .hljs-template-tag,
+  .rendered .hljs-template-variable,
+  .rendered .hljs-subst {
+    color: #15803d !important;
+  }
+  .rendered .hljs-number,
+  .rendered .hljs-symbol,
+  .rendered .hljs-bullet {
+    color: #b45309 !important;
+  }
+  .rendered .hljs-function .hljs-title,
+  .rendered .hljs-title,
+  .rendered .hljs-section,
+  .rendered .hljs-name {
+    color: #1d4ed8 !important;
+  }
+  .rendered .hljs-regexp,
+  .rendered .hljs-link,
+  .rendered .hljs-meta-string {
+    color: #b91c1c !important;
+  }
+  .rendered .hljs-comment,
+  .rendered .hljs-quote,
+  .rendered .hljs-meta {
+    color: #6b7280 !important;
+    font-style: italic;
+  }
+  .rendered pre[data-lang]::before {
+    color: #6b7280 !important;
+  }
   .rendered thead th {
     color: #6b21a8 !important;
     border-color: #6b21a8 !important;
@@ -1274,13 +1368,72 @@ kbd {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-focus);
 }
-[data-theme="dark"] .hljs {
+.hljs {
   background: transparent !important;
-  color: #abb2bf;
+  color: var(--text);
 }
-[data-theme="light"] .hljs {
-  background: transparent !important;
-  color: #383a42;
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-tag,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--accent);
+}
+.hljs-built_in,
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-doctag {
+  color: var(--accent-strong);
+}
+.hljs-string,
+.hljs-attr,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-subst {
+  color: var(--success);
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--warn-color);
+}
+.hljs-function .hljs-title,
+.hljs-title,
+.hljs-section,
+.hljs-name {
+  color: var(--info-color);
+}
+.hljs-variable,
+.hljs-params {
+  color: var(--text);
+}
+.hljs-regexp,
+.hljs-link,
+.hljs-meta-string {
+  color: var(--danger);
+}
+.hljs-comment,
+.hljs-quote,
+.hljs-meta {
+  color: var(--text-xdim);
+  font-style: italic;
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}
+.hljs-addition {
+  color: var(--success);
+  background: var(--accent-bg);
+}
+.hljs-deletion {
+  color: var(--danger);
+  background: var(--accent-bg);
 }
 
 .site-footer {

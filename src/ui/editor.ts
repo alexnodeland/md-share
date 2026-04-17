@@ -11,11 +11,13 @@ const RENDER_DEBOUNCE_MS = 180;
 
 export interface EditorDeps {
   onChange: () => void;
+  highlightSource: (source: string) => string;
 }
 
-export const initEditor = ({ onChange }: EditorDeps): (() => void) => {
+export const initEditor = ({ onChange, highlightSource }: EditorDeps): (() => void) => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   if (!editor) return () => {};
+  const mirror = document.getElementById('editor-mirror') as HTMLElement | null;
 
   let debounceTimer: number | undefined;
   const scheduleChange = () => {
@@ -23,11 +25,34 @@ export const initEditor = ({ onChange }: EditorDeps): (() => void) => {
     debounceTimer = window.setTimeout(onChange, RENDER_DEBOUNCE_MS);
   };
 
+  let composing = false;
+  let rafHandle: number | undefined;
+  const syncScroll = () => {
+    if (!mirror) return;
+    mirror.scrollTop = editor.scrollTop;
+    mirror.scrollLeft = editor.scrollLeft;
+  };
+  const paintMirror = () => {
+    rafHandle = undefined;
+    if (!mirror || composing) return;
+    mirror.innerHTML = highlightSource(editor.value);
+    syncScroll();
+  };
+  const scheduleMirror = () => {
+    if (!mirror || composing) return;
+    if (rafHandle !== undefined) return;
+    rafHandle = window.requestAnimationFrame(paintMirror);
+  };
+
+  const dispatchInput = () => {
+    editor.dispatchEvent(new Event('input'));
+  };
+
   const apply = (r: EditResult) => {
     editor.value = r.value;
     editor.selectionStart = r.start;
     editor.selectionEnd = r.end;
-    scheduleChange();
+    dispatchInput();
   };
 
   const hasModifier = (e: KeyboardEvent) => e.ctrlKey || e.metaKey;
@@ -38,7 +63,7 @@ export const initEditor = ({ onChange }: EditorDeps): (() => void) => {
       const s = editor.selectionStart;
       editor.value = `${editor.value.substring(0, s)}  ${editor.value.substring(editor.selectionEnd)}`;
       editor.selectionStart = editor.selectionEnd = s + 2;
-      scheduleChange();
+      dispatchInput();
       return;
     }
     if (hasModifier(e) && !e.altKey && !e.shiftKey) {
@@ -79,14 +104,36 @@ export const initEditor = ({ onChange }: EditorDeps): (() => void) => {
     apply(wrapLink(editor.value, start, end, text.trim()));
   };
 
+  const onInput = () => {
+    scheduleMirror();
+    scheduleChange();
+  };
+
+  const onCompositionStart = () => {
+    composing = true;
+  };
+  const onCompositionEnd = () => {
+    composing = false;
+    scheduleMirror();
+  };
+
   editor.addEventListener('keydown', onKeyDown);
   editor.addEventListener('paste', onPaste);
-  editor.addEventListener('input', scheduleChange);
+  editor.addEventListener('input', onInput);
+  editor.addEventListener('scroll', syncScroll);
+  editor.addEventListener('compositionstart', onCompositionStart);
+  editor.addEventListener('compositionend', onCompositionEnd);
+
+  if (mirror) mirror.innerHTML = highlightSource(editor.value);
 
   return () => {
     if (debounceTimer !== undefined) window.clearTimeout(debounceTimer);
+    if (rafHandle !== undefined) window.cancelAnimationFrame(rafHandle);
     editor.removeEventListener('keydown', onKeyDown);
     editor.removeEventListener('paste', onPaste);
-    editor.removeEventListener('input', scheduleChange);
+    editor.removeEventListener('input', onInput);
+    editor.removeEventListener('scroll', syncScroll);
+    editor.removeEventListener('compositionstart', onCompositionStart);
+    editor.removeEventListener('compositionend', onCompositionEnd);
   };
 };

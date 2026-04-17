@@ -142,7 +142,10 @@
           </select>
           <button type="button" id="btn-clear" class="pane-action" title="Clear editor">Clear</button>
         </div>
-        <textarea id="editor" spellcheck="false" aria-label="Markdown source"></textarea>
+        <div class="editor-surface-wrap">
+          <pre id="editor-mirror" class="editor-surface editor-mirror" aria-hidden="true"></pre>
+          <textarea id="editor" class="editor-surface" spellcheck="false" aria-label="Markdown source"></textarea>
+        </div>
         <div class="pane-footer" id="editor-stats" aria-live="polite"></div>
       </section>
       <section class="preview-pane" id="preview-pane" aria-label="Rendered preview">
