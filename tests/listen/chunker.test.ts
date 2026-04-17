@@ -257,11 +257,11 @@ describe('extractSpeakableChunks', () => {
     expect(chunks[0]!.text).toBe('Compute inline equation now.');
   });
 
-  it('skips elements with katex-display class when nested inline', () => {
+  it('narrates inline katex-display as "display equation"', () => {
     const chunks = extractSpeakableChunks(
       makeRoot('<p>Before <span class="katex-display">x^2</span> after</p>'),
     );
-    expect(chunks[0]!.text).toBe('Before after');
+    expect(chunks[0]!.text).toBe('Before display equation after');
   });
 
   it('ignores non-element non-text nodes (comments) during extraction', () => {

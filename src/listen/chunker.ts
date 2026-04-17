@@ -32,7 +32,10 @@ const speakableText = (
     if (node.nodeType !== Node.ELEMENT_NODE) return;
     const child = node as Element;
     const cls = child.classList;
-    if (cls.contains('katex-display')) return;
+    if (cls.contains('katex-display')) {
+      parts.push(' display equation ');
+      return;
+    }
     if (cls.contains('katex')) {
       parts.push(' inline equation ');
       return;
