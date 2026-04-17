@@ -31,6 +31,17 @@ describe('pluginAtlassianBlocks — panels', () => {
     const html = build().render('{INFO}\nhi\n{INFO}');
     expect(html).toContain('atl-panel-info');
   });
+
+  it('escapes HTML in the panel title', () => {
+    const html = build().render('{info:title=<script>alert(1)</script>}\nx\n{info}');
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(html).not.toContain('<script>alert(1)</script>');
+  });
+
+  it('escapes HTML in the default title fallback when user provides an empty title', () => {
+    const html = build().render('{info:title=}\nx\n{info}');
+    expect(html).toContain('<div class="atl-panel-title">info</div>');
+  });
 });
 
 describe('pluginAtlassianBlocks — expand', () => {
@@ -45,6 +56,12 @@ describe('pluginAtlassianBlocks — expand', () => {
   it('defaults summary text when no title is provided', () => {
     const html = build().render('{expand}\nbody\n{expand}');
     expect(html).toContain('<summary>Click to expand</summary>');
+  });
+
+  it('escapes HTML in the expand summary title', () => {
+    const html = build().render('{expand:<img src=x onerror=alert(1)>}\ny\n{expand}');
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
   });
 });
 
