@@ -1,4 +1,11 @@
-import { continueList, type EditResult, isUrl, toggleWrap, wrapLink } from '../editorCommands.ts';
+import {
+  continueIndent,
+  continueList,
+  type EditResult,
+  isUrl,
+  toggleWrap,
+  wrapLink,
+} from '../editorCommands.ts';
 
 const RENDER_DEBOUNCE_MS = 180;
 
@@ -54,7 +61,8 @@ export const initEditor = ({ onChange }: EditorDeps): (() => void) => {
     }
     if (e.key === 'Enter' && !e.shiftKey && !hasModifier(e) && !e.altKey) {
       if (editor.selectionStart !== editor.selectionEnd) return;
-      const r = continueList(editor.value, editor.selectionStart);
+      const pos = editor.selectionStart;
+      const r = continueList(editor.value, pos) ?? continueIndent(editor.value, pos);
       if (!r) return;
       e.preventDefault();
       apply({ value: r.value, start: r.cursor, end: r.cursor });

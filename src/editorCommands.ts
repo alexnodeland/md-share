@@ -86,4 +86,19 @@ export const continueList = (value: string, cursor: number): ContinueResult | nu
   };
 };
 
+export const continueIndent = (value: string, cursor: number): ContinueResult | null => {
+  if (cursor < value.length && value[cursor] !== '\n') return null;
+  const lineStart = value.lastIndexOf('\n', cursor - 1) + 1;
+  const line = value.slice(lineStart, cursor);
+  const match = /^[ \t]+/.exec(line);
+  if (!match) return null;
+  const indent = match[0];
+  if (line.length === indent.length) return null;
+  const insert = `\n${indent}`;
+  return {
+    value: value.slice(0, cursor) + insert + value.slice(cursor),
+    cursor: cursor + insert.length,
+  };
+};
+
 export const isUrl = (text: string): boolean => URL_PATTERN.test(text.trim());

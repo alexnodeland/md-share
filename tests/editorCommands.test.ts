@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { continueList, isUrl, toggleWrap, wrapLink } from '../src/editorCommands.ts';
+import {
+  continueIndent,
+  continueList,
+  isUrl,
+  toggleWrap,
+  wrapLink,
+} from '../src/editorCommands.ts';
 
 describe('toggleWrap', () => {
   it('wraps the selection with the marker when not already wrapped', () => {
@@ -85,6 +91,32 @@ describe('continueList', () => {
 
   it('returns null when the cursor is mid-line', () => {
     expect(continueList('- item', 3)).toBeNull();
+  });
+});
+
+describe('continueIndent', () => {
+  it('carries leading spaces onto the next line', () => {
+    const source = '    const x = 1;';
+    const r = continueIndent(source, source.length);
+    expect(r).toEqual({ value: '    const x = 1;\n    ', cursor: 21 });
+  });
+
+  it('carries a leading tab onto the next line', () => {
+    const source = '\t\tnote';
+    const r = continueIndent(source, source.length);
+    expect(r).toEqual({ value: '\t\tnote\n\t\t', cursor: 9 });
+  });
+
+  it('returns null when the line has no leading whitespace', () => {
+    expect(continueIndent('plain text', 10)).toBeNull();
+  });
+
+  it('returns null when the line is only whitespace', () => {
+    expect(continueIndent('    ', 4)).toBeNull();
+  });
+
+  it('returns null when the cursor is mid-line', () => {
+    expect(continueIndent('    word', 2)).toBeNull();
   });
 });
 
