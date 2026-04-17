@@ -319,6 +319,10 @@ textarea::placeholder {
   background: var(--preview-bg);
 }
 
+#preview :is(h1, h2, h3, h4, h5, h6)[id] {
+  cursor: pointer;
+}
+
 .drop-overlay {
   display: none;
   position: fixed;

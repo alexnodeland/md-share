@@ -19,6 +19,7 @@ import { initEditor } from './ui/editor.ts';
 import { initEditorToggle } from './ui/editorToggle.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
+import { initHeadingLinks } from './ui/headingLinks.ts';
 import { initHelpModal } from './ui/helpModal.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
@@ -249,6 +250,7 @@ const boot = (): void => {
   });
   initEditorToggle();
   initHelpModal();
+  initHeadingLinks({ clipboard: browserClipboard });
   const updateStats = initStats({ getSource: () => editor.value });
 
   const listenBar = initListenBar({
