@@ -5,6 +5,7 @@ import { lzStringCompressor } from './adapters/compressor.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
+import { resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { isSampleContent, sampleFor } from './samples.ts';
@@ -90,6 +91,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
 };
 
 const THEME_STORAGE_KEY = 'md-share:theme';
+const FLAVOR_STORAGE_KEY = 'md-share:flavor';
 
 const initialTheme = (): Theme => {
   const value = document.documentElement.dataset.theme;
@@ -144,7 +146,7 @@ const createLazyHighlighter = (onReady: () => void) => (lang: string) => {
 const boot = (): void => {
   const params = parseShareParams(window.location.search, lzStringCompressor);
   const theme = initialTheme();
-  const flavor: Flavor = params.flavor ?? 'commonmark';
+  const flavor = resolveInitialFlavor(params.flavor, browserStorage.get(FLAVOR_STORAGE_KEY));
   const ensureLanguage = createLazyHighlighter(() => {
     rerender();
   });
@@ -196,6 +198,7 @@ const boot = (): void => {
     onChange: (next) => {
       state.flavor = next;
       state.md = buildMD(next, state.deps);
+      browserStorage.set(FLAVOR_STORAGE_KEY, next);
       updatePlaceholder();
       rerender();
     },
