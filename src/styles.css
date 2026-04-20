@@ -510,7 +510,7 @@ html[data-presenting="true"] .preview-pane .pane-header {
   display: none !important;
 }
 html[data-presenting="true"] .main {
-  height: 100vh;
+  height: 100dvh;
   padding: 0;
   margin: 0;
 }
@@ -521,10 +521,12 @@ html[data-presenting="true"] .preview-pane {
 html[data-presenting="true"] .preview-scroll {
   overflow: hidden;
   height: 100%;
-  padding: 48px 64px;
+  padding: max(48px, env(safe-area-inset-top)) max(64px, env(safe-area-inset-right))
+    max(48px, env(safe-area-inset-bottom)) max(64px, env(safe-area-inset-left));
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: pan-y;
 }
 html[data-presenting="true"] .rendered {
   width: 100%;
@@ -554,7 +556,7 @@ html[data-presenting="true"] .slide.current {
 html[data-presenting="true"]::after {
   content: "← → navigate · Esc to exit";
   position: fixed;
-  bottom: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--mono);
@@ -563,6 +565,76 @@ html[data-presenting="true"]::after {
   letter-spacing: 0.04em;
   pointer-events: none;
 }
+
+.present-controls {
+  display: none;
+}
+html[data-presenting="true"] .present-controls {
+  display: contents;
+}
+.present-nav,
+.present-exit {
+  position: fixed;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.present-nav:hover,
+.present-exit:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+}
+.present-exit {
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 22px;
+}
+.present-nav {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 56px;
+  border-radius: 6px;
+  font-size: 24px;
+}
+#btn-present-prev {
+  left: calc(8px + env(safe-area-inset-left));
+}
+#btn-present-next {
+  right: calc(8px + env(safe-area-inset-right));
+}
+
+@media (pointer: coarse), (max-width: 900px) {
+  html[data-presenting="true"] .preview-scroll {
+    padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(56px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  html[data-presenting="true"] .rendered {
+    font-size: 1em;
+    line-height: 1.6;
+  }
+  html[data-presenting="true"]::after {
+    content: "swipe to navigate · tap × to exit";
+    font-size: 10px;
+  }
+  html[data-presenting="true"] .present-exit,
+  html[data-presenting="true"] .present-nav {
+    display: flex;
+  }
+}
+
 @media print {
   html[data-presenting="true"] .preview-scroll {
     padding: 0;
@@ -578,8 +650,11 @@ html[data-presenting="true"]::after {
   html[data-presenting="true"] .slide:last-child {
     page-break-after: auto;
   }
-  html[data-presenting="true"]::after {
-    display: none;
+  html[data-presenting="true"]::after,
+  html[data-presenting="true"] .present-controls,
+  html[data-presenting="true"] .present-nav,
+  html[data-presenting="true"] .present-exit {
+    display: none !important;
   }
 }
 

@@ -13,6 +13,9 @@ export interface PresentationMode {
   isActive(): boolean;
 }
 
+const SWIPE_MIN_DISTANCE = 40;
+const SWIPE_MAX_DURATION_MS = 600;
+
 export const initPresentationMode = ({
   getPreviewRoot,
   rerender,
@@ -91,6 +94,56 @@ export const initPresentationMode = ({
     },
     { capture: true },
   );
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  let touchTracking = false;
+
+  document.addEventListener(
+    'touchstart',
+    (e) => {
+      if (!active || e.touches.length !== 1) {
+        touchTracking = false;
+        return;
+      }
+      const t = e.touches[0];
+      if (!t) return;
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchStartTime = Date.now();
+      touchTracking = true;
+    },
+    { passive: true },
+  );
+
+  document.addEventListener(
+    'touchend',
+    (e) => {
+      if (!active || !touchTracking) return;
+      touchTracking = false;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      if (Date.now() - touchStartTime > SWIPE_MAX_DURATION_MS) return;
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      if (absDx < SWIPE_MIN_DISTANCE || absDx <= absDy) return;
+      if (dx < 0) next();
+      else prev();
+    },
+    { passive: true },
+  );
+
+  const exitBtn = document.getElementById('btn-present-exit');
+  exitBtn?.addEventListener('click', () => exit());
+
+  const prevBtn = document.getElementById('btn-present-prev');
+  prevBtn?.addEventListener('click', () => prev());
+
+  const nextBtn = document.getElementById('btn-present-next');
+  nextBtn?.addEventListener('click', () => next());
 
   return { enter, exit, next, prev, isActive: () => active };
 };
