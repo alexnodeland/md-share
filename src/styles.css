@@ -526,7 +526,7 @@ html[data-presenting="true"] .preview-scroll {
   display: flex;
   align-items: center;
   justify-content: center;
-  touch-action: pan-y;
+  cursor: pointer;
 }
 html[data-presenting="true"] .rendered {
   width: 100%;
@@ -572,17 +572,22 @@ html[data-presenting="true"]::after {
 html[data-presenting="true"] .present-controls {
   display: contents;
 }
-.present-nav,
 .present-exit {
   position: fixed;
   z-index: 100;
   display: none;
   align-items: center;
   justify-content: center;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   background: var(--bg-raised);
   border: 1px solid var(--border);
   color: var(--text);
   font-family: var(--mono);
+  font-size: 22px;
   line-height: 1;
   padding: 0;
   cursor: pointer;
@@ -593,44 +598,11 @@ html[data-presenting="true"] .present-controls {
     border-color 160ms ease;
   -webkit-tap-highlight-color: transparent;
 }
-.present-nav:hover,
 .present-exit:hover,
-.present-nav:active,
 .present-exit:active {
   background: var(--bg-hover);
   border-color: var(--border-focus);
   opacity: 1;
-}
-.present-nav:disabled {
-  opacity: 0.2;
-  cursor: default;
-}
-.present-nav:disabled:hover,
-.present-nav:disabled:active {
-  background: var(--bg-raised);
-  border-color: var(--border);
-  opacity: 0.2;
-}
-.present-exit {
-  top: calc(12px + env(safe-area-inset-top));
-  right: calc(12px + env(safe-area-inset-right));
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  font-size: 22px;
-}
-.present-nav {
-  bottom: calc(40px + env(safe-area-inset-bottom));
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  font-size: 22px;
-}
-#btn-present-prev {
-  left: calc(12px + env(safe-area-inset-left));
-}
-#btn-present-next {
-  right: calc(12px + env(safe-area-inset-right));
 }
 
 @media (pointer: coarse), (max-width: 900px) {
@@ -643,11 +615,10 @@ html[data-presenting="true"] .present-controls {
     line-height: 1.6;
   }
   html[data-presenting="true"]::after {
-    content: "swipe to navigate · tap × to exit";
+    content: "tap left/right to navigate · × to exit";
     font-size: 10px;
   }
-  html[data-presenting="true"] .present-exit,
-  html[data-presenting="true"] .present-nav {
+  html[data-presenting="true"] .present-exit {
     display: flex;
   }
 }
