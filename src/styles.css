@@ -586,12 +586,30 @@ html[data-presenting="true"] .present-controls {
   line-height: 1;
   padding: 0;
   cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
   -webkit-tap-highlight-color: transparent;
 }
 .present-nav:hover,
-.present-exit:hover {
+.present-exit:hover,
+.present-nav:active,
+.present-exit:active {
   background: var(--bg-hover);
   border-color: var(--border-focus);
+  opacity: 1;
+}
+.present-nav:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+.present-nav:disabled:hover,
+.present-nav:disabled:active {
+  background: var(--bg-raised);
+  border-color: var(--border);
+  opacity: 0.2;
 }
 .present-exit {
   top: calc(12px + env(safe-area-inset-top));
@@ -602,18 +620,17 @@ html[data-presenting="true"] .present-controls {
   font-size: 22px;
 }
 .present-nav {
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: calc(40px + env(safe-area-inset-bottom));
   width: 44px;
-  height: 56px;
-  border-radius: 6px;
-  font-size: 24px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 22px;
 }
 #btn-present-prev {
-  left: calc(8px + env(safe-area-inset-left));
+  left: calc(12px + env(safe-area-inset-left));
 }
 #btn-present-next {
-  right: calc(8px + env(safe-area-inset-right));
+  right: calc(12px + env(safe-area-inset-right));
 }
 
 @media (pointer: coarse), (max-width: 900px) {

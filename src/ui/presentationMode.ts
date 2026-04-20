@@ -24,10 +24,15 @@ export const initPresentationMode = ({
   let slides: HTMLDivElement[] = [];
   let currentIndex = 0;
 
+  const prevBtn = document.getElementById('btn-present-prev') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('btn-present-next') as HTMLButtonElement | null;
+
   const updateCurrent = () => {
     for (const [i, slide] of slides.entries()) {
       slide.classList.toggle('current', i === currentIndex);
     }
+    if (prevBtn) prevBtn.disabled = currentIndex <= 0;
+    if (nextBtn) nextBtn.disabled = currentIndex >= slides.length - 1;
   };
 
   const enter = () => {
@@ -138,11 +143,7 @@ export const initPresentationMode = ({
 
   const exitBtn = document.getElementById('btn-present-exit');
   exitBtn?.addEventListener('click', () => exit());
-
-  const prevBtn = document.getElementById('btn-present-prev');
   prevBtn?.addEventListener('click', () => prev());
-
-  const nextBtn = document.getElementById('btn-present-next');
   nextBtn?.addEventListener('click', () => next());
 
   return { enter, exit, next, prev, isActive: () => active };
