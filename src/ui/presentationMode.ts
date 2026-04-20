@@ -13,6 +13,9 @@ export interface PresentationMode {
   isActive(): boolean;
 }
 
+const INTERACTIVE_SELECTOR =
+  'a, button, input, select, textarea, summary, details, label, [contenteditable="true"], [role="button"], [role="link"]';
+
 export const initPresentationMode = ({
   getPreviewRoot,
   rerender,
@@ -91,6 +94,21 @@ export const initPresentationMode = ({
     },
     { capture: true },
   );
+
+  document.addEventListener('click', (e) => {
+    if (!active) return;
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest(INTERACTIVE_SELECTOR)) return;
+    if (target.closest('.present-controls')) return;
+    const x = e.clientX;
+    const width = window.innerWidth;
+    if (x < width / 2) prev();
+    else next();
+  });
+
+  const exitBtn = document.getElementById('btn-present-exit');
+  exitBtn?.addEventListener('click', () => exit());
 
   return { enter, exit, next, prev, isActive: () => active };
 };

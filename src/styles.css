@@ -510,7 +510,7 @@ html[data-presenting="true"] .preview-pane .pane-header {
   display: none !important;
 }
 html[data-presenting="true"] .main {
-  height: 100vh;
+  height: 100dvh;
   padding: 0;
   margin: 0;
 }
@@ -521,10 +521,12 @@ html[data-presenting="true"] .preview-pane {
 html[data-presenting="true"] .preview-scroll {
   overflow: hidden;
   height: 100%;
-  padding: 48px 64px;
+  padding: max(48px, env(safe-area-inset-top)) max(64px, env(safe-area-inset-right))
+    max(48px, env(safe-area-inset-bottom)) max(64px, env(safe-area-inset-left));
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 html[data-presenting="true"] .rendered {
   width: 100%;
@@ -554,7 +556,7 @@ html[data-presenting="true"] .slide.current {
 html[data-presenting="true"]::after {
   content: "← → navigate · Esc to exit";
   position: fixed;
-  bottom: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--mono);
@@ -563,6 +565,64 @@ html[data-presenting="true"]::after {
   letter-spacing: 0.04em;
   pointer-events: none;
 }
+
+.present-controls {
+  display: none;
+}
+html[data-presenting="true"] .present-controls {
+  display: contents;
+}
+.present-exit {
+  position: fixed;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.present-exit:hover,
+.present-exit:active {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+  opacity: 1;
+}
+
+@media (pointer: coarse), (max-width: 900px) {
+  html[data-presenting="true"] .preview-scroll {
+    padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(56px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  html[data-presenting="true"] .rendered {
+    font-size: 1em;
+    line-height: 1.6;
+  }
+  html[data-presenting="true"]::after {
+    content: "tap left/right to navigate · × to exit";
+    font-size: 10px;
+  }
+  html[data-presenting="true"] .present-exit {
+    display: flex;
+  }
+}
+
 @media print {
   html[data-presenting="true"] .preview-scroll {
     padding: 0;
@@ -578,8 +638,11 @@ html[data-presenting="true"]::after {
   html[data-presenting="true"] .slide:last-child {
     page-break-after: auto;
   }
-  html[data-presenting="true"]::after {
-    display: none;
+  html[data-presenting="true"]::after,
+  html[data-presenting="true"] .present-controls,
+  html[data-presenting="true"] .present-nav,
+  html[data-presenting="true"] .present-exit {
+    display: none !important;
   }
 }
 
