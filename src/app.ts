@@ -1,15 +1,20 @@
 import hljs from 'highlight.js/lib/common';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { lzStringCompressor } from './adapters/compressor.ts';
+import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
+import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
+import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
+import { insertImageAtCursor } from './imageEmbed.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
-import { isSampleContent, sampleFor } from './samples.ts';
+import { buildMermaidError } from './mermaidErrorBox.ts';
+import { isSampleContent, SAMPLE_FLAVOR, type SampleKey, sampleFor } from './samples.ts';
 import { parseShareParams } from './share.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
@@ -22,18 +27,21 @@ import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
 import { initEditorToggle } from './ui/editorToggle.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
+import { initFindBar } from './ui/findBar.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
 import { initHeadingLinks } from './ui/headingLinks.ts';
 import { initHelpModal } from './ui/helpModal.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initPaneDivider } from './ui/paneDivider.ts';
+import { initPresentationMode } from './ui/presentationMode.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
 import { initScrollSync } from './ui/scrollSync.ts';
 import { initShareModal } from './ui/share.ts';
 import { initStats } from './ui/stats.ts';
 import { initTaskToggle } from './ui/taskToggle.ts';
 import { initThemeToggle } from './ui/themeToggle.ts';
+import { showToast } from './ui/toast.ts';
 import './styles.css';
 
 import type MarkdownIt from 'markdown-it';
@@ -43,7 +51,7 @@ interface AppState {
   theme: Theme;
   md: MarkdownIt;
   deps: FlavorDeps;
-  activeSample: Flavor | null;
+  activeSample: SampleKey | null;
 }
 
 type Mermaid = typeof import('mermaid').default;
@@ -110,12 +118,30 @@ const renderPreview = async (state: AppState): Promise<void> => {
     return;
   }
   if (scroller) scroller.scrollTop = scrollTop;
-  if (!preview.querySelector('.mermaid')) return;
+  const mermaidEls = preview.querySelectorAll<HTMLElement>('pre.mermaid');
+  if (mermaidEls.length === 0) return;
+  let mermaid: Mermaid;
   try {
-    const m = await loadMermaid();
-    await m.run({ querySelector: '.mermaid' });
+    mermaid = await loadMermaid();
   } catch (err) {
-    console.warn('Mermaid render error:', err);
+    console.warn('Mermaid load failed:', err);
+    return;
+  }
+  for (let i = 0; i < mermaidEls.length; i++) {
+    const el = mermaidEls[i] as HTMLElement;
+    const container = el.closest('.mermaid-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    const renderId = `mermaid-svg-${Date.now()}-${i}`;
+    try {
+      const { svg } = await mermaid.render(renderId, source);
+      container.innerHTML = svg;
+    } catch (err) {
+      const ghost = document.getElementById(renderId);
+      ghost?.remove();
+      const message = err instanceof Error ? err.message : String(err);
+      container.innerHTML = buildMermaidError(source, message);
+    }
   }
 };
 
@@ -130,9 +156,22 @@ const initialTheme = (): Theme => {
 const registerServiceWorker = (): void => {
   if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((err) => {
-      console.warn('Service worker registration failed:', err);
-    });
+    navigator.serviceWorker
+      .register('./sw.js')
+      .then((registration) => {
+        registration.addEventListener('updatefound', () => {
+          const next = registration.installing;
+          if (!next) return;
+          next.addEventListener('statechange', () => {
+            if (next.state === 'installed' && navigator.serviceWorker.controller) {
+              showToast('Update ready — refresh to apply', true);
+            }
+          });
+        });
+      })
+      .catch((err) => {
+        console.warn('Service worker registration failed:', err);
+      });
   });
 };
 
@@ -187,8 +226,22 @@ const createLazyHighlighter = (onReady: () => void) => (lang: string) => {
     });
 };
 
+const readHeadingPositions = (): HeadingPosition[] => {
+  const preview = document.getElementById('preview');
+  const scroller = document.getElementById('preview-scroll');
+  if (!preview || !scroller) return [];
+  const scrollerRect = scroller.getBoundingClientRect();
+  const nodes = preview.querySelectorAll<HTMLElement>(
+    'h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]',
+  );
+  return Array.from(nodes).map((el) => ({
+    id: el.id,
+    top: el.getBoundingClientRect().top - scrollerRect.top + scroller.scrollTop,
+  }));
+};
+
 const boot = (): void => {
-  const params = parseShareParams(window.location.search, lzStringCompressor);
+  const params = parseShareParams(window.location.search, lzStringCompressor, window.location.hash);
   const theme = initialTheme();
   const flavor = resolveInitialFlavor(params.flavor, browserStorage.get(FLAVOR_STORAGE_KEY));
   const ensureLanguage = createLazyHighlighter(() => {
@@ -227,6 +280,13 @@ const boot = (): void => {
       editor.removeEventListener('input', clearBanner);
     };
     editor.addEventListener('input', clearBanner);
+  } else {
+    const draft = loadDraft(browserStorage);
+    if (draft !== null && draft !== '') {
+      editor.value = draft;
+      state.activeSample = isSampleContent(draft);
+      showToast('Draft restored', true);
+    }
   }
   setSampleSelectValue(state.activeSample);
   updatePlaceholder();
@@ -237,6 +297,7 @@ const boot = (): void => {
 
   initEditor({
     onChange: () => {
+      saveDraft(browserStorage, editor.value);
       if (state.activeSample !== null) {
         const match = isSampleContent(editor.value);
         if (match !== state.activeSample) {
@@ -247,6 +308,7 @@ const boot = (): void => {
       rerender();
     },
     highlightSource: (s) => highlightMarkdownSource(s, hljs),
+    compressImage,
   });
   initFlavorSelect({
     onChange: (next) => {
@@ -260,6 +322,15 @@ const boot = (): void => {
   });
   initSampleSelect({
     onSelect: (key) => {
+      const nextFlavor = SAMPLE_FLAVOR[key];
+      if (nextFlavor !== state.flavor) {
+        state.flavor = nextFlavor;
+        state.md = buildMD(nextFlavor, state.deps);
+        browserStorage.set(FLAVOR_STORAGE_KEY, nextFlavor);
+        ensureKatexFor(nextFlavor);
+        setFlavorSelectValue(nextFlavor);
+        updatePlaceholder();
+      }
       state.activeSample = key;
       editor.value = sampleFor(key);
       editor.dispatchEvent(new Event('input'));
@@ -271,6 +342,7 @@ const boot = (): void => {
       editor.value = '';
       state.activeSample = null;
       setSampleSelectValue(null);
+      clearDraft(browserStorage);
       editor.dispatchEvent(new Event('input'));
       rerender();
     },
@@ -294,6 +366,14 @@ const boot = (): void => {
     location: window.location,
     getSource: () => editor.value,
     getFlavor: () => state.flavor,
+    getCurrentHeading: () => {
+      const scroller = document.getElementById('preview-scroll');
+      return pickCurrentHeading(readHeadingPositions(), scroller?.scrollTop ?? 0, 40);
+    },
+  });
+  const presentation = initPresentationMode({
+    getPreviewRoot: () => document.getElementById('preview'),
+    rerender: () => rerender(),
   });
   initExportMenu({
     printer: browserPrinter,
@@ -306,11 +386,32 @@ const boot = (): void => {
       return clone.innerHTML;
     },
     getPreviewElement: () => document.getElementById('preview'),
+    onPresent: () => presentation.enter(),
   });
   initDropZone({
     onText: (text) => {
       editor.value = text;
       editor.dispatchEvent(new Event('input'));
+      rerender();
+    },
+    onImageInsert: (dataUrl) => {
+      const r = insertImageAtCursor(
+        editor.value,
+        editor.selectionStart,
+        editor.selectionEnd,
+        dataUrl,
+      );
+      editor.value = r.value;
+      editor.selectionStart = editor.selectionEnd = r.cursor;
+      editor.dispatchEvent(new Event('input'));
+      rerender();
+    },
+    compressImage,
+  });
+  initFindBar({
+    editor,
+    onEditorChange: () => {
+      saveDraft(browserStorage, editor.value);
       rerender();
     },
   });
@@ -323,7 +424,13 @@ const boot = (): void => {
   if (mainContainer && paneDivider) {
     initPaneDivider({ container: mainContainer, divider: paneDivider, storage: browserStorage });
   }
-  initHeadingLinks({ clipboard: browserClipboard });
+  initHeadingLinks({
+    clipboard: browserClipboard,
+    compressor: lzStringCompressor,
+    location: window.location,
+    getSource: () => editor.value,
+    getFlavor: () => state.flavor,
+  });
   initTaskToggle({
     onToggle: (line) => {
       const next = toggleTaskAtLine(editor.value, line);
@@ -353,6 +460,7 @@ const boot = (): void => {
 
   ensureKatexFor(state.flavor);
   rerender();
+  if (params.anchor) document.getElementById(params.anchor)?.scrollIntoView({ block: 'start' });
   if (params.source === null && editor.value === '') editor.focus();
   registerServiceWorker();
 };

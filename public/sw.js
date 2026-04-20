@@ -1,4 +1,4 @@
-const CACHE = 'md-share-v1';
+const CACHE = '__CACHE_VERSION__';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

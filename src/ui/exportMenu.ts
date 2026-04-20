@@ -8,6 +8,7 @@ export interface ExportDeps {
   getSource: () => string;
   getPreviewHTML: () => string;
   getPreviewElement: () => HTMLElement | null;
+  onPresent: () => void;
 }
 
 const download = (blob: Blob, name: string): void => {
@@ -23,7 +24,13 @@ export const initExportMenu = (deps: ExportDeps): void => {
   const btnHtml = document.getElementById('btn-export-html');
   const btnPng = document.getElementById('btn-export-png');
   const btnPdf = document.getElementById('btn-export-pdf');
-  if (!btnMd || !btnHtml || !btnPng || !btnPdf) return;
+  const btnPresent = document.getElementById('btn-present');
+  if (!btnMd || !btnHtml || !btnPng || !btnPdf || !btnPresent) return;
+
+  btnPresent.addEventListener('click', () => {
+    closeAllDropdowns();
+    deps.onPresent();
+  });
 
   btnMd.addEventListener('click', () => {
     closeAllDropdowns();

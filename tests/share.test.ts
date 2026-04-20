@@ -65,6 +65,7 @@ describe('parseShareParams', () => {
     expect(parseShareParams('', identityCompressor)).toEqual({
       source: null,
       flavor: null,
+      anchor: null,
     });
   });
 
@@ -72,6 +73,7 @@ describe('parseShareParams', () => {
     expect(parseShareParams('?d=hello%20world', identityCompressor)).toEqual({
       source: 'hello world',
       flavor: null,
+      anchor: null,
     });
   });
 
@@ -79,6 +81,7 @@ describe('parseShareParams', () => {
     expect(parseShareParams('?d=x&f=atlassian', identityCompressor)).toEqual({
       source: 'x',
       flavor: 'atlassian',
+      anchor: null,
     });
   });
 
@@ -86,6 +89,7 @@ describe('parseShareParams', () => {
     expect(parseShareParams('?d=x&f=bogus', identityCompressor)).toEqual({
       source: 'x',
       flavor: null,
+      anchor: null,
     });
   });
 
@@ -93,6 +97,7 @@ describe('parseShareParams', () => {
     expect(parseShareParams('?d=garbage', nullCompressor)).toEqual({
       source: null,
       flavor: null,
+      anchor: null,
     });
   });
 
@@ -100,6 +105,51 @@ describe('parseShareParams', () => {
     expect(parseShareParams('d=hi&f=gfm', identityCompressor)).toEqual({
       source: 'hi',
       flavor: 'gfm',
+      anchor: null,
     });
+  });
+
+  it('parses a percent-encoded hash fragment as an anchor', () => {
+    expect(parseShareParams('?d=x', identityCompressor, '#my%20section')).toEqual({
+      source: 'x',
+      flavor: null,
+      anchor: 'my section',
+    });
+  });
+
+  it('accepts a hash without a leading #', () => {
+    expect(parseShareParams('?d=x', identityCompressor, 'plain-slug')).toEqual({
+      source: 'x',
+      flavor: null,
+      anchor: 'plain-slug',
+    });
+  });
+
+  it('falls back to the raw fragment when decodeURIComponent fails', () => {
+    expect(parseShareParams('', identityCompressor, '#%FF')).toEqual({
+      source: null,
+      flavor: null,
+      anchor: '%FF',
+    });
+  });
+});
+
+describe('buildShareURL with anchor', () => {
+  it('appends the anchor to an empty-source base URL', () => {
+    expect(buildShareURL(loc, '', 'commonmark', identityCompressor, 'intro')).toBe(
+      'https://md.example/render/#intro',
+    );
+  });
+
+  it('appends the anchor after the query string', () => {
+    expect(buildShareURL(loc, 'hi', 'gfm', identityCompressor, 'my section')).toBe(
+      'https://md.example/render/?d=hi&f=gfm#my%20section',
+    );
+  });
+
+  it('omits the anchor when null', () => {
+    expect(buildShareURL(loc, 'hi', 'commonmark', identityCompressor, null)).toBe(
+      'https://md.example/render/?d=hi',
+    );
   });
 });

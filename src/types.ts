@@ -15,6 +15,7 @@ export const isFlavor = (x: unknown): x is Flavor =>
 export interface ShareParams {
   source: string | null;
   flavor: Flavor | null;
+  anchor: string | null;
 }
 
 export interface TocHeading {

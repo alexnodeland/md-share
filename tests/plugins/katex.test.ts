@@ -21,27 +21,62 @@ describe('pluginKaTeX', () => {
     expect(html).toContain('katex-display');
   });
 
-  it('renders katex-error div on invalid inline LaTeX when throwOnError is true', () => {
+  it('renders katex-error inline with message title on invalid inline LaTeX', () => {
     const md = new MarkdownIt({ html: true });
     pluginKaTeX(md, {
       renderToString: () => {
-        throw new Error('bad');
+        throw new Error('KaTeX parse error: Expected EOF');
       },
     } as unknown as typeof katex);
     const html = md.render('bad $x$ math');
-    expect(html).toContain('<code>x</code>');
+    expect(html).toContain('class="katex-error"');
+    expect(html).toContain('title="Expected EOF"');
+    expect(html).toContain('>x</code>');
   });
 
-  it('renders katex-error pre on invalid block LaTeX when renderToString throws', () => {
+  it('surfaces line number and error message on invalid block LaTeX', () => {
+    const md = new MarkdownIt({ html: true });
+    pluginKaTeX(md, {
+      renderToString: () => {
+        throw new Error('KaTeX parse error: Undefined control sequence \\foo');
+      },
+    } as unknown as typeof katex);
+    const html = md.render('some text\n\n$$\nbadblock\n$$');
+    expect(html).toContain('class="katex-error"');
+    expect(html).toContain('Line 3:');
+    expect(html).toContain('Undefined control sequence');
+    expect(html).toContain('badblock');
+  });
+
+  it('omits the line prefix when token.map is absent', () => {
     const md = new MarkdownIt({ html: true });
     pluginKaTeX(md, {
       renderToString: () => {
         throw new Error('bad');
       },
     } as unknown as typeof katex);
-    const html = md.render('$$\nbadblock\n$$');
-    expect(html).toContain('class="katex-error"');
-    expect(html).toContain('badblock');
+    const rule = md.renderer.rules.math_block!;
+    const token = { content: 'x', map: null };
+    const html = rule(
+      [token] as unknown as Parameters<typeof rule>[0],
+      0,
+      md.options,
+      {},
+      md.renderer,
+    );
+    expect(html).toContain('<strong>bad</strong>');
+    expect(html).not.toContain('Line ');
+  });
+
+  it('coerces a non-Error throw value to a string', () => {
+    const md = new MarkdownIt({ html: true });
+    pluginKaTeX(md, {
+      renderToString: () => {
+        throw 'plain-string-error';
+      },
+    } as unknown as typeof katex);
+    const html = md.render('$$\nx\n$$');
+    expect(html).toContain('plain-string-error');
   });
 
   it('ignores a single $ without a closing match', () => {
