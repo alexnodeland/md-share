@@ -73,7 +73,7 @@
           </svg>
           <span class="hide-mobile">Listen</span>
         </button>
-        <button type="button" id="btn-link" title="Share (Ctrl+S)">
+        <button type="button" id="btn-link" title="Share" data-shortcut="Mod+S">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
             <polyline points="16 6 12 2 8 6" />
@@ -99,6 +99,20 @@
           </div>
         </div>
         <div class="sep hide-mobile"></div>
+        <button
+          type="button"
+          id="btn-editor-toggle"
+          class="icon-only hide-mobile"
+          title="Editor pane"
+          data-shortcut="Mod+E"
+          aria-pressed="true"
+          aria-label="Toggle editor pane"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="5" width="18" height="14" rx="1" />
+            <line x1="12" y1="5" x2="12" y2="19" />
+          </svg>
+        </button>
         <button type="button" id="btn-theme" class="icon-only" title="Toggle theme">
           <svg aria-hidden="true" id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" />
@@ -123,7 +137,7 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
         </button>
-        <button type="button" id="btn-help" class="icon-only hide-mobile" title="Keyboard shortcuts (?)">
+        <button type="button" id="btn-help" class="icon-only" title="Keyboard shortcuts">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
@@ -139,7 +153,6 @@
       <section class="editor-pane mobile-visible" id="editor-pane" aria-label="Editor">
         <div class="pane-header">
           Editor
-          <span class="shortcut hide-mobile"><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle</span>
           <select id="sample-select" class="sample-select" title="Load a sample document">
             <option value="" disabled selected>Samples</option>
             <option value="commonmark">CommonMark</option>
@@ -150,6 +163,19 @@
             <option value="atlassian">Atlassian</option>
             <option value="presentation">Presentation</option>
           </select>
+          <button
+            type="button"
+            id="btn-find"
+            class="pane-action pane-action-icon"
+            title="Find in editor"
+            data-shortcut="Mod+F"
+            aria-label="Find in editor"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
           <button type="button" id="btn-clear" class="pane-action" title="Clear editor">Clear</button>
         </div>
         <div class="editor-surface-wrap">
@@ -161,12 +187,12 @@
             <div class="find-row find-row-main">
               <input type="text" id="find-input" class="find-input" placeholder="Find" aria-label="Find" />
               <span class="find-status" id="find-status" aria-live="polite"></span>
-              <button type="button" id="find-prev" class="find-icon" title="Previous match (Shift+Enter)">↑</button>
-              <button type="button" id="find-next" class="find-icon" title="Next match (Enter)">↓</button>
+              <button type="button" id="find-prev" class="find-icon" title="Previous match" data-shortcut="Shift+Enter">↑</button>
+              <button type="button" id="find-next" class="find-icon" title="Next match" data-shortcut="Enter">↓</button>
               <label class="find-case" title="Match case">
                 <input type="checkbox" id="find-case" /><span>Aa</span>
               </label>
-              <button type="button" id="find-close" class="find-icon find-icon-close" title="Close (Esc)" aria-label="Close">×</button>
+              <button type="button" id="find-close" class="find-icon find-icon-close" title="Close" data-shortcut="Esc" aria-label="Close">×</button>
             </div>
             <div class="find-row find-row-replace">
               <input
@@ -176,8 +202,8 @@
                 placeholder="Replace"
                 aria-label="Replace"
               />
-              <button type="button" id="find-replace-one" class="find-text-btn" title="Replace (Enter)">Replace</button>
-              <button type="button" id="find-replace-all" class="find-text-btn" title="Replace all (Ctrl+Alt+Enter)">All</button>
+              <button type="button" id="find-replace-one" class="find-text-btn" title="Replace" data-shortcut="Enter">Replace</button>
+              <button type="button" id="find-replace-all" class="find-text-btn" title="Replace all" data-shortcut="Mod+Alt+Enter">All</button>
             </div>
           </div>
         </div>
@@ -290,14 +316,8 @@
           <dd>Wrap selection as a Markdown link</dd>
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>F</kbd></dt>
           <dd>Find in editor · press again to expand to replace · again to close</dd>
-          <dt><kbd>Ctrl</kbd>+<kbd>H</kbd> <span class="help-hint">(Win/Linux)</span></dt>
-          <dd>Jump directly to find and replace</dd>
-          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd></dt>
-          <dd>Start presentation mode (<code>---</code> splits slides)</dd>
           <dt><kbd>Enter</kbd></dt>
           <dd>Continue list · clear marker if empty</dd>
-          <dt><kbd>?</kbd></dt>
-          <dd>Show this help</dd>
           <dt><kbd>Esc</kbd></dt>
           <dd>Close dialog · stop listen mode</dd>
           <dt><kbd>←</kbd> · <kbd>→</kbd></dt>

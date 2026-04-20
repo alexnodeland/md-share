@@ -16,16 +16,19 @@ import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
 import { isSampleContent, SAMPLE_FLAVOR, type SampleKey, sampleFor } from './samples.ts';
 import { parseShareParams } from './share.ts';
+import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
 import type { Flavor, Theme } from './types.ts';
+import { applyEdit } from './ui/applyEdit.ts';
 import { initClearButton } from './ui/clearButton.ts';
 import { initCodeCopyButtons } from './ui/codeCopyButtons.ts';
 import { initDropdowns } from './ui/dropdown.ts';
 import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
 import { initEditorToggle } from './ui/editorToggle.ts';
+import { initEditorUndo } from './ui/editorUndo.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
 import { initFindBar } from './ui/findBar.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
@@ -37,6 +40,7 @@ import { initPaneDivider } from './ui/paneDivider.ts';
 import { initPresentationMode } from './ui/presentationMode.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
 import { initScrollSync } from './ui/scrollSync.ts';
+import { initSelectionToolbar, type SelectionToolbar } from './ui/selectionToolbar.ts';
 import { initShareModal } from './ui/share.ts';
 import { initStats } from './ui/stats.ts';
 import { initTaskToggle } from './ui/taskToggle.ts';
@@ -295,6 +299,7 @@ const boot = (): void => {
     void renderPreview(state);
   };
 
+  let toolbar: SelectionToolbar | undefined;
   initEditor({
     onChange: () => {
       saveDraft(browserStorage, editor.value);
@@ -309,7 +314,14 @@ const boot = (): void => {
     },
     highlightSource: (s) => highlightMarkdownSource(s, hljs),
     compressImage,
+    onFormatCommand: (cmd) => toolbar?.pulse(cmd),
   });
+  const mirrorEl = document.getElementById('editor-mirror');
+  const editorWrap = editor.parentElement;
+  if (mirrorEl && editorWrap) {
+    toolbar = initSelectionToolbar({ editor, mirror: mirrorEl, wrap: editorWrap });
+  }
+  initEditorUndo({ editor });
   initFlavorSelect({
     onChange: (next) => {
       state.flavor = next;
@@ -332,18 +344,16 @@ const boot = (): void => {
         updatePlaceholder();
       }
       state.activeSample = key;
-      editor.value = sampleFor(key);
-      editor.dispatchEvent(new Event('input'));
+      applyEdit(editor, { value: sampleFor(key), start: 0, end: 0 });
       rerender();
     },
   });
   initClearButton({
     onClear: () => {
-      editor.value = '';
       state.activeSample = null;
       setSampleSelectValue(null);
       clearDraft(browserStorage);
-      editor.dispatchEvent(new Event('input'));
+      applyEdit(editor, { value: '', start: 0, end: 0 });
       rerender();
     },
   });
@@ -390,8 +400,7 @@ const boot = (): void => {
   });
   initDropZone({
     onText: (text) => {
-      editor.value = text;
-      editor.dispatchEvent(new Event('input'));
+      applyEdit(editor, { value: text, start: 0, end: 0 });
       rerender();
     },
     onImageInsert: (dataUrl) => {
@@ -401,21 +410,23 @@ const boot = (): void => {
         editor.selectionEnd,
         dataUrl,
       );
-      editor.value = r.value;
-      editor.selectionStart = editor.selectionEnd = r.cursor;
-      editor.dispatchEvent(new Event('input'));
+      applyEdit(editor, { value: r.value, start: r.cursor, end: r.cursor });
       rerender();
     },
     compressImage,
   });
-  initFindBar({
+  const findBar = initFindBar({
     editor,
     onEditorChange: () => {
       saveDraft(browserStorage, editor.value);
       rerender();
     },
   });
-  initEditorToggle();
+  document.getElementById('btn-find')?.addEventListener('click', () => findBar.open('find'));
+  const editorToggleBtn = document.getElementById('btn-editor-toggle');
+  if (editorToggleBtn instanceof HTMLButtonElement) {
+    initEditorToggle({ button: editorToggleBtn });
+  }
   initHelpModal();
   const previewScroll = document.getElementById('preview-scroll');
   if (previewScroll) initScrollSync({ editor, preview: previewScroll });
@@ -435,8 +446,7 @@ const boot = (): void => {
     onToggle: (line) => {
       const next = toggleTaskAtLine(editor.value, line);
       if (next === editor.value) return;
-      editor.value = next;
-      editor.dispatchEvent(new Event('input'));
+      applyEdit(editor, { value: next, start: editor.selectionStart, end: editor.selectionEnd });
     },
   });
   const decorateCopyButtons = initCodeCopyButtons({ clipboard: browserClipboard });
@@ -460,6 +470,18 @@ const boot = (): void => {
 
   ensureKatexFor(state.flavor);
   rerender();
+
+  const platform = detectPlatform(navigator.platform);
+  for (const el of document.querySelectorAll<HTMLElement>('[data-shortcut]')) {
+    const combo = el.dataset.shortcut;
+    if (!combo) continue;
+    const base = el.getAttribute('title') ?? '';
+    el.setAttribute(
+      'title',
+      base ? `${base} (${formatShortcut(combo, platform)})` : formatShortcut(combo, platform),
+    );
+  }
+
   if (params.anchor) document.getElementById(params.anchor)?.scrollIntoView({ block: 'start' });
   if (params.source === null && editor.value === '') editor.focus();
   registerServiceWorker();

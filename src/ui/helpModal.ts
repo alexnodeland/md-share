@@ -52,15 +52,6 @@ export const initHelpModal = (): void => {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isOpen()) {
-      close();
-      return;
-    }
-    if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey) return;
-    const target = e.target as HTMLElement | null;
-    if (target?.matches?.('input, textarea, select, [contenteditable="true"]')) return;
-    e.preventDefault();
-    if (isOpen()) close();
-    else open();
+    if (e.key === 'Escape' && isOpen()) close();
   });
 };

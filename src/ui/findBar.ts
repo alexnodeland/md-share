@@ -1,4 +1,5 @@
 import { findAll, findNext, findPrev, type Match, replaceAll, replaceOne } from '../editorFind.ts';
+import { applyEdit } from './applyEdit.ts';
 
 export interface FindBarDeps {
   editor: HTMLTextAreaElement;
@@ -153,9 +154,7 @@ export const initFindBar = ({ editor, onEditorChange }: FindBarDeps): FindBar =>
     if (matches.length === 0) return;
     const target = targetMatch(matches, editor.selectionStart);
     const { value, cursor } = replaceOne(editor.value, target, replaceInput.value);
-    editor.value = value;
-    editor.setSelectionRange(cursor, cursor);
-    editor.dispatchEvent(new Event('input'));
+    applyEdit(editor, { value, start: cursor, end: cursor });
     onEditorChange();
     goNext();
   };
@@ -164,8 +163,7 @@ export const initFindBar = ({ editor, onEditorChange }: FindBarDeps): FindBar =>
     if (!findInput.value) return;
     const { value, count } = replaceAll(editor.value, findInput.value, replaceInput.value, opts());
     if (count === 0) return;
-    editor.value = value;
-    editor.dispatchEvent(new Event('input'));
+    applyEdit(editor, { value, start: editor.selectionStart, end: editor.selectionEnd });
     onEditorChange();
     statusEl.textContent = `Replaced ${count}`;
     findInput.focus();
@@ -262,10 +260,6 @@ export const initFindBar = ({ editor, onEditorChange }: FindBarDeps): FindBar =>
         e.preventDefault();
         e.stopPropagation();
         progressiveFind();
-      } else if (!isMac && e.code === 'KeyH') {
-        e.preventDefault();
-        e.stopPropagation();
-        open('replace');
       }
     },
     { capture: true },

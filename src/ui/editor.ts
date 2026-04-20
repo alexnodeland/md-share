@@ -8,21 +8,26 @@ import {
   wrapLink,
 } from '../editorCommands.ts';
 import { insertImageAtCursor } from '../imageEmbed.ts';
+import { applyEdit } from './applyEdit.ts';
 import { fmtBytes, IMAGE_EMBED_CONFIRM, IMAGE_MAX_DIM, IMAGE_QUALITY } from './imageConsts.ts';
 import { showToast } from './toast.ts';
 
 const RENDER_DEBOUNCE_MS = 180;
 
+export type FormatCommand = 'bold' | 'italic' | 'code' | 'link';
+
 export interface EditorDeps {
   onChange: () => void;
   highlightSource: (source: string) => string;
   compressImage: ImageCompressor;
+  onFormatCommand?: (command: FormatCommand) => void;
 }
 
 export const initEditor = ({
   onChange,
   highlightSource,
   compressImage,
+  onFormatCommand,
 }: EditorDeps): (() => void) => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   if (!editor) return () => {};
@@ -53,15 +58,8 @@ export const initEditor = ({
     rafHandle = window.requestAnimationFrame(paintMirror);
   };
 
-  const dispatchInput = () => {
-    editor.dispatchEvent(new Event('input'));
-  };
-
   const apply = (r: EditResult) => {
-    editor.value = r.value;
-    editor.selectionStart = r.start;
-    editor.selectionEnd = r.end;
-    dispatchInput();
+    applyEdit(editor, r);
   };
 
   const hasModifier = (e: KeyboardEvent) => e.ctrlKey || e.metaKey;
@@ -70,9 +68,12 @@ export const initEditor = ({
     if (e.key === 'Tab') {
       e.preventDefault();
       const s = editor.selectionStart;
-      editor.value = `${editor.value.substring(0, s)}  ${editor.value.substring(editor.selectionEnd)}`;
-      editor.selectionStart = editor.selectionEnd = s + 2;
-      dispatchInput();
+      const eEnd = editor.selectionEnd;
+      apply({
+        value: `${editor.value.substring(0, s)}  ${editor.value.substring(eEnd)}`,
+        start: s + 2,
+        end: s + 2,
+      });
       return;
     }
     if (hasModifier(e) && !e.altKey && !e.shiftKey) {
@@ -80,16 +81,19 @@ export const initEditor = ({
       if (key === 'b') {
         e.preventDefault();
         apply(toggleWrap(editor.value, editor.selectionStart, editor.selectionEnd, '**'));
+        onFormatCommand?.('bold');
         return;
       }
       if (key === 'i') {
         e.preventDefault();
         apply(toggleWrap(editor.value, editor.selectionStart, editor.selectionEnd, '*'));
+        onFormatCommand?.('italic');
         return;
       }
       if (key === 'k') {
         e.preventDefault();
         apply(wrapLink(editor.value, editor.selectionStart, editor.selectionEnd, ''));
+        onFormatCommand?.('link');
         return;
       }
     }
