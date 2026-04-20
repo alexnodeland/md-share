@@ -1,3 +1,4 @@
+import type { ImageCompressor } from '../adapters/imageCompress.ts';
 import {
   continueIndent,
   continueList,
@@ -6,15 +7,23 @@ import {
   toggleWrap,
   wrapLink,
 } from '../editorCommands.ts';
+import { insertImageAtCursor } from '../imageEmbed.ts';
+import { fmtBytes, IMAGE_EMBED_CONFIRM, IMAGE_MAX_DIM, IMAGE_QUALITY } from './imageConsts.ts';
+import { showToast } from './toast.ts';
 
 const RENDER_DEBOUNCE_MS = 180;
 
 export interface EditorDeps {
   onChange: () => void;
   highlightSource: (source: string) => string;
+  compressImage: ImageCompressor;
 }
 
-export const initEditor = ({ onChange, highlightSource }: EditorDeps): (() => void) => {
+export const initEditor = ({
+  onChange,
+  highlightSource,
+  compressImage,
+}: EditorDeps): (() => void) => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   if (!editor) return () => {};
   const mirror = document.getElementById('editor-mirror') as HTMLElement | null;
@@ -94,7 +103,40 @@ export const initEditor = ({ onChange, highlightSource }: EditorDeps): (() => vo
     }
   };
 
+  const embedImageFile = async (file: File) => {
+    if (!window.confirm(IMAGE_EMBED_CONFIRM)) return;
+    try {
+      const { dataUrl, bytes, originalBytes } = await compressImage(file, {
+        maxDim: IMAGE_MAX_DIM,
+        quality: IMAGE_QUALITY,
+      });
+      const r = insertImageAtCursor(
+        editor.value,
+        editor.selectionStart,
+        editor.selectionEnd,
+        dataUrl,
+      );
+      apply({ value: r.value, start: r.cursor, end: r.cursor });
+      showToast(`Image embedded: ${fmtBytes(originalBytes)} → ${fmtBytes(bytes)}`, true);
+    } catch {
+      showToast('Could not embed image — unsupported format');
+    }
+  };
+
   const onPaste = (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (items) {
+      for (const item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            void embedImageFile(file);
+            return;
+          }
+        }
+      }
+    }
     const text = e.clipboardData?.getData('text/plain') ?? '';
     if (!isUrl(text)) return;
     const start = editor.selectionStart;

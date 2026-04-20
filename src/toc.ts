@@ -1,19 +1,8 @@
+import { cleanHeadingText, slugifyHeading, uniqueSlug } from './slug.ts';
 import type { TocHeading } from './types.ts';
 
 const HEADING_RE = /^(#{2,4})\s+(.+)/;
 const FENCE_RE = /^```/;
-const STRIP_RE = /[*_`[\]#]/g;
-const NON_SLUG_RE = /[^\w\s-]/g;
-const WHITESPACE_RE = /\s+/g;
-
-const slugify = (text: string): string =>
-  text.toLowerCase().replace(NON_SLUG_RE, '').replace(WHITESPACE_RE, '-');
-
-const uniqueSlug = (base: string, used: Map<string, number>): string => {
-  const n = used.get(base) ?? 0;
-  used.set(base, n + 1);
-  return n === 0 ? base : `${base}-${n + 1}`;
-};
 
 export const parseHeadings = (source: string): TocHeading[] => {
   const headings: TocHeading[] = [];
@@ -28,10 +17,9 @@ export const parseHeadings = (source: string): TocHeading[] => {
     const match = line.match(HEADING_RE);
     if (!match) continue;
     const hashes = match[1] as string;
-    const rawText = match[2] as string;
-    const text = rawText.replace(STRIP_RE, '').trim();
+    const text = cleanHeadingText(match[2] as string);
     const level = hashes.length as 2 | 3 | 4;
-    headings.push({ level, text, slug: uniqueSlug(slugify(text), used) });
+    headings.push({ level, text, slug: uniqueSlug(slugifyHeading(text), used) });
   }
   return headings;
 };

@@ -1,47 +1,12 @@
 import MarkdownIt from 'markdown-it';
 import { describe, expect, it } from 'vitest';
-import { addHeadingAnchors, slugifyHeading, uniqueSlug } from '../../src/plugins/anchors.ts';
+import { addHeadingAnchors } from '../../src/plugins/anchors.ts';
 
 const build = () => {
   const md = new MarkdownIt({ html: true });
   addHeadingAnchors(md);
   return md;
 };
-
-describe('slugifyHeading', () => {
-  it('lowercases, strips markdown chars, replaces spaces with dashes', () => {
-    expect(slugifyHeading('**Bold** Heading')).toBe('bold-heading');
-  });
-
-  it('strips punctuation that is not word/space/dash', () => {
-    expect(slugifyHeading('Hello, World!')).toBe('hello-world');
-  });
-
-  it('preserves existing dashes', () => {
-    expect(slugifyHeading('foo-bar baz')).toBe('foo-bar-baz');
-  });
-});
-
-describe('uniqueSlug', () => {
-  it('returns the base slug the first time', () => {
-    const used = new Map<string, number>();
-    expect(uniqueSlug('x', used)).toBe('x');
-  });
-
-  it('appends -2, -3 for repeated bases', () => {
-    const used = new Map<string, number>();
-    uniqueSlug('x', used);
-    expect(uniqueSlug('x', used)).toBe('x-2');
-    expect(uniqueSlug('x', used)).toBe('x-3');
-  });
-
-  it('tracks each base independently', () => {
-    const used = new Map<string, number>();
-    expect(uniqueSlug('a', used)).toBe('a');
-    expect(uniqueSlug('b', used)).toBe('b');
-    expect(uniqueSlug('a', used)).toBe('a-2');
-  });
-});
 
 describe('addHeadingAnchors', () => {
   it('adds an id attribute matching the slug', () => {

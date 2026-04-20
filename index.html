@@ -10,6 +10,14 @@
     <title>md-share</title>
     <meta name="description" content="Render, share, and export Markdown — no server required." />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180.png" />
+    <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="md-share" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap"
@@ -87,6 +95,7 @@
             <button type="button" id="btn-export-html">↓ &ensp;HTML snippet</button>
             <button type="button" id="btn-export-png">↓ &ensp;PNG image</button>
             <button type="button" id="btn-export-pdf">↓ &ensp;PDF (print)</button>
+            <button type="button" id="btn-present">▶ &ensp;Present slides</button>
           </div>
         </div>
         <div class="sep hide-mobile"></div>
@@ -139,13 +148,38 @@
             <option value="gfm">GitHub</option>
             <option value="obsidian">Obsidian</option>
             <option value="atlassian">Atlassian</option>
+            <option value="presentation">Presentation</option>
           </select>
           <button type="button" id="btn-clear" class="pane-action" title="Clear editor">Clear</button>
         </div>
         <div class="editor-surface-wrap">
           <pre id="editor-mirror" class="editor-surface editor-mirror" aria-hidden="true"></pre>
+          <div class="find-match-overlay" id="find-match-overlay" aria-hidden="true"></div>
           <textarea id="editor" class="editor-surface" spellcheck="false" aria-label="Markdown source"></textarea>
           <div class="editor-stats" id="editor-stats" aria-live="polite"></div>
+          <div class="find-bar" id="find-bar" role="search" aria-label="Find and replace">
+            <div class="find-row find-row-main">
+              <input type="text" id="find-input" class="find-input" placeholder="Find" aria-label="Find" />
+              <span class="find-status" id="find-status" aria-live="polite"></span>
+              <button type="button" id="find-prev" class="find-icon" title="Previous match (Shift+Enter)">↑</button>
+              <button type="button" id="find-next" class="find-icon" title="Next match (Enter)">↓</button>
+              <label class="find-case" title="Match case">
+                <input type="checkbox" id="find-case" /><span>Aa</span>
+              </label>
+              <button type="button" id="find-close" class="find-icon find-icon-close" title="Close (Esc)" aria-label="Close">×</button>
+            </div>
+            <div class="find-row find-row-replace">
+              <input
+                type="text"
+                id="find-replace-input"
+                class="find-input find-replace-input"
+                placeholder="Replace"
+                aria-label="Replace"
+              />
+              <button type="button" id="find-replace-one" class="find-text-btn" title="Replace (Enter)">Replace</button>
+              <button type="button" id="find-replace-all" class="find-text-btn" title="Replace all (Ctrl+Alt+Enter)">All</button>
+            </div>
+          </div>
         </div>
       </section>
       <div
@@ -254,6 +288,12 @@
           <dd>Bold · italic selection in editor</dd>
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd></dt>
           <dd>Wrap selection as a Markdown link</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>F</kbd></dt>
+          <dd>Find in editor · press again to expand to replace · again to close</dd>
+          <dt><kbd>Ctrl</kbd>+<kbd>H</kbd> <span class="help-hint">(Win/Linux)</span></dt>
+          <dd>Jump directly to find and replace</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd></dt>
+          <dd>Start presentation mode (<code>---</code> splits slides)</dd>
           <dt><kbd>Enter</kbd></dt>
           <dd>Continue list · clear marker if empty</dd>
           <dt><kbd>?</kbd></dt>
@@ -271,6 +311,10 @@
     <div class="modal-overlay" id="link-modal">
       <div class="modal">
         <h3>Share this document</h3>
+        <label class="link-section-toggle" id="link-section-toggle" hidden>
+          <input type="checkbox" id="link-section-check" />
+          <span>Link to current section (<code id="link-section-slug"></code>)</span>
+        </label>
         <div class="url-warn" id="url-warn"></div>
         <div class="url-box" id="link-url"></div>
         <div class="modal-actions">

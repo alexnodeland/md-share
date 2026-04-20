@@ -12,6 +12,7 @@ export interface ShareDeps {
   location: Location;
   getSource: () => string;
   getFlavor: () => Flavor;
+  getCurrentHeading: () => string | null;
 }
 
 export const initShareModal = (deps: ShareDeps): void => {
@@ -21,10 +22,32 @@ export const initShareModal = (deps: ShareDeps): void => {
   const openBtn = document.getElementById('btn-link');
   const closeBtn = document.getElementById('btn-link-close');
   const copyBtn = document.getElementById('btn-link-copy');
-  if (!modal || !urlBox || !warn || !openBtn || !closeBtn || !copyBtn) return;
+  const sectionToggle = document.getElementById('link-section-toggle');
+  const sectionCheckbox = document.getElementById('link-section-check') as HTMLInputElement | null;
+  const sectionSlug = document.getElementById('link-section-slug');
+  if (
+    !modal ||
+    !urlBox ||
+    !warn ||
+    !openBtn ||
+    !closeBtn ||
+    !copyBtn ||
+    !sectionToggle ||
+    !sectionCheckbox ||
+    !sectionSlug
+  )
+    return;
+
+  let heading: string | null = null;
 
   const buildURL = () =>
-    buildShareURL(deps.location, deps.getSource(), deps.getFlavor(), deps.compressor);
+    buildShareURL(
+      deps.location,
+      deps.getSource(),
+      deps.getFlavor(),
+      deps.compressor,
+      sectionCheckbox.checked ? heading : null,
+    );
 
   const describeLength = (len: number): { text: string; cls: string } => {
     const n = len.toLocaleString();
@@ -43,16 +66,28 @@ export const initShareModal = (deps: ShareDeps): void => {
     return { text: `URL length: ${n} chars`, cls: 'url-warn' };
   };
 
-  let previousFocus: HTMLElement | null = null;
-
-  const focusables = (): HTMLElement[] => [copyBtn as HTMLElement, closeBtn as HTMLElement];
-
-  const open = () => {
+  const refreshURL = () => {
     const url = buildURL();
     urlBox.textContent = url;
     const { text, cls } = describeLength(url.length);
     warn.textContent = text;
     warn.className = cls;
+  };
+
+  let previousFocus: HTMLElement | null = null;
+
+  const focusables = (): HTMLElement[] => [copyBtn as HTMLElement, closeBtn as HTMLElement];
+
+  const open = () => {
+    heading = deps.getCurrentHeading();
+    sectionCheckbox.checked = false;
+    if (heading) {
+      sectionToggle.hidden = false;
+      sectionSlug.textContent = heading;
+    } else {
+      sectionToggle.hidden = true;
+    }
+    refreshURL();
     previousFocus = (document.activeElement as HTMLElement) ?? null;
     modal.classList.add('open');
     copyBtn.focus();
@@ -68,6 +103,7 @@ export const initShareModal = (deps: ShareDeps): void => {
 
   openBtn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
+  sectionCheckbox.addEventListener('change', refreshURL);
   modal.addEventListener('click', (e) => {
     if (e.target === modal) close();
   });

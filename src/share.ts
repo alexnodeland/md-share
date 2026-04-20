@@ -11,19 +11,36 @@ export const buildShareURL = (
   source: string,
   flavor: Flavor,
   compressor: Compressor,
+  anchor: string | null = null,
 ): string => {
   const base = loc.origin + loc.pathname;
-  if (!source.trim()) return base;
+  const hash = anchor ? `#${encodeURIComponent(anchor)}` : '';
+  if (!source.trim()) return `${base}${hash}`;
   const encoded = encodeDoc(compressor, source);
   const flavorSuffix = flavor !== 'commonmark' ? `&f=${flavor}` : '';
-  return `${base}?d=${encoded}${flavorSuffix}`;
+  return `${base}?d=${encoded}${flavorSuffix}${hash}`;
 };
 
-export const parseShareParams = (search: string, compressor: Compressor): ShareParams => {
+const stripHashFragment = (raw: string): string => (raw.startsWith('#') ? raw.slice(1) : raw);
+
+export const parseShareParams = (
+  search: string,
+  compressor: Compressor,
+  hash = '',
+): ShareParams => {
   const params = new URLSearchParams(search);
   const encoded = params.get('d');
   const flavorRaw = params.get('f');
   const source = encoded ? decodeDoc(compressor, encoded) : null;
   const flavor = isFlavor(flavorRaw) ? flavorRaw : null;
-  return { source, flavor };
+  const fragment = stripHashFragment(hash);
+  let anchor: string | null = null;
+  if (fragment) {
+    try {
+      anchor = decodeURIComponent(fragment);
+    } catch {
+      anchor = fragment;
+    }
+  }
+  return { source, flavor, anchor };
 };

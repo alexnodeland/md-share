@@ -79,7 +79,7 @@ This sample uses only features in the [CommonMark spec](https://spec.commonmark.
 
 [Visit CommonMark](https://commonmark.org/) or use an auto-link: <https://commonmark.org/>
 
-![Placeholder image](https://via.placeholder.com/120x40.png?text=CommonMark)
+![Placeholder image](https://placehold.co/120x40/a78bfa/0c0c0e?text=CommonMark)
 
 ## Blockquotes
 
@@ -353,29 +353,94 @@ A[Jira Ticket] --> B[Dev] --> C[Review] --> D[Deploy]
 \`\`\`
 `;
 
-export const SAMPLES: Record<Flavor, string> = {
+const presentation = `# Presentation demo
+
+A slideshow built from plain Markdown.
+
+Press **⌘⌥P** (or **Ctrl+Alt+P** on Windows/Linux, or use the export menu → **Present slides**) to begin.
+
+Use **→** / **←** to navigate. **Esc** or click to exit.
+
+---
+
+## 1 · Slides split on \`---\`
+
+Each thematic break (\`---\`) in your document becomes a new slide while presenting.
+
+Outside presentation mode it renders as a normal horizontal rule, so the document stays portable.
+
+---
+
+## 2 · Anything Markdown works
+
+- Lists, quotes, images, and code blocks
+- Tables and task lists
+- Mermaid diagrams (Extended flavor)
+- KaTeX math (Academic flavor)
+
+> Lean text scales best — keep it short and let the reader pause.
+
+---
+
+## 3 · A little code
+
+\`\`\`ts
+const greet = (name: string) => 'Hello, ' + name;
+console.log(greet('presenter'));
+\`\`\`
+
+---
+
+## 4 · Print to PDF
+
+While presenting, open the browser print dialog (**⌘P** / **Ctrl+P**) to export one slide per page — no editor chrome.
+
+---
+
+## That's it
+
+Press **Esc** to exit. \`---\` becomes a plain horizontal rule again — your document is unchanged.
+`;
+
+export type SampleKey = Flavor | 'presentation';
+
+export const SAMPLES: Record<SampleKey, string> = {
   commonmark,
   extended,
   academic,
   gfm,
   obsidian,
   atlassian,
+  presentation,
 };
 
-export const SAMPLE_LABELS: Record<Flavor, string> = {
+export const SAMPLE_LABELS: Record<SampleKey, string> = {
   commonmark: 'CommonMark',
   extended: 'Extended',
   academic: 'Academic',
   gfm: 'GitHub',
   obsidian: 'Obsidian',
   atlassian: 'Atlassian',
+  presentation: 'Presentation',
 };
 
-export const sampleFor = (key: Flavor): string => SAMPLES[key];
+export const SAMPLE_FLAVOR: Record<SampleKey, Flavor> = {
+  commonmark: 'commonmark',
+  extended: 'extended',
+  academic: 'academic',
+  gfm: 'gfm',
+  obsidian: 'obsidian',
+  atlassian: 'atlassian',
+  presentation: 'commonmark',
+};
 
-export const isSampleContent = (text: string): Flavor | null => {
+export const isSampleKey = (s: string): s is SampleKey => s in SAMPLES;
+
+export const sampleFor = (key: SampleKey): string => SAMPLES[key];
+
+export const isSampleContent = (text: string): SampleKey | null => {
   const trimmed = text.trim();
-  for (const key of Object.keys(SAMPLES) as Flavor[]) {
+  for (const key of Object.keys(SAMPLES) as SampleKey[]) {
     if (SAMPLES[key].trim() === trimmed) return key;
   }
   return null;

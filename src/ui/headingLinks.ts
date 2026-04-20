@@ -1,11 +1,23 @@
-import type { Clipboard } from '../ports.ts';
+import type { Clipboard, Compressor, Location } from '../ports.ts';
+import { buildShareURL } from '../share.ts';
+import type { Flavor } from '../types.ts';
 import { showToast } from './toast.ts';
 
 export interface HeadingLinksDeps {
   clipboard: Clipboard;
+  compressor: Compressor;
+  location: Location;
+  getSource: () => string;
+  getFlavor: () => Flavor;
 }
 
-export const initHeadingLinks = ({ clipboard }: HeadingLinksDeps): void => {
+export const initHeadingLinks = ({
+  clipboard,
+  compressor,
+  location,
+  getSource,
+  getFlavor,
+}: HeadingLinksDeps): void => {
   const preview = document.getElementById('preview');
   if (!preview) return;
 
@@ -17,8 +29,8 @@ export const initHeadingLinks = ({ clipboard }: HeadingLinksDeps): void => {
     if (!heading?.id) return;
 
     e.preventDefault();
-    const base = window.location.href.split('#')[0] ?? window.location.href;
-    const url = `${base}#${heading.id}`;
+    const doc = buildShareURL(location, getSource(), getFlavor(), compressor);
+    const url = `${doc}#${encodeURIComponent(heading.id)}`;
     clipboard
       .write(url)
       .then(() => showToast('Heading link copied', true))
