@@ -77,15 +77,7 @@ export const initPresentationMode = ({
   document.addEventListener(
     'keydown',
     (e) => {
-      if (!active) {
-        const primary = e.ctrlKey || e.metaKey;
-        if (primary && e.altKey && !e.shiftKey && e.code === 'KeyP') {
-          e.preventDefault();
-          e.stopPropagation();
-          enter();
-        }
-        return;
-      }
+      if (!active) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         exit();
