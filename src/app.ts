@@ -1,6 +1,6 @@
 import hljs from 'highlight.js/lib/common';
 import { browserClipboard } from './adapters/clipboard.ts';
-import { lzStringCompressor } from './adapters/compressor.ts';
+import { browserCompressor } from './adapters/compressor.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
@@ -244,8 +244,12 @@ const readHeadingPositions = (): HeadingPosition[] => {
   }));
 };
 
-const boot = (): void => {
-  const params = parseShareParams(window.location.search, lzStringCompressor, window.location.hash);
+const boot = async (): Promise<void> => {
+  const params = await parseShareParams(
+    window.location.search,
+    browserCompressor,
+    window.location.hash,
+  );
   const theme = initialTheme();
   const flavor = resolveInitialFlavor(params.flavor, browserStorage.get(FLAVOR_STORAGE_KEY));
   const ensureLanguage = createLazyHighlighter(() => {
@@ -371,7 +375,7 @@ const boot = (): void => {
   });
   initDropdowns();
   initShareModal({
-    compressor: lzStringCompressor,
+    compressor: browserCompressor,
     clipboard: browserClipboard,
     location: window.location,
     getSource: () => editor.value,
@@ -437,7 +441,7 @@ const boot = (): void => {
   }
   initHeadingLinks({
     clipboard: browserClipboard,
-    compressor: lzStringCompressor,
+    compressor: browserCompressor,
     location: window.location,
     getSource: () => editor.value,
     getFlavor: () => state.flavor,
@@ -487,4 +491,4 @@ const boot = (): void => {
   registerServiceWorker();
 };
 
-boot();
+void boot();

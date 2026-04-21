@@ -1,6 +1,6 @@
 export interface Compressor {
-  encode(text: string): string;
-  decode(text: string): string | null;
+  encode(text: string): Promise<string>;
+  decode(text: string): Promise<string | null>;
 }
 
 export interface SpeechUtterance {
