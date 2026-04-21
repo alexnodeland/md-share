@@ -9,6 +9,7 @@ import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserQrEncoder } from './adapters/qr.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
+import { browserVegaLiteRenderer } from './adapters/vegaLite.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import type { CompleteContext } from './editorComplete.ts';
@@ -123,6 +124,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
   const scrollTop = scroller?.scrollTop ?? 0;
   state.deps.mermaidCounter.reset();
   state.deps.chessCounter.reset();
+  state.deps.vegaLiteCounter.reset();
   try {
     const { meta, body, dir, lang } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
@@ -138,6 +140,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
   if (scroller) scroller.scrollTop = scrollTop;
   await renderMermaidBlocks(preview);
   await renderChessBlocks(preview);
+  await renderVegaLiteBlocks(preview);
 };
 
 const renderMermaidBlocks = async (preview: HTMLElement): Promise<void> => {
@@ -179,6 +182,21 @@ const renderChessBlocks = async (preview: HTMLElement): Promise<void> => {
       container.innerHTML = await browserChessRenderer.render(source);
     } catch (err) {
       console.warn('Chess render failed:', err);
+    }
+  }
+};
+
+const renderVegaLiteBlocks = async (preview: HTMLElement): Promise<void> => {
+  const els = preview.querySelectorAll<HTMLElement>('pre.vega-lite');
+  if (els.length === 0) return;
+  for (const el of els) {
+    const container = el.closest('.vega-lite-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    try {
+      container.innerHTML = await browserVegaLiteRenderer.render(source);
+    } catch (err) {
+      console.warn('Vega-Lite render failed:', err);
     }
   }
 };

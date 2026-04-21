@@ -183,6 +183,18 @@ B --> C[+ Def Lists]
 C --> D[+ Typographer]
 D --> E[Extended]
 \`\`\`
+
+## Vega-Lite chart
+
+Inline Vega-Lite JSON renders as an SVG chart — remote data URLs are rejected.
+
+\`\`\`vega-lite
+{
+  "data": {"values": [{"x": "A", "y": 28}, {"x": "B", "y": 55}, {"x": "C", "y": 43}]},
+  "mark": "bar",
+  "encoding": {"x": {"field": "x", "type": "nominal"}, "y": {"field": "y", "type": "quantitative"}}
+}
+\`\`\`
 `;
 
 const academic = `# Academic Flavor Demo

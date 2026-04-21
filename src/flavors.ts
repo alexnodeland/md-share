@@ -22,6 +22,11 @@ import { pluginObsidianInline } from './plugins/obsidianInline.ts';
 import { pluginPandocCite } from './plugins/pandocCite.ts';
 import { applySafeLinks } from './plugins/safeLinks.ts';
 import { pluginTaskList } from './plugins/taskList.ts';
+import {
+  createVegaLiteCounter,
+  type VegaLiteCounter,
+  wrapVegaLiteFences,
+} from './plugins/vegaLite.ts';
 import type { Flavor } from './types.ts';
 
 export interface FlavorDeps {
@@ -29,6 +34,7 @@ export interface FlavorDeps {
   katex: typeof katexNs | null;
   mermaidCounter: MermaidCounter;
   chessCounter: ChessCounter;
+  vegaLiteCounter: VegaLiteCounter;
   onUnknownLanguage?: (lang: string) => void;
 }
 
@@ -91,6 +97,7 @@ export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
   applyHighlighting(md, deps.highlighter, deps.onUnknownLanguage);
   wrapMermaidFences(md, deps.mermaidCounter);
   wrapChessFences(md, deps.chessCounter);
+  wrapVegaLiteFences(md, deps.vegaLiteCounter);
   addCodeLangLabels(md);
   addHeadingAnchors(md);
   applySafeLinks(md);
@@ -108,5 +115,6 @@ export const createFlavorDeps = (
   katex,
   mermaidCounter: createMermaidCounter(),
   chessCounter: createChessCounter(),
+  vegaLiteCounter: createVegaLiteCounter(),
   onUnknownLanguage,
 });

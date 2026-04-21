@@ -1129,6 +1129,20 @@ body[data-embed="true"] .caption-overlay {
   text-align: center;
   overflow-x: auto;
 }
+.vega-lite-container {
+  display: block;
+  margin: 1.2em 0;
+  padding: 20px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  overflow-x: auto;
+}
+.vega-lite-container svg {
+  max-width: 100%;
+  height: auto;
+}
 .katex-display {
   margin: 1em 0;
   overflow-x: auto;
@@ -2061,7 +2075,8 @@ html.theme-switching *::after {
     color: #333 !important;
     border-color: #ddd !important;
   }
-  .mermaid-container {
+  .mermaid-container,
+  .vega-lite-container {
     background: #fff !important;
     border-color: #ddd !important;
   }
