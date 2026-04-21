@@ -29,9 +29,8 @@ export const initHeadingLinks = ({
     if (!heading?.id) return;
 
     e.preventDefault();
-    const url = buildShareURL(location, getSource(), getFlavor(), compressor, heading.id);
-    clipboard
-      .write(url)
+    buildShareURL(location, getSource(), getFlavor(), compressor, heading.id)
+      .then((url) => clipboard.write(url))
       .then(() => showToast('Heading link copied', true))
       .catch(() => showToast('Copy failed'));
   });

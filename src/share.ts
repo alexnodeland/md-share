@@ -7,25 +7,25 @@ export const normalizeSource = (text: string): string => {
   return unifiedEol.replace(/[ \t\n]+$/, '');
 };
 
-export const encodeDoc = (compressor: Compressor, text: string): string =>
+export const encodeDoc = (compressor: Compressor, text: string): Promise<string> =>
   compressor.encode(normalizeSource(text));
 
-export const decodeDoc = (compressor: Compressor, encoded: string): string | null =>
-  compressor.decode(encoded);
+export const decodeDoc = (compressor: Compressor, encoded: string): Promise<string | null> =>
+  compressor.decode(encoded).catch(() => null);
 
-export const buildShareURL = (
+export const buildShareURL = async (
   loc: Location,
   source: string,
   flavor: Flavor,
   compressor: Compressor,
   anchor: string | null = null,
-): string => {
+): Promise<string> => {
   const base = loc.origin + loc.pathname;
   const normalized = normalizeSource(source);
   if (!normalized) {
     return anchor ? `${base}#${encodeURIComponent(anchor)}` : base;
   }
-  const encoded = compressor.encode(normalized);
+  const encoded = await compressor.encode(normalized);
   const parts = [`d=${encoded}`];
   if (flavor !== 'commonmark') parts.push(`f=${flavor}`);
   if (anchor) parts.push(`a=${encodeURIComponent(anchor)}`);
@@ -34,11 +34,11 @@ export const buildShareURL = (
 
 const stripHashFragment = (raw: string): string => (raw.startsWith('#') ? raw.slice(1) : raw);
 
-export const parseShareParams = (
+export const parseShareParams = async (
   search: string,
   compressor: Compressor,
   hash = '',
-): ShareParams => {
+): Promise<ShareParams> => {
   const rawHash = stripHashFragment(hash);
   const hashParams = new URLSearchParams(rawHash);
   const payloadInHash = hashParams.has('d');
@@ -46,7 +46,7 @@ export const parseShareParams = (
 
   const encoded = params.get('d');
   const flavorRaw = params.get('f');
-  const source = encoded ? decodeDoc(compressor, encoded) : null;
+  const source = encoded ? await decodeDoc(compressor, encoded) : null;
   const flavor = isFlavor(flavorRaw) ? flavorRaw : null;
 
   let anchor: string | null = null;

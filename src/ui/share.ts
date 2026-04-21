@@ -39,6 +39,7 @@ export const initShareModal = (deps: ShareDeps): void => {
     return;
 
   let heading: string | null = null;
+  let refreshGen = 0;
 
   const buildURL = () =>
     buildShareURL(
@@ -66,8 +67,10 @@ export const initShareModal = (deps: ShareDeps): void => {
     return { text: `URL length: ${n} chars`, cls: 'url-warn' };
   };
 
-  const refreshURL = () => {
-    const url = buildURL();
+  const refreshURL = async () => {
+    const gen = ++refreshGen;
+    const url = await buildURL();
+    if (gen !== refreshGen) return;
     urlBox.textContent = url;
     const { text, cls } = describeLength(url.length);
     warn.textContent = text;
@@ -87,7 +90,7 @@ export const initShareModal = (deps: ShareDeps): void => {
     } else {
       sectionToggle.hidden = true;
     }
-    refreshURL();
+    void refreshURL();
     previousFocus = (document.activeElement as HTMLElement) ?? null;
     modal.classList.add('open');
     copyBtn.focus();
@@ -103,13 +106,15 @@ export const initShareModal = (deps: ShareDeps): void => {
 
   openBtn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
-  sectionCheckbox.addEventListener('change', refreshURL);
+  sectionCheckbox.addEventListener('change', () => {
+    void refreshURL();
+  });
   modal.addEventListener('click', (e) => {
     if (e.target === modal) close();
   });
   copyBtn.addEventListener('click', () => {
-    deps.clipboard
-      .write(buildURL())
+    buildURL()
+      .then((url) => deps.clipboard.write(url))
       .then(() => showToast('URL copied', true))
       .catch(() => showToast('Copy failed — select the URL and copy manually'))
       .finally(close);
