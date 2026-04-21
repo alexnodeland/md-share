@@ -384,4 +384,26 @@ describe('extractSpeakableChunks', () => {
     const chunks = extractSpeakableChunks(makeRoot('<span>ok</span>'));
     expect(chunks).toEqual([]);
   });
+
+  it('attaches the lang attribute when the block has one', () => {
+    const chunks = extractSpeakableChunks(makeRoot('<p lang="fr">Bonjour</p>'));
+    expect(chunks[0]!.lang).toBe('fr');
+  });
+
+  it('inherits lang from an ancestor container', () => {
+    const chunks = extractSpeakableChunks(makeRoot('<section lang="de"><p>Hallo</p></section>'));
+    expect(chunks[0]!.lang).toBe('de');
+  });
+
+  it('omits the lang property when no ancestor has one', () => {
+    const chunks = extractSpeakableChunks(makeRoot('<p>plain</p>'));
+    expect('lang' in chunks[0]!).toBe(false);
+  });
+
+  it('uses the nearest ancestor lang when multiple are stacked', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<div lang="en"><section lang="ja"><p>こんにちは</p></section></div>'),
+    );
+    expect(chunks[0]!.lang).toBe('ja');
+  });
 });

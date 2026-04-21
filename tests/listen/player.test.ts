@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPlayer } from '../../src/listen/player.ts';
-import type { SpeechUtterance, Synth } from '../../src/ports.ts';
+import type { SpeechUtterance, SpeechVoice, Synth } from '../../src/ports.ts';
 import type { SpeechChunk } from '../../src/types.ts';
 
 interface SpokenUtterance extends SpeechUtterance {
   spoken: true;
 }
 
-const makeSynth = () => {
+const makeSynth = (voices: SpeechVoice[] = []) => {
   const log: { text: string; rate: number; voiceURI: string | null }[] = [];
   const utts: SpokenUtterance[] = [];
   let cancelled = 0;
@@ -28,7 +28,7 @@ const makeSynth = () => {
     cancel: () => {
       cancelled++;
     },
-    getVoices: () => [],
+    getVoices: () => voices,
     onVoicesChanged: () => () => {},
     isSupported: () => true,
   };
@@ -376,5 +376,47 @@ describe('createPlayer', () => {
     ctx.triggerEnd();
     // Player stopped; any further action is inactive
     expect(p.getState().active).toBe(false);
+  });
+
+  it('picks a matching voice for a chunk with a language tag', () => {
+    const voices: SpeechVoice[] = [
+      { voiceURI: 'amelie', name: 'Amélie', lang: 'fr-FR', default: false },
+      { voiceURI: 'alex', name: 'Alex', lang: 'en-US', default: true },
+    ];
+    const ctx2 = makeSynth(voices);
+    const p = createPlayer({ synth: ctx2.synth });
+    const langChunks: SpeechChunk[] = [
+      { text: 'bonjour', el: null, lang: 'fr' },
+      { text: 'hello', el: null },
+    ];
+    p.start(langChunks);
+    expect(ctx2.log[0]!.voiceURI).toBe('amelie');
+    // Second chunk has no lang → falls through to the player's preferred voiceURI (null).
+    ctx2.triggerEnd();
+    expect(ctx2.log[1]!.voiceURI).toBeNull();
+  });
+
+  it('falls back to the preferred voice when no voice matches the chunk lang', () => {
+    const voices: SpeechVoice[] = [
+      { voiceURI: 'alex', name: 'Alex', lang: 'en-US', default: true },
+    ];
+    const ctx2 = makeSynth(voices);
+    const p = createPlayer({ synth: ctx2.synth });
+    p.setVoice('alex');
+    p.start([{ text: 'hola', el: null, lang: 'es' }]);
+    // "es" has no matching voice → uses the user's saved voice
+    expect(ctx2.log[0]!.voiceURI).toBe('alex');
+  });
+
+  it('lang match wins over the user preference', () => {
+    const voices: SpeechVoice[] = [
+      { voiceURI: 'alex', name: 'Alex', lang: 'en-US', default: true },
+      { voiceURI: 'amelie', name: 'Amélie', lang: 'fr-FR', default: false },
+    ];
+    const ctx2 = makeSynth(voices);
+    const p = createPlayer({ synth: ctx2.synth });
+    p.setVoice('alex');
+    p.start([{ text: 'bonjour', el: null, lang: 'fr' }]);
+    expect(ctx2.log[0]!.voiceURI).toBe('amelie');
   });
 });

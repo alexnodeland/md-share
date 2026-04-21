@@ -58,6 +58,7 @@
         <option value="gfm">GitHub</option>
         <option value="obsidian">Obsidian</option>
         <option value="atlassian">Atlassian</option>
+        <option value="notion">Notion</option>
       </select>
       <div class="spacer"></div>
       <div class="view-toggle mobile-only">
@@ -93,6 +94,10 @@
           <div class="dropdown" id="export-menu" style="right: 0">
             <button type="button" id="btn-export-md">↓ &ensp;Markdown (.md)</button>
             <button type="button" id="btn-export-html">↓ &ensp;HTML snippet</button>
+            <button type="button" id="btn-export-html-standalone">↓ &ensp;HTML (self-contained)</button>
+            <button type="button" id="btn-export-docx">↓ &ensp;Word (.docx)</button>
+            <button type="button" id="btn-export-latex">↓ &ensp;LaTeX (.tex)</button>
+            <button type="button" id="btn-export-typst">↓ &ensp;Typst (.typ)</button>
             <button type="button" id="btn-export-png">↓ &ensp;PNG image</button>
             <button type="button" id="btn-export-pdf">↓ &ensp;PDF (print)</button>
             <button type="button" id="btn-present">▶ &ensp;Present slides</button>
@@ -161,6 +166,7 @@
             <option value="gfm">GitHub</option>
             <option value="obsidian">Obsidian</option>
             <option value="atlassian">Atlassian</option>
+            <option value="notion">Notion</option>
             <option value="presentation">Presentation</option>
           </select>
           <button
@@ -220,10 +226,27 @@
         tabindex="0"
       ></div>
       <section class="preview-pane" id="preview-pane" aria-label="Rendered preview">
-        <div class="pane-header">Preview</div>
+        <div class="pane-header">
+          Preview
+          <div class="pane-header-spacer"></div>
+          <button
+            type="button"
+            id="lint-toggle"
+            class="pane-action lint-toggle"
+            aria-expanded="false"
+            aria-controls="lint-panel"
+            title="Toggle diagnostics"
+          >
+            Issues
+            <span class="lint-badge" id="lint-badge" hidden></span>
+          </button>
+        </div>
         <div class="preview-scroll" id="preview-scroll">
           <div class="rendered" id="preview" tabindex="-1"></div>
         </div>
+        <aside class="lint-panel" id="lint-panel" aria-label="Document diagnostics" hidden>
+          <ul class="lint-list" id="lint-list"></ul>
+        </aside>
       </section>
     </main>
 
@@ -270,6 +293,22 @@
         <div class="ab-progress-fill" id="audio-progress-fill" style="width: 0%"></div>
       </div>
       <div class="ab-label" id="audio-label"><strong>Ready</strong></div>
+      <button
+        type="button"
+        id="audio-captions-btn"
+        class="icon-only"
+        title="Toggle captions"
+        aria-label="Toggle captions"
+        aria-pressed="true"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="M7 15h3" />
+          <path d="M14 15h3" />
+          <path d="M7 11h3" />
+          <path d="M14 11h3" />
+        </svg>
+      </button>
       <select id="audio-voice" title="Voice"></select>
       <select id="audio-speed" title="Speed">
         <option value="0.75">0.75×</option>
@@ -323,9 +362,11 @@
           <dt><kbd>Enter</kbd></dt>
           <dd>Continue list · clear marker if empty</dd>
           <dt><kbd>Esc</kbd></dt>
-          <dd>Close dialog · stop listen mode</dd>
+          <dd>Close dialog · stop listen mode · exit focus mode</dd>
           <dt><kbd>←</kbd> · <kbd>→</kbd></dt>
           <dd>Previous · next chunk in listen mode</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>.</kbd></dt>
+          <dd>Focus mode: show only the current heading section</dd>
         </dl>
         <div class="modal-actions">
           <button type="button" id="btn-help-close" class="primary">Close</button>
@@ -340,6 +381,7 @@
           <span>Link to current section (<code id="link-section-slug"></code>)</span>
         </label>
         <div class="url-warn" id="url-warn"></div>
+        <div class="link-qr" id="link-qr" aria-label="QR code for this URL"></div>
         <div class="url-box" id="link-url"></div>
         <div class="modal-actions">
           <button type="button" id="btn-link-close">Close</button>

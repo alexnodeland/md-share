@@ -1,5 +1,6 @@
 import type { SpeechUtterance, Synth } from '../ports.ts';
 import type { SpeechChunk } from '../types.ts';
+import { pickVoiceForLang } from '../voicePreference.ts';
 
 export interface PlayerState {
   readonly active: boolean;
@@ -50,12 +51,18 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
 
   const emit = () => onStateChange?.(state());
 
+  const resolveVoiceFor = (chunk: SpeechChunk): string | null => {
+    if (!chunk.lang) return voiceURI;
+    const match = pickVoiceForLang(synth.getVoices(), chunk.lang);
+    return match ? match.voiceURI : voiceURI;
+  };
+
   const speakAt = (i: number): void => {
     index = i;
     const chunk = chunks[i]!;
     const utterance = synth.createUtterance(chunk.text);
     utterance.rate = speed;
-    utterance.voiceURI = voiceURI;
+    utterance.voiceURI = resolveVoiceFor(chunk);
     utterance.onend = () => {
       if (!playing || utterance !== liveUtterance) return;
       if (index >= chunks.length - 1) stop();
