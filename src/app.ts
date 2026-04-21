@@ -4,6 +4,7 @@ import { browserChessRenderer } from './adapters/chess.ts';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
 import { createBrowserDocxToMd } from './adapters/docxToMd.ts';
+import { browserGraphvizRenderer } from './adapters/graphviz.ts';
 import { browserHtmlToMd } from './adapters/htmlToMd.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
@@ -127,6 +128,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
   state.deps.chessCounter.reset();
   state.deps.vegaLiteCounter.reset();
   state.deps.abcCounter.reset();
+  state.deps.graphvizCounter.reset();
   try {
     const { meta, body, dir, lang } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
@@ -144,6 +146,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
   await renderChessBlocks(preview);
   await renderVegaLiteBlocks(preview);
   await renderAbcBlocks(preview);
+  await renderGraphvizBlocks(preview);
 };
 
 const renderMermaidBlocks = async (preview: HTMLElement): Promise<void> => {
@@ -215,6 +218,21 @@ const renderAbcBlocks = async (preview: HTMLElement): Promise<void> => {
       container.innerHTML = await browserAbcRenderer.render(source);
     } catch (err) {
       console.warn('ABC render failed:', err);
+    }
+  }
+};
+
+const renderGraphvizBlocks = async (preview: HTMLElement): Promise<void> => {
+  const els = preview.querySelectorAll<HTMLElement>('pre.graphviz');
+  if (els.length === 0) return;
+  for (const el of els) {
+    const container = el.closest('.graphviz-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    try {
+      container.innerHTML = await browserGraphvizRenderer.render(source);
+    } catch (err) {
+      console.warn('Graphviz render failed:', err);
     }
   }
 };

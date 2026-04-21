@@ -13,6 +13,11 @@ import { type ChessCounter, createChessCounter, wrapChessFences } from './plugin
 import { addCodeLangLabels } from './plugins/codeLang.ts';
 import { pluginCrossRef } from './plugins/crossRef.ts';
 import { EMOJI_DATA, pluginEmoji } from './plugins/emoji.ts';
+import {
+  createGraphvizCounter,
+  type GraphvizCounter,
+  wrapGraphvizFences,
+} from './plugins/graphviz.ts';
 import { applyHighlighting } from './plugins/highlighting.ts';
 import { pluginKaTeX } from './plugins/katex.ts';
 import { createMermaidCounter, type MermaidCounter, wrapMermaidFences } from './plugins/mermaid.ts';
@@ -37,6 +42,7 @@ export interface FlavorDeps {
   chessCounter: ChessCounter;
   vegaLiteCounter: VegaLiteCounter;
   abcCounter: AbcCounter;
+  graphvizCounter: GraphvizCounter;
   onUnknownLanguage?: (lang: string) => void;
 }
 
@@ -101,6 +107,7 @@ export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
   wrapChessFences(md, deps.chessCounter);
   wrapVegaLiteFences(md, deps.vegaLiteCounter);
   wrapAbcFences(md, deps.abcCounter);
+  wrapGraphvizFences(md, deps.graphvizCounter);
   addCodeLangLabels(md);
   addHeadingAnchors(md);
   applySafeLinks(md);
@@ -120,5 +127,6 @@ export const createFlavorDeps = (
   chessCounter: createChessCounter(),
   vegaLiteCounter: createVegaLiteCounter(),
   abcCounter: createAbcCounter(),
+  graphvizCounter: createGraphvizCounter(),
   onUnknownLanguage,
 });

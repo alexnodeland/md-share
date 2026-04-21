@@ -208,6 +208,18 @@ L:1/4
 K:C
 C D E F | G A B c |
 \`\`\`
+
+## Graphviz
+
+A \`graphviz\` (or \`dot\`) fence renders [Graphviz DOT](https://graphviz.org/doc/info/lang.html) as an SVG graph.
+
+\`\`\`graphviz
+digraph G {
+  A -> B;
+  B -> C;
+  A -> C;
+}
+\`\`\`
 `;
 
 const academic = `# Academic Flavor Demo

@@ -1157,6 +1157,20 @@ body[data-embed="true"] .caption-overlay {
   max-width: 100%;
   height: auto;
 }
+.graphviz-container {
+  display: block;
+  margin: 1.2em 0;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  overflow-x: auto;
+}
+.graphviz-container svg {
+  max-width: 100%;
+  height: auto;
+}
 .katex-display {
   margin: 1em 0;
   overflow-x: auto;
@@ -2091,7 +2105,8 @@ html.theme-switching *::after {
   }
   .mermaid-container,
   .vega-lite-container,
-  .abc-container {
+  .abc-container,
+  .graphviz-container {
     background: #fff !important;
     border-color: #ddd !important;
   }
