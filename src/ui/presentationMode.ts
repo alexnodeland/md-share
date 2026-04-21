@@ -23,6 +23,7 @@ export const initPresentationMode = ({
   let active = false;
   let slides: HTMLDivElement[] = [];
   let currentIndex = 0;
+  let previousMobileView: { editorVisible: boolean; previewVisible: boolean } | null = null;
 
   const updateCurrent = () => {
     for (const [i, slide] of slides.entries()) {
@@ -50,6 +51,16 @@ export const initPresentationMode = ({
     });
     currentIndex = 0;
     updateCurrent();
+    const editorPane = document.getElementById('editor-pane');
+    const previewPane = document.getElementById('preview-pane');
+    if (editorPane && previewPane) {
+      previousMobileView = {
+        editorVisible: editorPane.classList.contains('mobile-visible'),
+        previewVisible: previewPane.classList.contains('mobile-visible'),
+      };
+      editorPane.classList.remove('mobile-visible');
+      previewPane.classList.add('mobile-visible');
+    }
     document.documentElement.dataset.presenting = 'true';
     active = true;
   };
@@ -57,6 +68,13 @@ export const initPresentationMode = ({
   const exit = () => {
     if (!active) return;
     delete document.documentElement.dataset.presenting;
+    const editorPane = document.getElementById('editor-pane');
+    const previewPane = document.getElementById('preview-pane');
+    if (previousMobileView && editorPane && previewPane) {
+      editorPane.classList.toggle('mobile-visible', previousMobileView.editorVisible);
+      previewPane.classList.toggle('mobile-visible', previousMobileView.previewVisible);
+    }
+    previousMobileView = null;
     active = false;
     slides = [];
     currentIndex = 0;
