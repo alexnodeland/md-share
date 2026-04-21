@@ -29,8 +29,7 @@ export const initHeadingLinks = ({
     if (!heading?.id) return;
 
     e.preventDefault();
-    const doc = buildShareURL(location, getSource(), getFlavor(), compressor);
-    const url = `${doc}#${encodeURIComponent(heading.id)}`;
+    const url = buildShareURL(location, getSource(), getFlavor(), compressor, heading.id);
     clipboard
       .write(url)
       .then(() => showToast('Heading link copied', true))

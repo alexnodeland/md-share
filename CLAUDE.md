@@ -11,7 +11,7 @@ If a request conflicts with PHILOSOPHY.md, surface the conflict before implement
 
 ## What this is
 
-md-share: a zero-backend Markdown viewer/editor. The document *is* the URL (lz-string-compressed into `?d=`). Ships as static `index.html` + `assets/*.js`. No accounts, no server, no storage.
+md-share: a zero-backend Markdown viewer/editor. The document *is* the URL (lz-string-compressed into the fragment `#d=…`; legacy `?d=…` links still load). Ships as static `index.html` + `assets/*.js`. No accounts, no server, no storage.
 
 Six flavors: CommonMark, Extended, Academic (KaTeX), GitHub (`gfm`), Obsidian, Atlassian.
 

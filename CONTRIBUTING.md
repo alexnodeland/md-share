@@ -84,7 +84,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 
 - [ ] Flavor switcher — each of the six flavors renders its default doc without errors
 - [ ] Share → modal shows URL → paste URL in new tab → read-only banner + content loads
-- [ ] Typing in a read-only doc clears the banner and strips `?d=` from the URL
+- [ ] Typing in a read-only doc clears the banner and strips the `#d=` payload from the URL (also verify with a legacy `?d=…` link)
 - [ ] Listen — progress advances, skip fwd/back work, seek-on-click works, speed change works, `Esc` stops
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor
 - [ ] Export: Markdown / HTML / PNG / PDF all download or print
