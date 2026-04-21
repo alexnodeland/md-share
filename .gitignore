@@ -4,4 +4,5 @@ coverage
 .DS_Store
 *.log
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .playwright-mcp/
