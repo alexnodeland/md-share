@@ -4,6 +4,7 @@ import MarkdownIt from 'markdown-it';
 import mdDeflist from 'markdown-it-deflist';
 import mdFootnote from 'markdown-it-footnote';
 
+import { type AbcCounter, createAbcCounter, wrapAbcFences } from './plugins/abc.ts';
 import { addHeadingAnchors } from './plugins/anchors.ts';
 import { pluginAtlassianBlocks } from './plugins/atlassianBlocks.ts';
 import { pluginAtlassianInline } from './plugins/atlassianInline.ts';
@@ -35,6 +36,7 @@ export interface FlavorDeps {
   mermaidCounter: MermaidCounter;
   chessCounter: ChessCounter;
   vegaLiteCounter: VegaLiteCounter;
+  abcCounter: AbcCounter;
   onUnknownLanguage?: (lang: string) => void;
 }
 
@@ -98,6 +100,7 @@ export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
   wrapMermaidFences(md, deps.mermaidCounter);
   wrapChessFences(md, deps.chessCounter);
   wrapVegaLiteFences(md, deps.vegaLiteCounter);
+  wrapAbcFences(md, deps.abcCounter);
   addCodeLangLabels(md);
   addHeadingAnchors(md);
   applySafeLinks(md);
@@ -116,5 +119,6 @@ export const createFlavorDeps = (
   mermaidCounter: createMermaidCounter(),
   chessCounter: createChessCounter(),
   vegaLiteCounter: createVegaLiteCounter(),
+  abcCounter: createAbcCounter(),
   onUnknownLanguage,
 });

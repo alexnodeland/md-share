@@ -38,6 +38,7 @@
     ]
   },
   "dependencies": {
+    "abcjs": "^6.6.2",
     "chess.js": "^1.4.0",
     "highlight.js": "^11.11.1",
     "html-docx-js-typescript": "^0.1.5",

@@ -195,6 +195,19 @@ Inline Vega-Lite JSON renders as an SVG chart — remote data URLs are rejected.
   "encoding": {"x": {"field": "x", "type": "nominal"}, "y": {"field": "y", "type": "quantitative"}}
 }
 \`\`\`
+
+## ABC music notation
+
+An \`abc\` fence renders [ABC notation](https://abcnotation.com/) as staff music.
+
+\`\`\`abc
+X:1
+T:Simple Scale
+M:4/4
+L:1/4
+K:C
+C D E F | G A B c |
+\`\`\`
 `;
 
 const academic = `# Academic Flavor Demo

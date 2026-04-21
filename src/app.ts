@@ -1,4 +1,5 @@
 import hljs from 'highlight.js/lib/common';
+import { browserAbcRenderer } from './adapters/abc.ts';
 import { browserChessRenderer } from './adapters/chess.ts';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
@@ -125,6 +126,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
   state.deps.mermaidCounter.reset();
   state.deps.chessCounter.reset();
   state.deps.vegaLiteCounter.reset();
+  state.deps.abcCounter.reset();
   try {
     const { meta, body, dir, lang } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
@@ -141,6 +143,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
   await renderMermaidBlocks(preview);
   await renderChessBlocks(preview);
   await renderVegaLiteBlocks(preview);
+  await renderAbcBlocks(preview);
 };
 
 const renderMermaidBlocks = async (preview: HTMLElement): Promise<void> => {
@@ -197,6 +200,21 @@ const renderVegaLiteBlocks = async (preview: HTMLElement): Promise<void> => {
       container.innerHTML = await browserVegaLiteRenderer.render(source);
     } catch (err) {
       console.warn('Vega-Lite render failed:', err);
+    }
+  }
+};
+
+const renderAbcBlocks = async (preview: HTMLElement): Promise<void> => {
+  const els = preview.querySelectorAll<HTMLElement>('pre.abc');
+  if (els.length === 0) return;
+  for (const el of els) {
+    const container = el.closest('.abc-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    try {
+      container.innerHTML = await browserAbcRenderer.render(source);
+    } catch (err) {
+      console.warn('ABC render failed:', err);
     }
   }
 };
