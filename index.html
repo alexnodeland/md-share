@@ -183,6 +183,18 @@
             </svg>
           </button>
           <button type="button" id="btn-clear" class="pane-action" title="Clear editor">Clear</button>
+          <div class="pane-header-spacer"></div>
+          <button
+            type="button"
+            id="lint-toggle"
+            class="pane-action lint-toggle"
+            aria-expanded="false"
+            aria-controls="lint-panel"
+            title="Toggle diagnostics"
+          >
+            Issues
+            <span class="lint-badge" id="lint-badge" hidden></span>
+          </button>
         </div>
         <div class="editor-surface-wrap">
           <pre id="editor-mirror" class="editor-surface editor-mirror" aria-hidden="true"></pre>
@@ -213,6 +225,9 @@
             </div>
           </div>
         </div>
+        <aside class="lint-panel" id="lint-panel" aria-label="Document diagnostics" hidden>
+          <ul class="lint-list" id="lint-list"></ul>
+        </aside>
       </section>
       <div
         class="pane-divider"
@@ -228,25 +243,10 @@
       <section class="preview-pane" id="preview-pane" aria-label="Rendered preview">
         <div class="pane-header">
           Preview
-          <div class="pane-header-spacer"></div>
-          <button
-            type="button"
-            id="lint-toggle"
-            class="pane-action lint-toggle"
-            aria-expanded="false"
-            aria-controls="lint-panel"
-            title="Toggle diagnostics"
-          >
-            Issues
-            <span class="lint-badge" id="lint-badge" hidden></span>
-          </button>
         </div>
         <div class="preview-scroll" id="preview-scroll">
           <div class="rendered" id="preview" tabindex="-1"></div>
         </div>
-        <aside class="lint-panel" id="lint-panel" aria-label="Document diagnostics" hidden>
-          <ul class="lint-list" id="lint-list"></ul>
-        </aside>
       </section>
     </main>
 
