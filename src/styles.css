@@ -1154,6 +1154,11 @@ body[data-embed="true"] .caption-overlay {
   overflow-x: auto;
 }
 .abc-container svg {
+  /* abcjs stamps `position: absolute` inline; override via !important so the
+     SVG lays out inside the container rather than escaping to the page. */
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
   max-width: 100%;
   height: auto;
 }
