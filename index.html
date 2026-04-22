@@ -158,17 +158,7 @@
       <section class="editor-pane mobile-visible" id="editor-pane" aria-label="Editor">
         <div class="pane-header">
           Editor
-          <select id="sample-select" class="sample-select" title="Load a sample document">
-            <option value="" disabled selected>Samples</option>
-            <option value="commonmark">CommonMark</option>
-            <option value="extended">Extended</option>
-            <option value="academic">Academic</option>
-            <option value="gfm">GitHub</option>
-            <option value="obsidian">Obsidian</option>
-            <option value="atlassian">Atlassian</option>
-            <option value="notion">Notion</option>
-            <option value="presentation">Presentation</option>
-          </select>
+          <div class="pane-header-spacer"></div>
           <button
             type="button"
             id="btn-find"
@@ -182,25 +172,37 @@
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </button>
+          <select id="sample-select" class="sample-select" title="Load a sample document">
+            <option value="" disabled selected>Samples</option>
+            <option value="commonmark">CommonMark</option>
+            <option value="extended">Extended</option>
+            <option value="academic">Academic</option>
+            <option value="gfm">GitHub</option>
+            <option value="obsidian">Obsidian</option>
+            <option value="atlassian">Atlassian</option>
+            <option value="notion">Notion</option>
+            <option value="presentation">Presentation</option>
+          </select>
           <button type="button" id="btn-clear" class="pane-action" title="Clear editor">Clear</button>
-          <div class="pane-header-spacer"></div>
-          <button
-            type="button"
-            id="lint-toggle"
-            class="pane-action lint-toggle"
-            aria-expanded="false"
-            aria-controls="lint-panel"
-            title="Toggle diagnostics"
-          >
-            Issues
-            <span class="lint-badge" id="lint-badge" hidden></span>
-          </button>
         </div>
         <div class="editor-surface-wrap">
           <pre id="editor-mirror" class="editor-surface editor-mirror" aria-hidden="true"></pre>
           <div class="find-match-overlay" id="find-match-overlay" aria-hidden="true"></div>
           <textarea id="editor" class="editor-surface" spellcheck="false" aria-label="Markdown source"></textarea>
-          <div class="editor-stats" id="editor-stats" aria-live="polite"></div>
+          <div class="editor-stats" id="editor-stats">
+            <span class="editor-stats-text" id="editor-stats-text" aria-live="polite"></span>
+            <button
+              type="button"
+              id="lint-toggle"
+              class="lint-toggle"
+              aria-expanded="false"
+              aria-controls="lint-panel"
+              title="Toggle diagnostics"
+            >
+              Issues
+              <span class="lint-badge" id="lint-badge" hidden></span>
+            </button>
+          </div>
           <div class="find-bar" id="find-bar" role="search" aria-label="Find and replace">
             <div class="find-row find-row-main">
               <input type="text" id="find-input" class="find-input" placeholder="Find" aria-label="Find" />

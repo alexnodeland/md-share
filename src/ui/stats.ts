@@ -5,7 +5,7 @@ export interface StatsDeps {
 }
 
 export const initStats = ({ getSource }: StatsDeps): (() => void) => {
-  const el = document.getElementById('editor-stats');
+  const el = document.getElementById('editor-stats-text');
   if (!el) return () => {};
   const update = () => {
     el.textContent = formatStats(countStats(getSource()));

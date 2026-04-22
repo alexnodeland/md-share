@@ -314,6 +314,9 @@ body.is-resizing-panes {
   position: absolute;
   right: 10px;
   bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   padding: 3px 8px;
   font-size: 10px;
   letter-spacing: 0.3px;
@@ -322,8 +325,10 @@ body.is-resizing-panes {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-variant-numeric: tabular-nums;
-  pointer-events: none;
   z-index: 2;
+}
+.editor-stats-text {
+  pointer-events: none;
 }
 .editor-surface-wrap {
   flex: 1;
@@ -2407,9 +2412,21 @@ html.theme-switching *::after {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  text-transform: uppercase;
+  padding: 1px 6px;
+  font-family: inherit;
   font-size: 9px;
   letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-xdim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.lint-toggle:hover {
+  border-color: var(--border);
+  background: var(--bg-raised);
+  color: var(--text);
 }
 .lint-toggle.has-issues {
   color: var(--accent);
