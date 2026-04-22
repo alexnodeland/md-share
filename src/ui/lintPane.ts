@@ -18,9 +18,25 @@ export const initLintPane = (): LintPaneHandle => {
     toggle.setAttribute('aria-expanded', panel.classList.contains('open') ? 'true' : 'false');
   });
 
-  const scrollTo = (id: string): void => {
+  const scrollToPreviewAnchor = (id: string): void => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+
+  const jumpToSource = (range: { start: number; end: number }): void => {
+    const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
+    if (!editor) return;
+    editor.focus();
+    editor.setSelectionRange(range.start, range.end);
+    // Selection scroll-into-view isn't guaranteed — nudge scrollTop to the line.
+    const before = editor.value.slice(0, range.start);
+    const lineIndex = before.split('\n').length - 1;
+    const lineHeight = Number.parseFloat(getComputedStyle(editor).lineHeight) || 20;
+    const pad = editor.clientHeight / 4;
+    const targetTop = lineIndex * lineHeight - pad;
+    if (targetTop < editor.scrollTop || targetTop > editor.scrollTop + editor.clientHeight - pad) {
+      editor.scrollTop = Math.max(0, targetTop);
+    }
   };
 
   return {
@@ -49,13 +65,23 @@ export const initLintPane = (): LintPaneHandle => {
         label.className = 'lint-msg';
         label.textContent = d.message;
         li.append(label);
-        if (d.targetId) {
+        // sourceRange jumps the editor; targetId scrolls the preview to a
+        // rendered element. A diagnostic that carries neither gets no button.
+        if (d.sourceRange) {
+          const jump = document.createElement('button');
+          jump.type = 'button';
+          jump.className = 'lint-jump';
+          jump.textContent = 'Jump';
+          const range = d.sourceRange;
+          jump.addEventListener('click', () => jumpToSource(range));
+          li.append(jump);
+        } else if (d.targetId) {
           const jump = document.createElement('button');
           jump.type = 'button';
           jump.className = 'lint-jump';
           jump.textContent = 'Jump';
           const target = d.targetId;
-          jump.addEventListener('click', () => scrollTo(target));
+          jump.addEventListener('click', () => scrollToPreviewAnchor(target));
           li.append(jump);
         }
         list.append(li);

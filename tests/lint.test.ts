@@ -28,7 +28,7 @@ describe('lint — images without alt', () => {
     expect(out.find((d) => d.id === 'img-alt-missing')).toBeUndefined();
   });
 
-  it('counts multiple images in the message', () => {
+  it('counts multiple images in the aggregate fallback message', () => {
     const out = run('', '<img src="a.png"><img src="b.png">');
     const diag = out.find((d) => d.id === 'img-alt-missing')!;
     expect(diag.message).toContain('2 images');
@@ -38,6 +38,39 @@ describe('lint — images without alt', () => {
     const out = run('', '<img src="a.png">');
     const diag = out.find((d) => d.id === 'img-alt-missing')!;
     expect(diag.message).toContain('1 image without');
+  });
+
+  it('emits per-image diagnostics with sourceRange for `![](src)` in source', () => {
+    const source = 'Intro\n\n![](no-alt.png)\n';
+    const out = run(source, '<img src="no-alt.png">');
+    const diags = out.filter((d) => d.id === 'img-alt-missing');
+    expect(diags.length).toBe(1);
+    expect(diags[0]!.message).toBe('Image without alt text');
+    const range = diags[0]!.sourceRange!;
+    expect(source.slice(range.start, range.end)).toBe('![](no-alt.png)');
+  });
+
+  it('does not flag `![alt](src)` with non-empty alt', () => {
+    const out = run('![dog](x.png)', '<img src="x.png" alt="dog">');
+    expect(out.find((d) => d.id === 'img-alt-missing')).toBeUndefined();
+  });
+
+  it('ignores `![]()` shorthand sitting inside a fence', () => {
+    const out = run('```\n![](x.png)\n```', '');
+    expect(out.find((d) => d.id === 'img-alt-missing')).toBeUndefined();
+  });
+
+  it('emits per-image for multiple `![]()` with distinct ranges', () => {
+    const source = '![](a.png) and ![](b.png)';
+    const out = run(source, '<img src="a.png"><img src="b.png">');
+    const diags = out.filter((d) => d.id === 'img-alt-missing' && d.sourceRange);
+    expect(diags.length).toBe(2);
+    expect(source.slice(diags[0]!.sourceRange!.start, diags[0]!.sourceRange!.end)).toBe(
+      '![](a.png)',
+    );
+    expect(source.slice(diags[1]!.sourceRange!.start, diags[1]!.sourceRange!.end)).toBe(
+      '![](b.png)',
+    );
   });
 });
 
@@ -133,10 +166,13 @@ describe('lint — missing footnote defs', () => {
 
 describe('lint — broken heading refs', () => {
   it('warns when a [text](#slug) points at a non-existent heading', () => {
-    const out = run('[jump](#missing)', '<h2 id="present">x</h2>');
+    const source = '[jump](#missing)';
+    const out = run(source, '<h2 id="present">x</h2>');
     const diag = out.find((d) => d.id === 'heading-ref-broken');
     expect(diag).toBeDefined();
-    expect(diag!.targetId).toBe('missing');
+    expect(diag!.sourceRange).toEqual({ start: 0, end: source.length });
+    // sourceRange replaces the old targetId-to-missing-slug pattern.
+    expect(diag!.targetId).toBeUndefined();
   });
 
   it('does not warn when the slug exists', () => {
@@ -144,9 +180,13 @@ describe('lint — broken heading refs', () => {
     expect(out.find((d) => d.id === 'heading-ref-broken')).toBeUndefined();
   });
 
-  it('de-duplicates a broken ref repeated many times', () => {
-    const out = run('[a](#x) and [b](#x)', '<h2 id="y">y</h2>');
-    expect(out.filter((d) => d.id === 'heading-ref-broken').length).toBe(1);
+  it('emits one diagnostic per broken ref occurrence', () => {
+    const source = '[a](#x) and [b](#x)';
+    const out = run(source, '<h2 id="y">y</h2>');
+    const diags = out.filter((d) => d.id === 'heading-ref-broken');
+    expect(diags.length).toBe(2);
+    expect(source.slice(diags[0]!.sourceRange!.start, diags[0]!.sourceRange!.end)).toBe('[a](#x)');
+    expect(source.slice(diags[1]!.sourceRange!.start, diags[1]!.sourceRange!.end)).toBe('[b](#x)');
   });
 
   it('ignores links inside code fences', () => {

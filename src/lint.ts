@@ -7,7 +7,11 @@ export interface Diagnostic {
   id: string;
   severity: Severity;
   message: string;
+  // DOM id in the preview — used for rules that anchor at a rendered element.
   targetId?: string;
+  // Character offsets into the markdown source — Jump highlights this range
+  // in the editor textarea. Set for rules that can locate the offending text.
+  sourceRange?: { start: number; end: number };
 }
 
 export interface LintInput {
@@ -42,6 +46,38 @@ const stripFencesAndMath = (source: string): string => {
     }
     if (inMath) {
       out.push('');
+      continue;
+    }
+    out.push(line);
+  }
+  return out.join('\n');
+};
+
+// Like stripFencesAndMath but replaces fenced/math content with same-width
+// blanks so character offsets in the returned string line up 1:1 with the
+// original source. Rules that emit sourceRange values rely on this.
+const maskFencesAndMath = (source: string): string => {
+  const lines = source.split('\n');
+  const out: string[] = [];
+  let inFence = false;
+  let inMath = false;
+  for (const line of lines) {
+    if (FENCE_RE.test(line.trim())) {
+      inFence = !inFence;
+      out.push(' '.repeat(line.length));
+      continue;
+    }
+    if (inFence) {
+      out.push(' '.repeat(line.length));
+      continue;
+    }
+    if (BLOCK_MATH_RE.test(line)) {
+      inMath = !inMath;
+      out.push(' '.repeat(line.length));
+      continue;
+    }
+    if (inMath) {
+      out.push(' '.repeat(line.length));
       continue;
     }
     out.push(line);
@@ -89,21 +125,44 @@ const collectHeadingIds = (preview: Element): Set<string> => {
   return ids;
 };
 
-const lintImagesMissingAlt = (preview: Element): Diagnostic[] => {
-  const imgs = Array.from(preview.querySelectorAll('img'));
-  let count = 0;
-  for (const img of imgs) {
-    const alt = img.getAttribute('alt');
-    if (alt === null || alt.trim() === '') count++;
-  }
-  if (count === 0) return [];
-  return [
-    {
+// Markdown image: alt captured for the emptiness check, full match preserved
+// so the Jump range covers the whole `![...](...)` span.
+const IMAGE_RE = /!\[([^\]]*)\]\([^)\s]+(?:\s+"[^"]*")?\)/g;
+
+const lintImagesMissingAlt = (source: string, preview: Element): Diagnostic[] => {
+  const diags: Diagnostic[] = [];
+  const masked = maskFencesAndMath(source);
+  for (const m of masked.matchAll(IMAGE_RE)) {
+    // The capture group and `.index` are always populated for a matchAll hit
+    // on a global regex; narrow with an assertion rather than an unreachable
+    // `?? ''` branch that coverage can't exercise.
+    const alt = m[1] as string;
+    if (alt.trim() !== '') continue;
+    const start = m.index as number;
+    diags.push({
       id: 'img-alt-missing',
       severity: 'warn',
-      message: `${count} image${count === 1 ? '' : 's'} without alt text`,
-    },
-  ];
+      message: 'Image without alt text',
+      sourceRange: { start, end: start + m[0].length },
+    });
+  }
+  // Fallback for images that come from embedded HTML rather than the `![]`
+  // shorthand — surface them without a sourceRange (no Jump) rather than let
+  // an authored `<img>` with no alt slip by unflagged.
+  const authoredImgs = Array.from(preview.querySelectorAll('img')).filter((img) => {
+    const alt = img.getAttribute('alt');
+    return alt === null || alt.trim() === '';
+  });
+  const sourceMatches = diags.length;
+  const unmatched = authoredImgs.length - sourceMatches;
+  if (unmatched > 0) {
+    diags.push({
+      id: 'img-alt-missing',
+      severity: 'warn',
+      message: `${unmatched} image${unmatched === 1 ? '' : 's'} without alt text`,
+    });
+  }
+  return diags;
 };
 
 const lintTablesWithoutHeader = (preview: Element): Diagnostic[] => {
@@ -164,19 +223,20 @@ const lintMissingFootnoteDefs = (source: string): Diagnostic[] => {
 };
 
 const lintBrokenHeadingRefs = (source: string, heads: Set<string>): Diagnostic[] => {
-  const clean = stripFencesAndMath(source);
-  const broken = new Set<string>();
-  for (const m of clean.matchAll(HEADING_LINK_RE)) {
+  const masked = maskFencesAndMath(source);
+  const diags: Diagnostic[] = [];
+  for (const m of masked.matchAll(HEADING_LINK_RE)) {
     const slug = m[1] as string;
-    if (!heads.has(slug)) broken.add(slug);
+    if (heads.has(slug)) continue;
+    const start = m.index as number;
+    diags.push({
+      id: 'heading-ref-broken',
+      severity: 'warn',
+      message: `Link to #${slug} — no heading with that id`,
+      sourceRange: { start, end: start + m[0].length },
+    });
   }
-  if (broken.size === 0) return [];
-  return Array.from(broken).map((slug) => ({
-    id: 'heading-ref-broken',
-    severity: 'warn' as const,
-    message: `Link to #${slug} — no heading with that id`,
-    targetId: slug,
-  }));
+  return diags;
 };
 
 const WCAG_AA_NORMAL = 4.5;
@@ -239,7 +299,7 @@ const lintLowContrast = (preview: Element): Diagnostic[] => {
 export const lint = ({ source, preview, flavor: _flavor }: LintInput): Diagnostic[] => {
   const heads = collectHeadingIds(preview);
   return [
-    ...lintImagesMissingAlt(preview),
+    ...lintImagesMissingAlt(source, preview),
     ...lintTablesWithoutHeader(preview),
     ...lintDuplicateSlugs(preview),
     ...lintUnbalancedBlockMath(source),
