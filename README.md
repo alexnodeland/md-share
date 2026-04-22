@@ -111,6 +111,24 @@ npm run build     # → dist/ (static, deployable anywhere, openable via file://
 
 Full dev loop, scripts, architecture rules, and testing conventions live in [**CONTRIBUTING.md**](./CONTRIBUTING.md).
 
+### Generate a share link from a local file
+
+You can generate an md-share URL from a local `.md`, `.markdown`, or `.txt` file with a curl-friendly script:
+
+```bash
+# download the script
+curl -fsSL https://raw.githubusercontent.com/alexnodeland/md-share/main/scripts/generate-share-link.mjs -o generate-share-link.mjs
+
+# run it against a local file
+node generate-share-link.mjs ./notes.md
+```
+
+Or run the version in this repo directly:
+
+```bash
+npm run share:link -- ./notes.md
+```
+
 ---
 
 ## 🧠 Philosophy
