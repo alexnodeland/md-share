@@ -26,20 +26,21 @@ export const initLintPane = (): LintPaneHandle => {
   return {
     update(diagnostics) {
       const count = diagnostics.length;
+      panel.hidden = false;
+      list.innerHTML = '';
       if (count === 0) {
         toggle.classList.remove('has-issues');
         badge.textContent = '';
         badge.hidden = true;
-        panel.classList.remove('open');
-        panel.hidden = true;
-        list.innerHTML = '';
+        const empty = document.createElement('li');
+        empty.className = 'lint-empty';
+        empty.textContent = 'No issues found';
+        list.append(empty);
         return;
       }
       toggle.classList.add('has-issues');
       badge.hidden = false;
       badge.textContent = String(count);
-      panel.hidden = false;
-      list.innerHTML = '';
       for (const d of diagnostics) {
         const li = document.createElement('li');
         li.className = `lint-item lint-${d.severity}`;
