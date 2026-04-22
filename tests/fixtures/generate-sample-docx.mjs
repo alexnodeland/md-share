@@ -2,10 +2,9 @@
 //
 // Run: `node tests/fixtures/generate-sample-docx.mjs`
 //
-// Uses the `docx` library (dev-dep) to author a Word-compatible DOCX with
-// proper OOXML (paragraphs, runs, tables) — Mammoth can parse this shape.
-// html-docx-js-typescript was tried first but emits <w:altChunk> wrappers
-// that Mammoth ignores by design.
+// Uses the `docx` library (also the runtime DOCX exporter) to author a
+// Word-compatible DOCX with proper OOXML (paragraphs, runs, tables) —
+// Mammoth can parse this shape.
 //
 // Fixture contents:
 //   - <h1> "Heading"

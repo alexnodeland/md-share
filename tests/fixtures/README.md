@@ -18,11 +18,12 @@ Contents (deliberately small — each piece exercises a Mammoth feature):
 node tests/fixtures/generate-sample-docx.mjs
 ```
 
-The generator uses the `docx` package (dev-dep) to emit a proper
-OOXML Word document — paragraphs, runs, tables — that Mammoth can
-parse. An earlier attempt using `html-docx-js-typescript` produced
-files wrapping the HTML as `<w:altChunk>`, which Mammoth ignores by
-design; avoid that path for Mammoth-backed fixtures.
+The generator uses the `docx` package (also the runtime DOCX exporter) to
+emit a proper OOXML Word document — paragraphs, runs, tables — that
+Mammoth can parse. An earlier attempt using `html-docx-js-typescript`
+produced files wrapping the HTML as `<w:altChunk>`, which Mammoth
+ignores by design; this was the same bug that caused blank DOCX
+exports before the `docx`-based rewrite.
 
 If a test is sensitive to specific Word-ish styling that this
 generator doesn't reproduce, author a replacement manually in

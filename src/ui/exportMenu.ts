@@ -137,10 +137,9 @@ export const initExportMenu = (deps: ExportDeps): void => {
     closeAllDropdowns();
     showToast('Building .docx…');
     const source = deps.getSource();
-    const body = deps.getPreviewHTML();
     const title = deriveTitle(source);
     try {
-      const blob = await buildBrowserDocx({ title, body, css: '' });
+      const blob = await buildBrowserDocx({ title, source, md: deps.getMd() });
       download(blob, deriveFilename(source, 'docx'));
       showToast('Word document exported', true);
     } catch {
