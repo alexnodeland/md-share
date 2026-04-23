@@ -62,6 +62,15 @@ describe('notion callout', () => {
     expect(html).toContain('notion-mention');
     expect(html).toContain('notion-slash');
   });
+
+  it('parses block Markdown inside the callout body', () => {
+    const html = build().render(
+      '{callout:blue}\n**bold** and *italic*\n\n- item 1\n- item 2\n{callout}',
+    );
+    expect(html).toMatch(
+      /<aside[^>]*>[\s\S]*<strong>bold<\/strong>[\s\S]*<em>italic<\/em>[\s\S]*<ul>[\s\S]*<li>item 1<\/li>[\s\S]*<\/aside>/,
+    );
+  });
 });
 
 describe('notion toggle', () => {
@@ -100,6 +109,13 @@ describe('notion toggle', () => {
     // The body line has its leading "> " stripped and renders as a paragraph.
     expect(html).toContain('<details class="notion-toggle">');
     expect(html).toMatch(/<summary>Title<\/summary>[\s\S]*?<p>body<\/p>/);
+  });
+
+  it('parses block Markdown inside the toggle body', () => {
+    const html = build().render('?> Summary\n> **bold**\n> - a\n> - b');
+    expect(html).toMatch(
+      /<details[^>]*>[\s\S]*<summary>Summary<\/summary>[\s\S]*<strong>bold<\/strong>[\s\S]*<ul>[\s\S]*<li>a<\/li>[\s\S]*<\/details>/,
+    );
   });
 });
 

@@ -30,18 +30,24 @@ describe('sanitizeVegaLiteSpec', () => {
     if ('error' in result) expect(result.error).toMatch(/Invalid JSON/);
   });
 
-  it('rejects a JSON primitive (not an object/array)', () => {
+  it('rejects a JSON primitive', () => {
     const result = sanitizeVegaLiteSpec('42');
     expect(result).toEqual({ error: 'Vega-Lite spec must be a JSON object' });
   });
 
-  it('rejects a JSON null (not an object/array)', () => {
+  it('rejects a JSON null', () => {
     const result = sanitizeVegaLiteSpec('null');
     expect(result).toEqual({ error: 'Vega-Lite spec must be a JSON object' });
   });
 
-  it('accepts an array at the top level (used by Vega multi-view layouts)', () => {
+  it('rejects a top-level array', () => {
     const result = sanitizeVegaLiteSpec(JSON.stringify([MINIMAL]));
+    expect(result).toEqual({ error: 'Vega-Lite spec must be a JSON object' });
+  });
+
+  it('walks nested arrays in layered specs without false positives', () => {
+    const spec = { layer: [{ mark: 'bar' }, { mark: 'line' }] };
+    const result = sanitizeVegaLiteSpec(JSON.stringify(spec));
     expect('spec' in result).toBe(true);
   });
 

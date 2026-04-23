@@ -112,7 +112,7 @@ export const sanitizeVegaLiteSpec = (raw: string): Ok | Err => {
     // JSON.parse always throws a SyntaxError (Error subclass) on bad input.
     return { error: `Invalid JSON: ${(err as Error).message}` };
   }
-  if (!isObject(parsed) && !Array.isArray(parsed)) {
+  if (!isObject(parsed)) {
     return { error: 'Vega-Lite spec must be a JSON object' };
   }
   const forbidden = findForbiddenKey(parsed);

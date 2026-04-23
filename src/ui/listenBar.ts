@@ -246,6 +246,7 @@ export const initListenBar = ({ synth, getChunks, storage }: ListenBarDeps): Lis
   })();
 
   const populateVoices = () => {
+    const previous = voiceSel.value;
     const voices = synth.getVoices();
     voiceSel.innerHTML = '';
     if (voices.length === 0) {
@@ -263,13 +264,12 @@ export const initListenBar = ({ synth, getChunks, storage }: ListenBarDeps): Lis
       opt.textContent = `${v.name} (${v.lang})`;
       voiceSel.appendChild(opt);
     }
-    const saved = storage.get(VOICE_STORAGE_KEY);
-    const pick: SpeechVoice | null = pickVoice(voices, saved, systemLangHint);
-    const current = voiceSel.value;
-    if (current && voices.some((v) => v.voiceURI === current)) {
-      // preserve an in-session selection the user already made
+    if (previous && voices.some((v) => v.voiceURI === previous)) {
+      voiceSel.value = previous;
       return;
     }
+    const saved = storage.get(VOICE_STORAGE_KEY);
+    const pick: SpeechVoice | null = pickVoice(voices, saved, systemLangHint);
     if (pick) {
       voiceSel.value = pick.voiceURI;
       player.setVoice(pick.voiceURI);

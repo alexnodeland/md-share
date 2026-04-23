@@ -64,6 +64,6 @@ export const htmlToMarkdown = (html: string, deps: HtmlToMdDeps): string => {
   const doc = deps.parseHtml(html);
   sanitizeDocument(doc);
   const body = doc.body;
-  const cleaned = body ? body.innerHTML : '';
-  return postProcess(deps.turndown(cleaned));
+  if (!body) return '';
+  return postProcess(deps.turndown(body.innerHTML));
 };

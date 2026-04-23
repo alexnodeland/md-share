@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { htmlToMarkdown, postProcess, sanitizeDocument } from '../../src/importers/html.ts';
 
 const parse = (html: string): Document => new DOMParser().parseFromString(html, 'text/html');
@@ -157,7 +157,9 @@ describe('htmlToMarkdown', () => {
         body: null,
         querySelectorAll: () => [] as unknown as NodeListOf<Element>,
       }) as unknown as Document;
-    const out = htmlToMarkdown('x', { parseHtml: fakeParser, turndown: () => 'x' });
-    expect(out).toBe('x');
+    const turndown = vi.fn(() => 'x');
+    const out = htmlToMarkdown('x', { parseHtml: fakeParser, turndown });
+    expect(out).toBe('');
+    expect(turndown).not.toHaveBeenCalled();
   });
 });
