@@ -27,8 +27,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies (npm@11 matches lockfile resolver)
-        run: npx -y npm@11 ci
+      - name: Install dependencies
+        run: npm ci
 
       - name: Verify (Biome + tsc + Vitest)
         run: npm run verify
