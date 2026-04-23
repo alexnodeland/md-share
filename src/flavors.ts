@@ -4,24 +4,45 @@ import MarkdownIt from 'markdown-it';
 import mdDeflist from 'markdown-it-deflist';
 import mdFootnote from 'markdown-it-footnote';
 
+import { type AbcCounter, createAbcCounter, wrapAbcFences } from './plugins/abc.ts';
 import { addHeadingAnchors } from './plugins/anchors.ts';
 import { pluginAtlassianBlocks } from './plugins/atlassianBlocks.ts';
 import { pluginAtlassianInline } from './plugins/atlassianInline.ts';
+import { pluginBlockLang } from './plugins/blockLang.ts';
+import { type ChessCounter, createChessCounter, wrapChessFences } from './plugins/chess.ts';
 import { addCodeLangLabels } from './plugins/codeLang.ts';
+import { pluginCrossRef } from './plugins/crossRef.ts';
+import { EMOJI_DATA, pluginEmoji } from './plugins/emoji.ts';
+import {
+  createGraphvizCounter,
+  type GraphvizCounter,
+  wrapGraphvizFences,
+} from './plugins/graphviz.ts';
 import { applyHighlighting } from './plugins/highlighting.ts';
 import { pluginKaTeX } from './plugins/katex.ts';
 import { createMermaidCounter, type MermaidCounter, wrapMermaidFences } from './plugins/mermaid.ts';
+import { pluginNotion } from './plugins/notion.ts';
 import { pluginObsidianCallouts } from './plugins/obsidianCallouts.ts';
 import { pluginObsidianComments } from './plugins/obsidianComments.ts';
 import { pluginObsidianInline } from './plugins/obsidianInline.ts';
+import { pluginPandocCite } from './plugins/pandocCite.ts';
 import { applySafeLinks } from './plugins/safeLinks.ts';
 import { pluginTaskList } from './plugins/taskList.ts';
+import {
+  createVegaLiteCounter,
+  type VegaLiteCounter,
+  wrapVegaLiteFences,
+} from './plugins/vegaLite.ts';
 import type { Flavor } from './types.ts';
 
 export interface FlavorDeps {
   highlighter: typeof hljs;
   katex: typeof katexNs | null;
   mermaidCounter: MermaidCounter;
+  chessCounter: ChessCounter;
+  vegaLiteCounter: VegaLiteCounter;
+  abcCounter: AbcCounter;
+  graphvizCounter: GraphvizCounter;
   onUnknownLanguage?: (lang: string) => void;
 }
 
@@ -32,11 +53,12 @@ export const FLAVOR_LABELS: Record<Flavor, string> = {
   gfm: 'GitHub',
   obsidian: 'Obsidian',
   atlassian: 'Atlassian',
+  notion: 'Notion',
 };
 
 const createBase = (flavor: Flavor): MarkdownIt => {
   if (flavor === 'commonmark') return new MarkdownIt('commonmark');
-  if (flavor === 'gfm' || flavor === 'atlassian') {
+  if (flavor === 'gfm' || flavor === 'atlassian' || flavor === 'notion') {
     return new MarkdownIt({ html: true, linkify: true });
   }
   return new MarkdownIt({ html: true, linkify: true, typographer: true });
@@ -56,6 +78,11 @@ const applyFlavorPlugins = (md: MarkdownIt, flavor: Flavor, deps: FlavorDeps): v
     pluginKaTeX(md, deps.katex);
   }
 
+  if (flavor === 'academic') {
+    pluginPandocCite(md);
+    pluginCrossRef(md);
+  }
+
   if (flavor === 'obsidian') {
     pluginObsidianComments(md);
     pluginObsidianCallouts(md);
@@ -66,6 +93,10 @@ const applyFlavorPlugins = (md: MarkdownIt, flavor: Flavor, deps: FlavorDeps): v
     pluginAtlassianBlocks(md);
     pluginAtlassianInline(md);
   }
+
+  if (flavor === 'notion') {
+    pluginNotion(md);
+  }
 };
 
 export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
@@ -73,9 +104,15 @@ export const buildMD = (flavor: Flavor, deps: FlavorDeps): MarkdownIt => {
   applyFlavorPlugins(md, flavor, deps);
   applyHighlighting(md, deps.highlighter, deps.onUnknownLanguage);
   wrapMermaidFences(md, deps.mermaidCounter);
+  wrapChessFences(md, deps.chessCounter);
+  wrapVegaLiteFences(md, deps.vegaLiteCounter);
+  wrapAbcFences(md, deps.abcCounter);
+  wrapGraphvizFences(md, deps.graphvizCounter);
   addCodeLangLabels(md);
   addHeadingAnchors(md);
   applySafeLinks(md);
+  pluginBlockLang(md);
+  pluginEmoji(md, EMOJI_DATA);
   return md;
 };
 
@@ -87,5 +124,9 @@ export const createFlavorDeps = (
   highlighter,
   katex,
   mermaidCounter: createMermaidCounter(),
+  chessCounter: createChessCounter(),
+  vegaLiteCounter: createVegaLiteCounter(),
+  abcCounter: createAbcCounter(),
+  graphvizCounter: createGraphvizCounter(),
   onUnknownLanguage,
 });

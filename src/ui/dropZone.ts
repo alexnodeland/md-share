@@ -1,19 +1,30 @@
 import type { ImageCompressor } from '../adapters/imageCompress.ts';
+import { isUnsafeImageMime } from '../imageEmbed.ts';
+import type { DocxToMd } from '../ports.ts';
 import { fmtBytes, IMAGE_EMBED_CONFIRM, IMAGE_MAX_DIM, IMAGE_QUALITY } from './imageConsts.ts';
 import { showToast } from './toast.ts';
 
 const TEXT_EXT = /\.(md|markdown|txt)$/i;
+const DOCX_EXT = /\.docx$/i;
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 const isTextFile = (file: File) => TEXT_EXT.test(file.name) || file.type.startsWith('text/');
 const isImageFile = (file: File) => file.type.startsWith('image/');
+const isDocxFile = (file: File) => DOCX_EXT.test(file.name) || file.type === DOCX_MIME;
 
 export interface DropZoneDeps {
   onText: (content: string) => void;
   onImageInsert: (dataUrl: string) => void;
   compressImage: ImageCompressor;
+  docxToMd?: DocxToMd;
 }
 
-export const initDropZone = ({ onText, onImageInsert, compressImage }: DropZoneDeps): void => {
+export const initDropZone = ({
+  onText,
+  onImageInsert,
+  compressImage,
+  docxToMd,
+}: DropZoneDeps): void => {
   const overlay = document.getElementById('drop-overlay');
   if (!overlay) return;
 
@@ -54,6 +65,10 @@ export const initDropZone = ({ onText, onImageInsert, compressImage }: DropZoneD
       return;
     }
     if (isImageFile(file)) {
+      if (isUnsafeImageMime(file.type)) {
+        showToast('SVG images cannot be embedded — they may contain scripts');
+        return;
+      }
       if (!window.confirm(IMAGE_EMBED_CONFIRM)) return;
       compressImage(file, { maxDim: IMAGE_MAX_DIM, quality: IMAGE_QUALITY })
         .then(({ dataUrl, bytes, originalBytes }) => {
@@ -65,6 +80,24 @@ export const initDropZone = ({ onText, onImageInsert, compressImage }: DropZoneD
         });
       return;
     }
-    showToast('Drop a .md, text, or image file');
+    if (isDocxFile(file) && docxToMd) {
+      showToast(`Converting ${file.name}…`, true);
+      file
+        .arrayBuffer()
+        .then((buf) => docxToMd.convert(buf))
+        .then((md) => {
+          if (!md.trim()) {
+            showToast('DOCX had no convertible content');
+            return;
+          }
+          onText(md);
+          showToast(`Loaded ${file.name}`, true);
+        })
+        .catch(() => {
+          showToast('Could not convert DOCX');
+        });
+      return;
+    }
+    showToast('Drop a .md, text, image, or .docx file');
   });
 };

@@ -1,4 +1,11 @@
-export type Flavor = 'commonmark' | 'extended' | 'academic' | 'gfm' | 'obsidian' | 'atlassian';
+export type Flavor =
+  | 'commonmark'
+  | 'extended'
+  | 'academic'
+  | 'gfm'
+  | 'obsidian'
+  | 'atlassian'
+  | 'notion';
 
 export const FLAVOR_NAMES = [
   'commonmark',
@@ -7,6 +14,7 @@ export const FLAVOR_NAMES = [
   'gfm',
   'obsidian',
   'atlassian',
+  'notion',
 ] as const satisfies readonly Flavor[];
 
 export const isFlavor = (x: unknown): x is Flavor =>
@@ -27,6 +35,7 @@ export interface TocHeading {
 export interface SpeechChunk {
   text: string;
   el: Element | null;
+  lang?: string;
 }
 
 export type Theme = 'dark' | 'light';

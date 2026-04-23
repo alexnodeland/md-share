@@ -7,9 +7,11 @@ const escapeHtml = (s: string): string =>
 describe('parseFrontmatter', () => {
   it('extracts key/value pairs and returns the remaining body', () => {
     const source = '---\ntitle: Hello\nauthor: Ada\n---\n\n# Body';
-    const { meta, body } = parseFrontmatter(source);
-    expect(meta).toEqual({ title: 'Hello', author: 'Ada' });
-    expect(body).toBe('# Body');
+    const result = parseFrontmatter(source);
+    expect(result.meta).toEqual({ title: 'Hello', author: 'Ada' });
+    expect(result.body).toBe('# Body');
+    expect(result.dir).toBe('auto');
+    expect(result.lang).toBeNull();
   });
 
   it('strips surrounding quotes from values', () => {
@@ -31,28 +33,59 @@ describe('parseFrontmatter', () => {
   });
 
   it('returns the source unchanged when no opening delimiter is present', () => {
-    const { meta, body } = parseFrontmatter('# Just a heading\n');
-    expect(meta).toEqual({});
-    expect(body).toBe('# Just a heading\n');
+    const result = parseFrontmatter('# Just a heading\n');
+    expect(result.meta).toEqual({});
+    expect(result.body).toBe('# Just a heading\n');
+    expect(result.dir).toBe('auto');
+    expect(result.lang).toBeNull();
   });
 
   it('returns the source unchanged when the closing delimiter is missing', () => {
     const source = '---\ntitle: open\nbody without close';
-    const { meta, body } = parseFrontmatter(source);
-    expect(meta).toEqual({});
-    expect(body).toBe(source);
+    const result = parseFrontmatter(source);
+    expect(result.meta).toEqual({});
+    expect(result.body).toBe(source);
+    expect(result.dir).toBe('auto');
+    expect(result.lang).toBeNull();
   });
 
   it('returns the source unchanged when the block has no parsable keys', () => {
     const source = '---\n\n---\nhello';
-    const { meta, body } = parseFrontmatter(source);
-    expect(meta).toEqual({});
-    expect(body).toBe(source);
+    const result = parseFrontmatter(source);
+    expect(result.meta).toEqual({});
+    expect(result.body).toBe(source);
+    expect(result.dir).toBe('auto');
+    expect(result.lang).toBeNull();
   });
 
   it('ignores malformed lines (no colon or empty key)', () => {
     const { meta } = parseFrontmatter('---\nnot a pair\n: no key\ntitle: T\n---\n');
     expect(meta).toEqual({ title: 'T' });
+  });
+
+  it('parses dir: rtl (lowercase)', () => {
+    expect(parseFrontmatter('---\ndir: rtl\n---\nbody').dir).toBe('rtl');
+  });
+
+  it('parses dir: ltr and dir: auto', () => {
+    expect(parseFrontmatter('---\ndir: ltr\n---\nbody').dir).toBe('ltr');
+    expect(parseFrontmatter('---\ndir: auto\n---\nbody').dir).toBe('auto');
+  });
+
+  it('normalizes uppercase dir to lowercase', () => {
+    expect(parseFrontmatter('---\ndir: RTL\n---\nbody').dir).toBe('rtl');
+  });
+
+  it('defaults dir to auto when the value is unrecognized', () => {
+    expect(parseFrontmatter('---\ndir: sideways\n---\nbody').dir).toBe('auto');
+  });
+
+  it('parses a lang value', () => {
+    expect(parseFrontmatter('---\nlang: he\n---\nbody').lang).toBe('he');
+  });
+
+  it('treats blank lang as null', () => {
+    expect(parseFrontmatter('---\nlang: ""\ntitle: x\n---\nbody').lang).toBeNull();
   });
 });
 

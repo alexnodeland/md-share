@@ -1,25 +1,35 @@
 import hljs from 'highlight.js/lib/common';
+import { browserAbcRenderer } from './adapters/abc.ts';
+import { browserChessRenderer } from './adapters/chess.ts';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
+import { createBrowserDocxToMd } from './adapters/docxToMd.ts';
+import { browserGraphvizRenderer } from './adapters/graphviz.ts';
+import { browserHtmlToMd } from './adapters/htmlToMd.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
+import { browserQrEncoder } from './adapters/qr.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
+import { browserVegaLiteRenderer } from './adapters/vegaLite.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
+import type { CompleteContext } from './editorComplete.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { insertImageAtCursor } from './imageEmbed.ts';
+import { lint } from './lint.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
+import { EMOJI_DATA } from './plugins/emoji.ts';
 import { isSampleContent, SAMPLE_FLAVOR, type SampleKey, sampleFor } from './samples.ts';
 import { parseShareParams } from './share.ts';
 import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
-import { generateTOC } from './toc.ts';
+import { generateTOC, parseHeadings } from './toc.ts';
 import type { Flavor, Theme } from './types.ts';
 import { applyEdit } from './ui/applyEdit.ts';
 import { initClearButton } from './ui/clearButton.ts';
@@ -34,8 +44,10 @@ import { initFindBar } from './ui/findBar.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
 import { initHeadingLinks } from './ui/headingLinks.ts';
 import { initHelpModal } from './ui/helpModal.ts';
+import { initLintPane } from './ui/lintPane.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
+import { initOutlineMode } from './ui/outlineMode.ts';
 import { initPaneDivider } from './ui/paneDivider.ts';
 import { initPresentationMode } from './ui/presentationMode.ts';
 import { initSampleSelect, setSampleSelectValue } from './ui/sampleSelect.ts';
@@ -56,6 +68,7 @@ interface AppState {
   md: MarkdownIt;
   deps: FlavorDeps;
   activeSample: SampleKey | null;
+  focusedSource: string | null;
 }
 
 type Mermaid = typeof import('mermaid').default;
@@ -108,13 +121,20 @@ const renderPreview = async (state: AppState): Promise<void> => {
   const preview = document.getElementById('preview');
   const scroller = document.getElementById('preview-scroll');
   if (!editor || !preview) return;
-  const src = editor.value;
+  const src = state.focusedSource ?? editor.value;
+  preview.classList.toggle('focus-mode', state.focusedSource !== null);
   const scrollTop = scroller?.scrollTop ?? 0;
   state.deps.mermaidCounter.reset();
+  state.deps.chessCounter.reset();
+  state.deps.vegaLiteCounter.reset();
+  state.deps.abcCounter.reset();
+  state.deps.graphvizCounter.reset();
   try {
-    const { meta, body } = parseFrontmatter(src);
+    const { meta, body, dir, lang } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
     preview.innerHTML = front + generateTOC(body) + state.md.render(body);
+    preview.setAttribute('dir', dir);
+    preview.setAttribute('lang', lang ?? document.documentElement.lang);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     preview.replaceChildren(renderError(message));
@@ -122,6 +142,14 @@ const renderPreview = async (state: AppState): Promise<void> => {
     return;
   }
   if (scroller) scroller.scrollTop = scrollTop;
+  await renderMermaidBlocks(preview);
+  await renderChessBlocks(preview);
+  await renderVegaLiteBlocks(preview);
+  await renderAbcBlocks(preview);
+  await renderGraphvizBlocks(preview);
+};
+
+const renderMermaidBlocks = async (preview: HTMLElement): Promise<void> => {
   const mermaidEls = preview.querySelectorAll<HTMLElement>('pre.mermaid');
   if (mermaidEls.length === 0) return;
   let mermaid: Mermaid;
@@ -145,6 +173,66 @@ const renderPreview = async (state: AppState): Promise<void> => {
       ghost?.remove();
       const message = err instanceof Error ? err.message : String(err);
       container.innerHTML = buildMermaidError(source, message);
+    }
+  }
+};
+
+const renderChessBlocks = async (preview: HTMLElement): Promise<void> => {
+  const chessEls = preview.querySelectorAll<HTMLElement>('pre.chess');
+  if (chessEls.length === 0) return;
+  for (const el of chessEls) {
+    const container = el.closest('.chess-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    try {
+      container.innerHTML = await browserChessRenderer.render(source);
+    } catch (err) {
+      console.warn('Chess render failed:', err);
+    }
+  }
+};
+
+const renderVegaLiteBlocks = async (preview: HTMLElement): Promise<void> => {
+  const els = preview.querySelectorAll<HTMLElement>('pre.vega-lite');
+  if (els.length === 0) return;
+  for (const el of els) {
+    const container = el.closest('.vega-lite-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    try {
+      container.innerHTML = await browserVegaLiteRenderer.render(source);
+    } catch (err) {
+      console.warn('Vega-Lite render failed:', err);
+    }
+  }
+};
+
+const renderAbcBlocks = async (preview: HTMLElement): Promise<void> => {
+  const els = preview.querySelectorAll<HTMLElement>('pre.abc');
+  if (els.length === 0) return;
+  for (const el of els) {
+    const container = el.closest('.abc-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    try {
+      container.innerHTML = await browserAbcRenderer.render(source);
+    } catch (err) {
+      console.warn('ABC render failed:', err);
+    }
+  }
+};
+
+const renderGraphvizBlocks = async (preview: HTMLElement): Promise<void> => {
+  const els = preview.querySelectorAll<HTMLElement>('pre.graphviz');
+  if (els.length === 0) return;
+  for (const el of els) {
+    const container = el.closest('.graphviz-container') as HTMLElement | null;
+    if (!container) continue;
+    const source = el.textContent ?? '';
+    try {
+      container.innerHTML = await browserGraphvizRenderer.render(source);
+    } catch (err) {
+      console.warn('Graphviz render failed:', err);
     }
   }
 };
@@ -256,7 +344,14 @@ const boot = async (): Promise<void> => {
     rerender();
   });
   const deps = createFlavorDeps(hljs, null, ensureLanguage);
-  const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
+  const state: AppState = {
+    flavor,
+    theme,
+    md: buildMD(flavor, deps),
+    deps,
+    activeSample: null,
+    focusedSource: null,
+  };
 
   const ensureKatexFor = (f: Flavor): void => {
     if (!flavorNeedsKatex(f) || deps.katex) return;
@@ -303,6 +398,21 @@ const boot = async (): Promise<void> => {
     void renderPreview(state);
   };
 
+  const docxToMd = createBrowserDocxToMd(browserHtmlToMd);
+
+  const FOOTNOTE_DEF_RE = /^\[\^([^\]]+)\]:/gm;
+  const buildCompleteContext = (): CompleteContext => {
+    const src = editor.value;
+    const footnoteLabels: string[] = [];
+    for (const m of src.matchAll(FOOTNOTE_DEF_RE)) footnoteLabels.push(m[1] as string);
+    return {
+      headingSlugs: parseHeadings(src).map((h) => h.slug),
+      footnoteLabels,
+      wikilinkTargets: [],
+      emojiShortcodes: EMOJI_DATA,
+    };
+  };
+
   let toolbar: SelectionToolbar | undefined;
   initEditor({
     onChange: () => {
@@ -318,7 +428,9 @@ const boot = async (): Promise<void> => {
     },
     highlightSource: (s) => highlightMarkdownSource(s, hljs),
     compressImage,
+    htmlToMd: browserHtmlToMd,
     onFormatCommand: (cmd) => toolbar?.pulse(cmd),
+    getCompleteContext: buildCompleteContext,
   });
   const mirrorEl = document.getElementById('editor-mirror');
   const editorWrap = editor.parentElement;
@@ -378,6 +490,7 @@ const boot = async (): Promise<void> => {
     compressor: browserCompressor,
     clipboard: browserClipboard,
     location: window.location,
+    qrEncoder: browserQrEncoder,
     getSource: () => editor.value,
     getFlavor: () => state.flavor,
     getCurrentHeading: () => {
@@ -400,6 +513,8 @@ const boot = async (): Promise<void> => {
       return clone.innerHTML;
     },
     getPreviewElement: () => document.getElementById('preview'),
+    getTheme: () => state.theme,
+    getMd: () => state.md,
     onPresent: () => presentation.enter(),
   });
   initDropZone({
@@ -418,6 +533,7 @@ const boot = async (): Promise<void> => {
       rerender();
     },
     compressImage,
+    docxToMd,
   });
   const findBar = initFindBar({
     editor,
@@ -455,9 +571,28 @@ const boot = async (): Promise<void> => {
   });
   const decorateCopyButtons = initCodeCopyButtons({ clipboard: browserClipboard });
   const updateStats = initStats({ getSource: () => editor.value });
+  const lintPane = initLintPane();
+  initOutlineMode({
+    getSource: () => editor.value,
+    getCurrentHeadingId: () => {
+      const scroller = document.getElementById('preview-scroll');
+      return pickCurrentHeading(readHeadingPositions(), scroller?.scrollTop ?? 0, 40);
+    },
+    onChange: (focusedSource) => {
+      state.focusedSource = focusedSource;
+      rerender();
+    },
+  });
+
+  const runLint = (): void => {
+    const preview = document.getElementById('preview');
+    if (!preview) return;
+    lintPane.update(lint({ source: editor.value, preview, flavor: state.flavor }));
+  };
 
   const listenBar = initListenBar({
     synth: browserSynth,
+    storage: browserStorage,
     getChunks: () => {
       const preview = document.getElementById('preview');
       return preview ? extractSpeakableChunks(preview) : [];
@@ -470,6 +605,7 @@ const boot = async (): Promise<void> => {
     decorateCopyButtons();
     listenBar.onPreviewChange();
     updateStats();
+    runLint();
   };
 
   ensureKatexFor(state.flavor);

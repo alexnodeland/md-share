@@ -4,6 +4,7 @@ import {
   continueList,
   isUrl,
   toggleWrap,
+  wrap,
   wrapLink,
 } from '../src/editorCommands.ts';
 
@@ -34,6 +35,29 @@ describe('toggleWrap', () => {
     expect(r.value).toBe('abc**');
     expect(r.start).toBe(4);
     expect(r.end).toBe(4);
+  });
+});
+
+describe('wrap', () => {
+  it('wraps a selection with a symmetric marker, preserving the selection', () => {
+    const r = wrap('hello world', 0, 5, '**');
+    expect(r.value).toBe('**hello** world');
+    expect(r.start).toBe(2);
+    expect(r.end).toBe(7);
+  });
+
+  it('uses an explicit closing marker when provided', () => {
+    const r = wrap('hi there', 0, 2, '<', '>');
+    expect(r.value).toBe('<hi> there');
+    expect(r.start).toBe(1);
+    expect(r.end).toBe(3);
+  });
+
+  it('wraps an empty selection, placing cursor between markers', () => {
+    const r = wrap('abc', 1, 1, '~~');
+    expect(r.value).toBe('a~~~~bc');
+    expect(r.start).toBe(3);
+    expect(r.end).toBe(3);
   });
 });
 

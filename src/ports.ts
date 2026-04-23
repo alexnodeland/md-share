@@ -44,3 +44,22 @@ export interface Storage {
   get(key: string): string | null;
   set(key: string, value: string): void;
 }
+
+export interface QrEncoder {
+  encode(text: string): Promise<boolean[][]>;
+}
+
+export interface HtmlToMd {
+  convert(html: string): Promise<string>;
+}
+
+export interface DocxToMd {
+  convert(bytes: ArrayBuffer): Promise<string>;
+}
+
+// Generic renderer for fence-driven diagram engines (chess, later vega-lite,
+// abc, graphviz, d2). Each adapter lazy-loads its underlying library and
+// returns inline SVG markup for a given source string.
+export interface DiagramRenderer {
+  render(source: string): Promise<string>;
+}

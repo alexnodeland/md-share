@@ -1,19 +1,21 @@
-import type { Clipboard, Compressor, Location } from '../ports.ts';
+import type { Clipboard, Compressor, Location, QrEncoder } from '../ports.ts';
+import { buildQr } from '../qr.ts';
 import { buildShareURL } from '../share.ts';
+import { describeShareSize, formatBytes } from '../shareSize.ts';
 import type { Flavor } from '../types.ts';
 import { showToast } from './toast.ts';
-
-const SOFT_URL_LENGTH = 2000;
-const HARD_URL_LENGTH = 8000;
 
 export interface ShareDeps {
   compressor: Compressor;
   clipboard: Clipboard;
   location: Location;
+  qrEncoder: QrEncoder;
   getSource: () => string;
   getFlavor: () => Flavor;
   getCurrentHeading: () => string | null;
 }
+
+const QR_CANVAS_PX = 160;
 
 export const initShareModal = (deps: ShareDeps): void => {
   const modal = document.getElementById('link-modal');
@@ -25,6 +27,7 @@ export const initShareModal = (deps: ShareDeps): void => {
   const sectionToggle = document.getElementById('link-section-toggle');
   const sectionCheckbox = document.getElementById('link-section-check') as HTMLInputElement | null;
   const sectionSlug = document.getElementById('link-section-slug');
+  const qrMount = document.getElementById('link-qr');
   if (
     !modal ||
     !urlBox ||
@@ -34,12 +37,14 @@ export const initShareModal = (deps: ShareDeps): void => {
     !copyBtn ||
     !sectionToggle ||
     !sectionCheckbox ||
-    !sectionSlug
+    !sectionSlug ||
+    !qrMount
   )
     return;
 
   let heading: string | null = null;
   let refreshGen = 0;
+  let qrGen = 0;
 
   const buildURL = () =>
     buildShareURL(
@@ -50,21 +55,82 @@ export const initShareModal = (deps: ShareDeps): void => {
       sectionCheckbox.checked ? heading : null,
     );
 
-  const describeLength = (len: number): { text: string; cls: string } => {
-    const n = len.toLocaleString();
-    if (len > HARD_URL_LENGTH) {
-      return {
-        text: `⚠ URL is ${n} chars — likely to exceed browser limits. Consider exporting as Markdown instead.`,
-        cls: 'url-warn over',
-      };
+  const renderMeter = (url: string): void => {
+    const size = describeShareSize(url);
+    const pct = Math.round(size.ratio * 100);
+    warn.className = `url-warn band-${size.band}`;
+    warn.innerHTML = '';
+    const label = document.createElement('div');
+    label.className = 'url-warn-label';
+    label.textContent = `URL size: ${formatBytes(size.bytes)}`;
+    const bar = document.createElement('div');
+    bar.className = 'url-warn-bar';
+    const fill = document.createElement('div');
+    fill.className = 'url-warn-bar-fill';
+    fill.style.width = `${pct}%`;
+    bar.append(fill);
+    warn.append(label, bar);
+    if (size.suggestions.length > 0) {
+      const list = document.createElement('ul');
+      list.className = 'url-warn-tips';
+      for (const s of size.suggestions) {
+        const li = document.createElement('li');
+        li.dataset.suggestion = s.id;
+        li.textContent = s.message;
+        list.append(li);
+      }
+      warn.append(list);
     }
-    if (len > SOFT_URL_LENGTH) {
-      return {
-        text: `⚠ URL is ${n} chars — may not survive every mobile share sheet.`,
-        cls: 'url-warn soft',
-      };
+  };
+
+  const paintQrMessage = (text: string): void => {
+    qrMount.textContent = '';
+    const msg = document.createElement('div');
+    msg.className = 'link-qr-msg';
+    msg.textContent = text;
+    qrMount.append(msg);
+  };
+
+  const paintQr = async (url: string): Promise<void> => {
+    const gen = ++qrGen;
+    try {
+      const { matrix, modulesPerSide } = await buildQr(deps.qrEncoder, url);
+      if (gen !== qrGen) return;
+      const canvas = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      const pixelSize = QR_CANVAS_PX * dpr;
+      canvas.width = pixelSize;
+      canvas.height = pixelSize;
+      canvas.style.width = `${QR_CANVAS_PX}px`;
+      canvas.style.height = `${QR_CANVAS_PX}px`;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        paintQrMessage('QR unavailable');
+        return;
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pixelSize, pixelSize);
+      const cell = pixelSize / modulesPerSide;
+      ctx.fillStyle = '#000000';
+      for (let r = 0; r < modulesPerSide; r++) {
+        const row = matrix[r];
+        if (!row) continue;
+        for (let c = 0; c < modulesPerSide; c++) {
+          if (row[c])
+            ctx.fillRect(
+              Math.floor(c * cell),
+              Math.floor(r * cell),
+              Math.ceil(cell),
+              Math.ceil(cell),
+            );
+        }
+      }
+      qrMount.textContent = '';
+      qrMount.append(canvas);
+    } catch {
+      if (gen !== qrGen) return;
+      paintQrMessage('URL too long for QR');
     }
-    return { text: `URL length: ${n} chars`, cls: 'url-warn' };
   };
 
   const refreshURL = async () => {
@@ -72,9 +138,8 @@ export const initShareModal = (deps: ShareDeps): void => {
     const url = await buildURL();
     if (gen !== refreshGen) return;
     urlBox.textContent = url;
-    const { text, cls } = describeLength(url.length);
-    warn.textContent = text;
-    warn.className = cls;
+    renderMeter(url);
+    void paintQr(url);
   };
 
   let previousFocus: HTMLElement | null = null;

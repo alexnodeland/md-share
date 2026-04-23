@@ -6,6 +6,21 @@ type FootnoteMap = ReadonlyMap<string, string>;
 
 const collapse = (s: string): string => s.replace(/\s+/g, ' ').trim();
 
+const ancestorLang = (el: Element | null): string | undefined => {
+  let node: Element | null = el;
+  while (node) {
+    const lang = node.getAttribute?.('lang');
+    if (lang) return lang;
+    node = node.parentElement;
+  }
+  return undefined;
+};
+
+const withLang = (chunk: SpeechChunk): SpeechChunk => {
+  const lang = ancestorLang(chunk.el);
+  return lang ? { ...chunk, lang } : chunk;
+};
+
 const buildFootnoteMap = (root: HTMLElement): FootnoteMap => {
   const map = new Map<string, string>();
   for (const li of root.querySelectorAll('section.footnotes li[id]')) {
@@ -272,5 +287,5 @@ export const extractSpeakableChunks = (root: HTMLElement): SpeechChunk[] => {
   const fm = buildFootnoteMap(root);
   const chunks: SpeechChunk[] = [];
   for (const child of root.children) processElement(child, chunks, fm);
-  return chunks;
+  return chunks.map(withLang);
 };

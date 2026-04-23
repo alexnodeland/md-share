@@ -38,6 +38,24 @@ export const toggleWrap = (
   };
 };
 
+export const wrap = (
+  value: string,
+  start: number,
+  end: number,
+  open: string,
+  close?: string,
+): EditResult => {
+  const closing = close ?? open;
+  const before = value.slice(0, start);
+  const middle = value.slice(start, end);
+  const after = value.slice(end);
+  return {
+    value: before + open + middle + closing + after,
+    start: start + open.length,
+    end: end + open.length,
+  };
+};
+
 export const wrapLink = (value: string, start: number, end: number, url: string): EditResult => {
   const before = value.slice(0, start);
   const middle = value.slice(start, end);

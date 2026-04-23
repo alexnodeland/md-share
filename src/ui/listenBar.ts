@@ -1,16 +1,22 @@
 import { createPlayer } from '../listen/player.ts';
-import type { Synth } from '../ports.ts';
+import type { SpeechVoice, Storage, Synth } from '../ports.ts';
 import type { SpeechChunk } from '../types.ts';
+import { pickVoice } from '../voicePreference.ts';
+import { initCaptionOverlay } from './captionOverlay.ts';
 import { showToast } from './toast.ts';
 
 export interface ListenBarDeps {
   synth: Synth;
   getChunks: () => SpeechChunk[];
+  storage: Storage;
 }
 
 export interface ListenBarHandle {
   onPreviewChange: () => void;
 }
+
+const VOICE_STORAGE_KEY = 'md-share:voice';
+const CAPTIONS_STORAGE_KEY = 'md-share:captions';
 
 const MARKER_ID = 'speaking-marker';
 const PAD = 4;
@@ -87,7 +93,7 @@ const updateUI = (
   positionMarker(marker, chunk);
 };
 
-export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHandle => {
+export const initListenBar = ({ synth, getChunks, storage }: ListenBarDeps): ListenBarHandle => {
   const listenBtn = document.getElementById('listen-btn');
   const playBtn = document.getElementById('audio-play-btn');
   const stopBtn = document.getElementById('audio-stop-btn');
@@ -96,6 +102,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   const progress = document.getElementById('audio-progress');
   const speedSel = document.getElementById('audio-speed') as HTMLSelectElement | null;
   const voiceSel = document.getElementById('audio-voice') as HTMLSelectElement | null;
+  const captionsBtn = document.getElementById('audio-captions-btn') as HTMLButtonElement | null;
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   const previewPane = document.getElementById('preview-pane');
 
@@ -120,11 +127,24 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   let currentEl: Element | null = null;
   let dragging = false;
 
+  const captionsEnabledInitial = storage.get(CAPTIONS_STORAGE_KEY) !== '0';
+  const captions = initCaptionOverlay(captionsEnabledInitial);
+  if (captionsBtn) {
+    captionsBtn.setAttribute('aria-pressed', String(captionsEnabledInitial));
+    captionsBtn.classList.toggle('active-captions', captionsEnabledInitial);
+  }
+
   const refresh = () => {
     if (dragging) return;
     const s = player.getState();
     updateUI(marker, s.active, s.playing, s.index, s.total, activeChunks);
     currentEl = activeChunks[s.index]?.el ?? null;
+    const chunk = activeChunks[s.index];
+    if (s.active && s.playing && chunk) {
+      captions.show(chunk.text, chunk.lang);
+    } else {
+      captions.hide();
+    }
   };
 
   const player = createPlayer({ synth, onStateChange: refresh });
@@ -220,10 +240,20 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
     refresh();
   });
 
+  const systemLangHint = (() => {
+    const raw = navigator.language ?? '';
+    return raw.split('-')[0] || undefined;
+  })();
+
   const populateVoices = () => {
-    const voices = synth.getVoices();
     const previous = voiceSel.value;
+    const voices = synth.getVoices();
     voiceSel.innerHTML = '';
+    if (voices.length === 0) {
+      voiceSel.style.display = 'none';
+      return;
+    }
+    voiceSel.style.display = '';
     const auto = document.createElement('option');
     auto.value = '';
     auto.textContent = 'Default voice';
@@ -236,6 +266,13 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
     }
     if (previous && voices.some((v) => v.voiceURI === previous)) {
       voiceSel.value = previous;
+      return;
+    }
+    const saved = storage.get(VOICE_STORAGE_KEY);
+    const pick: SpeechVoice | null = pickVoice(voices, saved, systemLangHint);
+    if (pick) {
+      voiceSel.value = pick.voiceURI;
+      player.setVoice(pick.voiceURI);
     }
   };
 
@@ -243,9 +280,22 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
   synth.onVoicesChanged(populateVoices);
 
   voiceSel.addEventListener('change', () => {
-    player.setVoice(voiceSel.value || null);
+    const next = voiceSel.value || null;
+    player.setVoice(next);
+    storage.set(VOICE_STORAGE_KEY, next ?? '');
     refresh();
   });
+
+  if (captionsBtn) {
+    captionsBtn.addEventListener('click', () => {
+      const next = !captions.isEnabled();
+      captions.setEnabled(next);
+      storage.set(CAPTIONS_STORAGE_KEY, next ? '1' : '0');
+      captionsBtn.setAttribute('aria-pressed', String(next));
+      captionsBtn.classList.toggle('active-captions', next);
+      refresh();
+    });
+  }
 
   const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
   const ratioFromEvent = (e: PointerEvent): number => {

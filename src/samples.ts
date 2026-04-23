@@ -128,7 +128,7 @@ Tables, task lists, footnotes, definition lists, strikethrough, and math are **n
 
 const extended = `# Extended Flavor Demo
 
-Extended adds **footnotes**, **definition lists**, and **typographer** on top of CommonMark --- plus tables and task lists from GitHub.
+Extended adds **footnotes**, **definition lists**, and **typographer** on top of CommonMark --- plus tables and task lists from GitHub. Ship it :rocket: with a :smile:.
 
 ## Footnotes
 
@@ -182,6 +182,43 @@ A[CommonMark] --> B[+ Footnotes]
 B --> C[+ Def Lists]
 C --> D[+ Typographer]
 D --> E[Extended]
+\`\`\`
+
+## Vega-Lite chart
+
+Inline Vega-Lite JSON renders as an SVG chart — remote data URLs are rejected.
+
+\`\`\`vega-lite
+{
+  "data": {"values": [{"x": "A", "y": 28}, {"x": "B", "y": 55}, {"x": "C", "y": 43}]},
+  "mark": "bar",
+  "encoding": {"x": {"field": "x", "type": "nominal"}, "y": {"field": "y", "type": "quantitative"}}
+}
+\`\`\`
+
+## ABC music notation
+
+An \`abc\` fence renders [ABC notation](https://abcnotation.com/) as staff music.
+
+\`\`\`abc
+X:1
+T:Simple Scale
+M:4/4
+L:1/4
+K:C
+C D E F | G A B c |
+\`\`\`
+
+## Graphviz
+
+A \`graphviz\` (or \`dot\`) fence renders [Graphviz DOT](https://graphviz.org/doc/info/lang.html) as an SVG graph.
+
+\`\`\`graphviz
+digraph G {
+  A -> B;
+  B -> C;
+  A -> C;
+}
 \`\`\`
 `;
 
@@ -247,9 +284,21 @@ A[Raw Markdown] --> B[Extended plugins]
 B --> C[KaTeX renderer]
 C --> D[Rendered paper]
 \`\`\`
+
+## Chess position
+
+Given a [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) or PGN, a \`chess\` fence renders a static board. Below: the starting position.
+
+\`\`\`chess
+rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+\`\`\`
 `;
 
-const obsidian = `# Obsidian Flavor Demo
+const obsidian = `---
+dir: auto
+---
+
+# Obsidian Flavor Demo
 
 ## Callouts
 
@@ -291,6 +340,12 @@ $$
 ## Comments
 
 This is visible. %%This comment won't render.%% This is also visible.
+
+## RTL (auto-detected)
+
+With \`dir: auto\` in the frontmatter, browsers render Hebrew and Arabic paragraphs right-to-left automatically:
+
+> שלום עולם — זהו משפט בעברית שמודגם בכיוון הנכון.
 
 \`\`\`mermaid
 graph LR
@@ -353,6 +408,65 @@ A[Jira Ticket] --> B[Dev] --> C[Review] --> D[Deploy]
 \`\`\`
 `;
 
+const notion = `# Notion Flavor Demo
+
+A Notion-style page, in plain Markdown. @alex wrote this; review with /comment.
+
+## Toggles
+
+Toggles open with \`?> summary\` and wrap the next blockquote as their body:
+
+?> Roadmap (click to expand)
+> - Ship the Notion flavor
+> - Gather feedback from @team
+> - Iterate on callouts & toggles
+
+?> Hidden trivia
+> The toggle body is just a regular blockquote --- every Markdown feature still works inside.
+
+## Colored callouts
+
+Callouts use a \`{callout:color}\` fence. Nine colors are available.
+
+{callout:blue}
+**Heads up** --- blue is for informational notes. Ping @alex if unclear.
+{callout}
+
+{callout:green}
+**Success** --- the build passed. Run /deploy to ship it.
+{callout}
+
+{callout:yellow}
+**Watch out** --- unsaved work is lost on close. @jane.doe, please confirm.
+{callout}
+
+{callout:red}
+**Stop** --- do not run /rm-rf without a backup.
+{callout}
+
+## Mentions and slash commands
+
+Page owner: @alex. Reviewers: @jane.doe, @bob-smith.
+
+Keyboard-style hints render as code spans: /todo, /heading1, /toggle, /callout.
+
+## A list
+
+1. Write the doc.
+2. Share it via URL.
+3. No server required --- the document *is* the URL.
+
+## A little code
+
+\`\`\`ts
+const share = (doc: string) => \`#d=\${compress(doc)}\`;
+\`\`\`
+
+## Typography
+
+"Smart quotes", en--dashes, and em---dashes pass through the base parser untouched.
+`;
+
 const presentation = `# Presentation demo
 
 A slideshow built from plain Markdown.
@@ -411,6 +525,7 @@ export const SAMPLES: Record<SampleKey, string> = {
   gfm,
   obsidian,
   atlassian,
+  notion,
   presentation,
 };
 
@@ -421,6 +536,7 @@ export const SAMPLE_LABELS: Record<SampleKey, string> = {
   gfm: 'GitHub',
   obsidian: 'Obsidian',
   atlassian: 'Atlassian',
+  notion: 'Notion',
   presentation: 'Presentation',
 };
 
@@ -431,6 +547,7 @@ export const SAMPLE_FLAVOR: Record<SampleKey, Flavor> = {
   gfm: 'gfm',
   obsidian: 'obsidian',
   atlassian: 'atlassian',
+  notion: 'notion',
   presentation: 'commonmark',
 };
 
