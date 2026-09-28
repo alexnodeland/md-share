@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { brotliCompressSync } from 'node:zlib';
+import { deflateRawSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 import { basename, extname, resolve } from 'node:path';
 
@@ -37,7 +37,8 @@ const bytesToBase64Url = (bytes) =>
     .replace(/\//g, '_')
     .replace(/=+$/, '');
 
-const encodeDoc = (text) => `br1.${bytesToBase64Url(brotliCompressSync(Buffer.from(text, 'utf8')))}`;
+// deflate-raw (`df1.`) is the one stream format every modern browser can decode.
+const encodeDoc = (text) => `df1.${bytesToBase64Url(deflateRawSync(Buffer.from(text, 'utf8')))}`;
 
 const parseOption = (args, key) => {
   const prefix = `--${key}=`;

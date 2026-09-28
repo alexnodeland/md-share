@@ -1,3 +1,4 @@
+import { inPageTargetId } from '../inPageLink.ts';
 import type { Clipboard, Compressor, Location } from '../ports.ts';
 import { buildShareURL } from '../share.ts';
 import type { Flavor } from '../types.ts';
@@ -33,5 +34,17 @@ export const initHeadingLinks = ({
       .then((url) => clipboard.write(url))
       .then(() => showToast('Heading link copied', true))
       .catch(() => showToast('Copy failed'));
+  });
+
+  // Every other in-page link (TOC, footnotes): scroll, don't touch the URL.
+  preview.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    const link = (e.target as HTMLElement | null)?.closest('a[href^="#"]');
+    if (!link || !preview.contains(link)) return;
+    const id = inPageTargetId(link.getAttribute('href'));
+    const target = id ? document.getElementById(id) : null;
+    if (!target || !preview.contains(target)) return;
+    e.preventDefault();
+    target.scrollIntoView({ block: 'start' });
   });
 };
