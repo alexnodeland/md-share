@@ -1582,6 +1582,51 @@ details.atl-expand .expand-body {
   border-radius: 4px;
   justify-content: flex-start;
 }
+/* The pane header clips overflow; the history menu must escape it. */
+#editor-pane > .pane-header {
+  overflow: visible;
+  position: relative;
+  z-index: 5;
+}
+.history-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.history-menu {
+  top: calc(100% + 6px);
+  right: -60px;
+  width: 280px;
+  max-width: calc(100vw - 24px);
+  max-height: 60vh;
+  overflow-y: auto;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.history-menu .history-item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 7px 10px;
+  white-space: normal;
+}
+.history-title {
+  color: var(--text);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.history-meta {
+  color: var(--text-xdim);
+  font-size: 10px;
+}
+.history-empty {
+  padding: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
 .toast {
   position: fixed;
   bottom: 20px;

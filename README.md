@@ -74,6 +74,7 @@ Users should always be able to leave:
 ### ⚡ Weightless editing
 - Split pane, 180ms debounced render
 - Drag & drop `.md` / `.markdown` / `.txt` anywhere
+- Recent versions: loading a sample, clearing, dropping a file, or opening someone's link keeps your previous text one click away
 - `Ctrl+S` · share dialog &nbsp; `Ctrl+E` · toggle editor &nbsp; `Esc` · close / stop
 - Tab inserts two spaces, doesn't leave the textarea
 - Mobile: Edit/View toggle instead of cramped split

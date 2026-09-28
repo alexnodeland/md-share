@@ -8,6 +8,7 @@ import { browserSanitizer } from './adapters/sanitizer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
+import { recordSnapshot } from './draftHistory.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
@@ -35,6 +36,7 @@ import { initFindBar } from './ui/findBar.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
 import { initHeadingLinks } from './ui/headingLinks.ts';
 import { initHelpModal } from './ui/helpModal.ts';
+import { initHistoryMenu } from './ui/historyMenu.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initPaneDivider } from './ui/paneDivider.ts';
@@ -201,10 +203,13 @@ let katexPending: Promise<Katex> | null = null;
 const loadKatex = (): Promise<Katex> => {
   if (katexMod) return Promise.resolve(katexMod);
   if (!katexPending) {
-    katexPending = import('katex').then((m) => {
-      katexMod = m.default;
-      return katexMod;
-    });
+    // Bundled (not CDN) so math renders offline and from file://.
+    katexPending = Promise.all([import('katex'), import('katex/dist/katex.min.css')]).then(
+      ([m]) => {
+        katexMod = m.default;
+        return katexMod;
+      },
+    );
   }
   return katexPending;
 };
@@ -247,6 +252,8 @@ const readHeadingPositions = (): HeadingPosition[] => {
   }));
 };
 
+const snapshot = (text: string): void => recordSnapshot(browserStorage, text, Date.now());
+
 const stripUrlPayload = (): void => {
   window.history.replaceState(null, '', window.location.pathname);
 };
@@ -258,6 +265,9 @@ const loadInitialDocument = (
   banner: HTMLElement | null,
 ): void => {
   if (params.source !== null) {
+    // The first edit forks the shared doc into the draft slot; keep the old draft.
+    const draft = loadDraft(browserStorage);
+    if (draft && draft !== params.source) snapshot(draft);
     editor.value = params.source;
     banner?.classList.add('visible');
     const clearBanner = () => {
@@ -365,6 +375,8 @@ const boot = async (): Promise<void> => {
         setFlavorSelectValue(nextFlavor);
         updatePlaceholder();
       }
+      // An untouched sample isn't worth a snapshot; anything else is.
+      if (isSampleContent(editor.value) === null) snapshot(editor.value);
       state.activeSample = key;
       applyEdit(editor, { value: sampleFor(key), start: 0, end: 0 });
       rerender();
@@ -372,6 +384,9 @@ const boot = async (): Promise<void> => {
   });
   initClearButton({
     onClear: () => {
+      if (!editor.value) return;
+      snapshot(editor.value);
+      showToast('Cleared — earlier text is in Recent versions');
       state.activeSample = null;
       setSampleSelectValue(null);
       clearDraft(browserStorage);
@@ -390,6 +405,18 @@ const boot = async (): Promise<void> => {
   initMobileToggle({
     onShowPreview: () => rerender(),
     initialView: params.source !== null ? 'preview' : undefined,
+  });
+  initHistoryMenu({
+    storage: browserStorage,
+    now: () => Date.now(),
+    onRestore: (text) => {
+      snapshot(editor.value);
+      state.activeSample = isSampleContent(text);
+      setSampleSelectValue(state.activeSample);
+      applyEdit(editor, { value: text, start: 0, end: 0 });
+      rerender();
+      showToast('Restored — the replaced text is in Recent versions', true);
+    },
   });
   initDropdowns();
   initShareModal({
@@ -422,6 +449,7 @@ const boot = async (): Promise<void> => {
   });
   initDropZone({
     onText: (text) => {
+      snapshot(editor.value);
       applyEdit(editor, { value: text, start: 0, end: 0 });
       rerender();
     },

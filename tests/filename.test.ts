@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { deriveFilename, firstHeadingText, slugifyFilename } from '../src/filename.ts';
+import {
+  deriveFilename,
+  documentTitle,
+  firstHeadingText,
+  slugifyFilename,
+} from '../src/filename.ts';
 
 describe('firstHeadingText', () => {
   it('returns the first H1', () => {
@@ -18,6 +23,15 @@ describe('firstHeadingText', () => {
   it('ignores hashes inside fenced code blocks', () => {
     const src = ['```', '# not a heading', '```', '', '# real heading'].join('\n');
     expect(firstHeadingText(src)).toBe('real heading');
+  });
+
+  it('ignores hashes inside tilde fences', () => {
+    const src = ['~~~', '# not a heading', '~~~', '# real'].join('\n');
+    expect(firstHeadingText(src)).toBe('real');
+  });
+
+  it('keeps link text and drops link targets', () => {
+    expect(firstHeadingText('# See [the docs](https://x.dev/a_b)')).toBe('See the docs');
   });
 
   it('returns null when no heading exists', () => {
@@ -71,5 +85,34 @@ describe('deriveFilename', () => {
 
   it('supports arbitrary extensions', () => {
     expect(deriveFilename('# Report', 'pdf')).toBe('report.pdf');
+  });
+});
+
+describe('documentTitle', () => {
+  it('prefers a frontmatter title', () => {
+    expect(documentTitle('---\ntitle: "Field Notes"\n---\n# Heading')).toBe('Field Notes');
+  });
+
+  it('does not mistake a YAML comment for a heading', () => {
+    expect(documentTitle('---\n# comment\nauthor: me\n---\n## Real')).toBe('Real');
+  });
+
+  it('falls back to the first heading when the title is blank', () => {
+    expect(documentTitle('---\ntitle: "  "\n---\n# Heading')).toBe('Heading');
+  });
+
+  it('returns null for an untitled document', () => {
+    expect(documentTitle('plain text')).toBeNull();
+  });
+});
+
+describe('unicode filenames', () => {
+  it('keeps non-ASCII letters and digits', () => {
+    expect(slugifyFilename('Über Café 2')).toBe('über-café-2');
+    expect(deriveFilename('# 日本語のメモ', 'md')).toBe('日本語のメモ.md');
+  });
+
+  it('uses the frontmatter title for the filename', () => {
+    expect(deriveFilename('---\ntitle: Trip Plan\n---\n# Day 1', 'md')).toBe('trip-plan.md');
   });
 });

@@ -1,23 +1,33 @@
 import LZString from 'lz-string';
 import type { Compressor } from '../ports.ts';
 
-type StreamAlgo = 'br' | 'gzip';
-type EncoderChoice = StreamAlgo | 'lz';
+/**
+ * Payload format: `<tag>.<base64url body>`.
+ *
+ * - `df1.` deflate-raw — preferred: every modern browser decodes it, and it has
+ *   no gzip header/trailer, so URLs are ~24 chars shorter than `gz1.`.
+ * - `lz1.` lz-string — pure JS; wins on very short documents.
+ * - `gz1.` gzip — decode only (older links).
+ * - `br1.` brotli — decode only, where the browser supports it.
+ * - untagged — legacy lz-string.
+ */
+type StreamFormat = 'deflate-raw' | 'gzip' | 'brotli';
 
-const hasCompressionStream = typeof CompressionStream !== 'undefined';
+const STREAM_TAGS: Record<string, StreamFormat> = {
+  df1: 'deflate-raw',
+  gz1: 'gzip',
+  br1: 'brotli',
+};
 
-const canStream = (algo: StreamAlgo): boolean => {
-  if (!hasCompressionStream) return false;
+const supports = (format: StreamFormat): boolean => {
+  if (typeof CompressionStream === 'undefined') return false;
   try {
-    const Ctor = CompressionStream as unknown as new (format: string) => unknown;
-    new Ctor(algo);
+    new CompressionStream(format as CompressionFormat);
     return true;
   } catch {
     return false;
   }
 };
-
-const encoderAlgo: EncoderChoice = canStream('br') ? 'br' : canStream('gzip') ? 'gzip' : 'lz';
 
 const bytesToBase64Url = (bytes: Uint8Array): string => {
   let s = '';
@@ -34,74 +44,58 @@ const base64UrlToBytes = (s: string): Uint8Array => {
   return out;
 };
 
-const makeCompressionStream = (algo: StreamAlgo): TransformStream<Uint8Array, Uint8Array> => {
-  const Ctor = CompressionStream as unknown as new (
-    format: string,
-  ) => TransformStream<Uint8Array, Uint8Array>;
-  return new Ctor(algo);
+const pipe = async (
+  bytes: Uint8Array,
+  transform: CompressionStream | DecompressionStream,
+): Promise<Uint8Array> => {
+  const stream = new Blob([bytes as BlobPart]).stream().pipeThrough(transform);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
 };
 
-const makeDecompressionStream = (algo: StreamAlgo): TransformStream<Uint8Array, Uint8Array> => {
-  const Ctor = DecompressionStream as unknown as new (
-    format: string,
-  ) => TransformStream<Uint8Array, Uint8Array>;
-  return new Ctor(algo);
-};
-
-const compressBytes = async (text: string, algo: StreamAlgo): Promise<Uint8Array> => {
-  const input = new TextEncoder().encode(text);
-  const stream = new Blob([input as BlobPart]).stream().pipeThrough(makeCompressionStream(algo));
-  const buf = await new Response(stream).arrayBuffer();
-  return new Uint8Array(buf);
-};
-
-const decompressBytes = async (bytes: Uint8Array, algo: StreamAlgo): Promise<string> => {
-  const stream = new Blob([bytes as BlobPart]).stream().pipeThrough(makeDecompressionStream(algo));
-  const buf = await new Response(stream).arrayBuffer();
-  return new TextDecoder().decode(buf);
-};
-
-const encodeWithStream = async (text: string, algo: StreamAlgo): Promise<string> => {
-  const bytes = await compressBytes(text, algo);
-  const tag = algo === 'br' ? 'br1' : 'gz1';
+const encodeStream = async (text: string, format: StreamFormat, tag: string): Promise<string> => {
+  const bytes = await pipe(
+    new TextEncoder().encode(text),
+    new CompressionStream(format as CompressionFormat),
+  );
   return `${tag}.${bytesToBase64Url(bytes)}`;
 };
 
-const encodeWithLz = (text: string): string =>
-  `lz1.${LZString.compressToEncodedURIComponent(text)}`;
-
-const decodeLegacyLz = (text: string): string | null =>
-  LZString.decompressFromEncodedURIComponent(text) || null;
-
-const tryStreamDecode = async (body: string, algo: StreamAlgo): Promise<string | null> => {
+const decodeStream = async (body: string, format: StreamFormat): Promise<string | null> => {
   try {
-    return await decompressBytes(base64UrlToBytes(body), algo);
+    const stream = new DecompressionStream(format as CompressionFormat);
+    const bytes = await pipe(base64UrlToBytes(body), stream);
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
     return null;
   }
 };
 
-const tryLzDecode = (body: string): string | null => {
+const decodeLz = (body: string): string | null => {
   try {
-    return decodeLegacyLz(body);
+    return LZString.decompressFromEncodedURIComponent(body) || null;
   } catch {
     return null;
   }
 };
 
-export const browserCompressor: Compressor = {
-  encode: (text) =>
-    encoderAlgo === 'lz'
-      ? Promise.resolve(encodeWithLz(text))
-      : encodeWithStream(text, encoderAlgo),
+const encodeLz = (text: string): string => `lz1.${LZString.compressToEncodedURIComponent(text)}`;
+
+export const createCompressor = (canDeflate = supports('deflate-raw')): Compressor => ({
+  encode: async (text) => {
+    const lz = encodeLz(text);
+    if (!canDeflate) return lz;
+    const df = await encodeStream(text, 'deflate-raw', 'df1');
+    return df.length <= lz.length ? df : lz;
+  },
   decode: async (payload) => {
     const dot = payload.indexOf('.');
-    if (dot === -1) return tryLzDecode(payload);
+    if (dot === -1) return decodeLz(payload);
     const tag = payload.slice(0, dot);
     const body = payload.slice(dot + 1);
-    if (tag === 'br1') return tryStreamDecode(body, 'br');
-    if (tag === 'gz1') return tryStreamDecode(body, 'gzip');
-    if (tag === 'lz1') return tryLzDecode(body);
-    return null;
+    if (tag === 'lz1') return decodeLz(body);
+    const format = STREAM_TAGS[tag];
+    return format ? decodeStream(body, format) : null;
   },
-};
+});
+
+export const browserCompressor: Compressor = createCompressor();
