@@ -91,6 +91,7 @@ The repo is organized around ports-and-adapters:
 - the document check: badge, issue list, and jump-to-line
 - embed snippets (chrome hidden, read-only, viewer's draft untouched) and Web Share Target text
 - link-length guidance by destination, and sharing without embedded images
+- Send file… (share sheet with files, download fallback), a POST share into the installed app through the service worker, and "Open with" launches opened in place
 - open-in-place and Save to file… (against stubbed File System Access pickers), unlinking when the document is replaced; the file-input fallback
 - heading-link and footnote autocomplete: keyboard and mouse selection, Esc dismissal
 - Academic citations and cross-references: numbering, reference list, scroll-to-reference, `@` autocomplete, Word and LaTeX export
@@ -105,7 +106,9 @@ When you add a user-facing behavior, add its check to `e2e/` rather than to the 
 Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 
 - [ ] Scan the share dialog's QR code with a real phone camera; on a phone, **Share…** opens the OS share sheet
-- [ ] Install the app on Android, share text from another app to md-share → it opens as the document
+- [ ] Install the app on Android, share text, then a `.md` file, from another app to md-share → each opens as the document
+- [ ] Install the app on desktop Chrome/Edge, right-click a `.md` file → Open with → md-share: it opens, and `Ctrl+S` saves back
+- [ ] On a phone, Share → Send file… offers the OS share sheet with the `.md` attached
 - [ ] Cross-browser decode — copy a `#d=…` URL (`dd1.` for most docs; try a `df1.` one too) from Chrome, open it in Firefox and Safari, confirm it renders identically; do the reverse too
 - [ ] Listen — speech plays, progress advances, skip fwd/back and seek-on-click work, speed change works, `Esc` stops
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds

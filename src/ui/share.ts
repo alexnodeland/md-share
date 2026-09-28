@@ -3,6 +3,7 @@ import type { Clipboard, Compressor, Location, NativeShare } from '../ports.ts';
 import { fitsInQr, qrSvg } from '../qr.ts';
 import { buildShareURL, describeUrlLength, embedSnippet } from '../share.ts';
 import type { Flavor } from '../types.ts';
+import { download } from './download.ts';
 import { trapFocus } from './focusTrap.ts';
 import { showToast } from './toast.ts';
 
@@ -13,6 +14,8 @@ export interface ShareDeps {
   location: Location;
   getTitle: () => string | null;
   getSource: () => string;
+  /** File name for Send file…, e.g. from the title. */
+  getFileName: () => string;
   getFlavor: () => Flavor;
   getCurrentHeading: () => string | null;
 }
@@ -34,6 +37,7 @@ export const initShareModal = (deps: ShareDeps): { open: () => void } => {
   const qrDetails = document.getElementById('link-qr') as HTMLDetailsElement | null;
   const qrBox = document.getElementById('link-qr-code');
   const nativeBtn = document.getElementById('btn-link-native');
+  const fileBtn = document.getElementById('btn-link-file');
   if (
     !modal ||
     !urlBox ||
@@ -128,6 +132,27 @@ export const initShareModal = (deps: ShareDeps): { open: () => void } => {
         });
     });
   }
+
+  // Any size, images included: the OS share sheet where it takes files, else a download.
+  fileBtn?.addEventListener('click', async () => {
+    const file = new File([deps.getSource()], deps.getFileName(), { type: 'text/markdown' });
+    const downloadInstead = () => {
+      download(file, file.name);
+      showToast(`Downloaded ${file.name} — send it any way you like; it opens in md-share`, true);
+    };
+    if (!deps.nativeShare.canShareFiles([file])) {
+      downloadInstead();
+      close();
+      return;
+    }
+    try {
+      await deps.nativeShare.shareFiles({ title: deps.getTitle() ?? file.name, files: [file] });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      downloadInstead();
+    }
+    close();
+  });
 
   let previousFocus: HTMLElement | null = null;
 

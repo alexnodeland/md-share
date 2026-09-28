@@ -1,4 +1,5 @@
 import { escapeHtml } from './escapeHtml.ts';
+import { fileKind } from './fileKind.ts';
 import type { Compressor, Location } from './ports.ts';
 import { type Flavor, isFlavor, type ShareParams } from './types.ts';
 
@@ -101,7 +102,7 @@ export const describeUrlLength = (length: number): { level: UrlLengthLevel; text
   if (length > LONG_URL_LENGTH) {
     return {
       level: 'over',
-      text: `${n} — opens in browsers, but too long to paste into most chat apps. Send the file instead.`,
+      text: `${n} — opens in browsers, but too long to paste into most chat apps. Use Send file… instead.`,
     };
   }
   const fits = LINK_DESTINATIONS.filter((d) => length <= d.max).map((d) => d.name);
@@ -116,18 +117,35 @@ export const describeUrlLength = (length: number): { level: UrlLengthLevel; text
 export const embedSnippet = (embedUrl: string, title: string | null): string =>
   `<iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(title ?? 'Document')}" width="100%" height="600" style="border:0" loading="lazy"></iframe>`;
 
+/** What another app handed md-share: via the share sheet, or as files. */
+export interface SharedPayload {
+  title: string;
+  text: string;
+  url: string;
+  files: readonly { name: string; type: string; text: string }[];
+}
+
 /**
- * The Web Share Target (Android "Share → md-share") delivers `title`,
- * `text`, and `url` as query params; turn them into a document. Android
- * often repeats the URL inside `text`, so it is only added once.
+ * Turn a share into a document. Shared Markdown/text files win (several are
+ * joined by rules); otherwise `title`, `text`, and `url` become a heading, a
+ * paragraph, and a link. Android often repeats the URL inside `text`, so it
+ * is only added once.
  */
+export const sharedDocument = ({ title, text, url, files }: SharedPayload): string | null => {
+  const texts = files.filter((f) => fileKind(f.name, f.type) === 'text').map((f) => f.text);
+  if (texts.length) return texts.join('\n\n---\n\n');
+  const [t, x, u] = [title.trim(), text.trim(), url.trim()];
+  const parts = [t && `# ${t}`, x, u && !x.includes(u) ? u : ''].filter(Boolean);
+  return parts.length ? parts.join('\n\n') : null;
+};
+
+/** The GET form of the Web Share Target: `?title=&text=&url=` (installs from before file sharing). */
 export const shareTargetDocument = (search: string): string | null => {
   const params = new URLSearchParams(search);
-  const title = params.get('title')?.trim() ?? '';
-  const text = params.get('text')?.trim() ?? '';
-  const url = params.get('url')?.trim() ?? '';
-  const parts = [title && `# ${title}`, text, url && !text.includes(url) ? url : ''].filter(
-    Boolean,
-  );
-  return parts.length ? parts.join('\n\n') : null;
+  return sharedDocument({
+    title: params.get('title') ?? '',
+    text: params.get('text') ?? '',
+    url: params.get('url') ?? '',
+    files: [],
+  });
 };

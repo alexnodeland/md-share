@@ -51,6 +51,8 @@ test('text shared from another app (Web Share Target) becomes the document', asy
   await expect(editor(page)).toHaveValue('# Trip\n\nPack light\n\nhttps://example.com/trip');
   await expect(page.locator('#toast')).toContainText('Added from share');
   expect(new URL(page.url()).search).toBe('');
+  await page.reload(); // the share is the draft now
+  await expect(editor(page)).toHaveValue('# Trip\n\nPack light\n\nhttps://example.com/trip');
   await page.locator('#btn-history').click();
   await expect(page.locator('#history-menu .history-item').first()).toContainText('Earlier draft');
 });

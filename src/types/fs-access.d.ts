@@ -10,3 +10,16 @@ interface Window {
     options?: FilePickerOptions & { suggestedName?: string },
   ) => Promise<FileSystemFileHandle>;
 }
+
+// "Open with → md-share" for the installed app (manifest file_handlers).
+interface LaunchParams {
+  readonly files: readonly FileSystemHandle[];
+}
+
+interface LaunchQueue {
+  setConsumer(consumer: (params: LaunchParams) => void): void;
+}
+
+interface Window {
+  launchQueue?: LaunchQueue;
+}
