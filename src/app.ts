@@ -1,4 +1,5 @@
-import hljs from 'highlight.js/lib/common';
+import hljs from 'highlight.js/lib/core';
+import markdownGrammar from 'highlight.js/lib/languages/markdown';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
 import { browserHtmlToMarkdown } from './adapters/htmlToMarkdown.ts';
@@ -17,6 +18,7 @@ import { documentTitle, pageTitle } from './filename.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
+import { languageFile } from './hljsAliases.ts';
 import { insertImageAtCursor } from './imageEmbed.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
@@ -206,11 +208,15 @@ type LanguageLoader = () => Promise<LanguageModule>;
 const languageLoaders = import.meta.glob<LanguageModule>([
   '/node_modules/highlight.js/lib/languages/*.js',
   '!/node_modules/highlight.js/lib/languages/*.js.js',
-  '!/node_modules/highlight.js/lib/languages/{xml,bash,c,cpp,csharp,css,markdown,diff,ruby,go,graphql,ini,java,javascript,json,kotlin,less,lua,makefile,perl,objectivec,php,php-template,plaintext,python,python-repl,r,rust,scss,shell,sql,swift,yaml,typescript,vbnet,wasm}.js',
+  '!/node_modules/highlight.js/lib/languages/markdown.js',
 ]) as Record<string, LanguageLoader>;
 
+// Only the editor's own grammar ships in the entry chunk; every fence
+// language loads on first use (~1-20 kB each) instead of a 190-grammar bundle.
+hljs.registerLanguage('markdown', markdownGrammar);
+
 const loaderFor = (lang: string): LanguageLoader | undefined =>
-  languageLoaders[`/node_modules/highlight.js/lib/languages/${lang}.js`];
+  languageLoaders[`/node_modules/highlight.js/lib/languages/${languageFile(lang)}.js`];
 
 type Katex = typeof import('katex').default;
 let katexMod: Katex | null = null;
@@ -243,7 +249,7 @@ const createLazyHighlighter = (onReady: () => void) => (lang: string) => {
   pendingLanguages.add(lang);
   loader()
     .then((mod) => {
-      hljs.registerLanguage(lang, mod.default);
+      hljs.registerLanguage(languageFile(lang), mod.default);
       onReady();
     })
     .catch(() => {
@@ -312,6 +318,10 @@ const boot = async (): Promise<void> => {
   const flavor = resolveInitialFlavor(params.flavor, browserStorage.get(FLAVOR_STORAGE_KEY));
   const ensureLanguage = createLazyHighlighter(() => {
     rerender();
+    // The editor's own fence highlighting uses the same grammars.
+    const mirror = document.getElementById('editor-mirror');
+    const source = document.getElementById('editor') as HTMLTextAreaElement | null;
+    if (mirror && source) mirror.innerHTML = highlightMarkdownSource(source.value, hljs);
   });
   const deps = createFlavorDeps(hljs, null, ensureLanguage);
   const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };

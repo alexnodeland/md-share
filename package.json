@@ -22,6 +22,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "share:link": "node scripts/generate-share-link.mjs",
+    "gen:hljs-aliases": "node scripts/gen-hljs-aliases.mjs && biome format --write src/hljsAliases.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

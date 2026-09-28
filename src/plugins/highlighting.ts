@@ -6,22 +6,17 @@ export const applyHighlighting = (
   highlighter: typeof hljs,
   onUnknownLanguage?: (lang: string) => void,
 ): void => {
+  // Returning '' tells markdown-it to escape the code itself. Unlabelled
+  // fences stay plain (as on GitHub): grammars load on demand, so there is
+  // nothing reliable to auto-detect against.
   md.options.highlight = (str, lang) => {
-    // Empty string tells markdown-it to escape the source itself.
-    if (lang === 'mermaid') return '';
-    if (lang) {
-      if (highlighter.getLanguage(lang)) {
-        try {
-          return highlighter.highlight(str, { language: lang }).value;
-        } catch {
-          /* fall through */
-        }
-      } else {
-        onUnknownLanguage?.(lang);
-      }
+    if (!lang || lang === 'mermaid') return '';
+    if (!highlighter.getLanguage(lang)) {
+      onUnknownLanguage?.(lang);
+      return '';
     }
     try {
-      return highlighter.highlightAuto(str).value;
+      return highlighter.highlight(str, { language: lang }).value;
     } catch {
       return '';
     }
