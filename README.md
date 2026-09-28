@@ -80,6 +80,7 @@ Users should always be able to leave:
 - Document check: a badge flags skipped heading levels, images without alt text, broken in-page links, undefined footnotes, and unclosed code fences — click one to jump to the line
 - Recent versions: loading a sample, clearing, dropping a file, or opening someone's link keeps your previous text one click away
 - `Ctrl+S` · share dialog &nbsp; `Ctrl+E` · toggle editor &nbsp; `Esc` · close / stop
+- Type `](#` for heading-link suggestions, `[^` for footnotes
 - `Tab` / `Shift+Tab` indent and outdent the selected lines; `Esc` then `Tab` moves focus out of the editor
 - Mobile: Edit/View toggle instead of cramped split
 
