@@ -16,15 +16,17 @@ import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from '.
 import { buildDocModel } from './docModel.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { recordSnapshot } from './draftHistory.ts';
+import { lineBounds } from './editorCommands.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { renderEmptyState } from './emptyState.ts';
 import { flavorForDocxImport } from './fileKind.ts';
 import { documentTitle, pageTitle } from './filename.ts';
-import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
+import { flavorHasFootnotes, flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { languageFile } from './hljsAliases.ts';
 import { insertImageAtCursor } from './imageEmbed.ts';
+import { type Diagnostic, lintDocument } from './lint.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
 import {
@@ -56,6 +58,7 @@ import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
 import { initHeadingLinks } from './ui/headingLinks.ts';
 import { initHelpModal } from './ui/helpModal.ts';
 import { initHistoryMenu } from './ui/historyMenu.ts';
+import { initLintPanel } from './ui/lintPanel.ts';
 import { initListenBar } from './ui/listenBar.ts';
 import { initMobileToggle } from './ui/mobileToggle.ts';
 import { initPaneDivider } from './ui/paneDivider.ts';
@@ -78,6 +81,7 @@ interface AppState {
   md: MarkdownIt;
   deps: FlavorDeps;
   activeSample: SampleKey | null;
+  reportDiagnostics: (diagnostics: Diagnostic[]) => void;
 }
 
 type Mermaid = typeof import('mermaid').default;
@@ -136,17 +140,31 @@ const renderPreview = async (state: AppState): Promise<void> => {
   document.title = pageTitle(src);
   if (!src.trim()) {
     preview.innerHTML = renderEmptyState();
+    state.reportDiagnostics([]);
     return;
   }
   try {
     const { meta, body } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
-    const env: RenderEnv = { lineOffset: bodyLineOffset(src, body) };
-    const html = state.md.render(body, env);
-    preview.innerHTML = browserSanitizer.sanitize(front + renderTOC(env.headings ?? []) + html);
+    const lineOffset = bodyLineOffset(src, body);
+    const env: RenderEnv = { lineOffset };
+    // Parse once: the same tokens feed the preview and the document checks.
+    const tokens = state.md.parse(body, env);
+    const html = state.md.renderer.render(tokens, state.md.options, env);
+    const headings = env.headings ?? [];
+    preview.innerHTML = browserSanitizer.sanitize(front + renderTOC(headings) + html);
+    state.reportDiagnostics(
+      lintDocument(tokens, {
+        body,
+        lineOffset,
+        headings,
+        footnotes: flavorHasFootnotes(state.flavor),
+      }),
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     preview.replaceChildren(renderError(message));
+    state.reportDiagnostics([]);
     if (scroller) scroller.scrollTop = scrollTop;
     return;
   }
@@ -330,7 +348,14 @@ const boot = async (): Promise<void> => {
     if (mirror && source) mirror.innerHTML = highlightMarkdownSource(source.value, hljs);
   });
   const deps = createFlavorDeps(hljs, null, ensureLanguage);
-  const state: AppState = { flavor, theme, md: buildMD(flavor, deps), deps, activeSample: null };
+  const state: AppState = {
+    flavor,
+    theme,
+    md: buildMD(flavor, deps),
+    deps,
+    activeSample: null,
+    reportDiagnostics: () => {},
+  };
 
   const ensureKatexFor = (f: Flavor): void => {
     if (!flavorNeedsKatex(f) || deps.katex) return;
@@ -451,6 +476,18 @@ const boot = async (): Promise<void> => {
       applyEdit(editor, { value: text, start: 0, end: 0 });
       rerender();
       showToast('Restored — the replaced text is in Recent versions', true);
+    },
+  });
+  state.reportDiagnostics = initLintPanel({
+    onJump: (line) => {
+      // Phones show one pane at a time; the fix happens in the editor.
+      const editView = document.getElementById('btn-edit-view');
+      if (editView?.offsetParent) editView.click();
+      const { start, end } = lineBounds(editor.value, line);
+      // Blur first: focusing scrolls the textarea to its selection.
+      editor.blur();
+      editor.setSelectionRange(start, end);
+      editor.focus();
     },
   });
   initDropdowns();

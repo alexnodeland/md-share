@@ -15,6 +15,7 @@ A survey of candidate features that could bring md-share to the next level, each
 | 11 | Voice picker | ✅ Already present (`#audio-voice`) |
 | 15 | Local draft history | ✅ Shipped as "Recent versions" (#19) |
 | 21 | Paste image from clipboard | ✅ Already present (editor paste handler) |
+| 9 | Document linter pane | ✅ Document check: heading skips, alt text, broken anchors, empty links, undefined footnotes, unclosed fences |
 | 24 | Accessibility checks | ✅ axe-core runs in E2E for both themes (#27); user-color contrast in a linter is still open |
 
 Also shipped outside this list: sanitized rendering (#18), E2E smoke suite (#24), lazy code grammars (#28).

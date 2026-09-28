@@ -4,6 +4,7 @@ import {
   continueList,
   indentLines,
   isUrl,
+  lineBounds,
   outdentLines,
   toggleWrap,
   wrapLink,
@@ -175,5 +176,18 @@ describe('outdentLines', () => {
 
   it('is a no-op on unindented lines', () => {
     expect(outdentLines('abc', 1, 2)).toEqual({ value: 'abc', start: 1, end: 2 });
+  });
+});
+
+describe('lineBounds', () => {
+  const doc = 'one\ntwo\nthree';
+  it('spans the requested 1-based line', () => {
+    expect(lineBounds(doc, 1)).toEqual({ start: 0, end: 3 });
+    expect(lineBounds(doc, 2)).toEqual({ start: 4, end: 7 });
+    expect(lineBounds(doc, 3)).toEqual({ start: 8, end: 13 });
+  });
+
+  it('clamps past-the-end lines to the last line', () => {
+    expect(lineBounds(doc, 9)).toEqual({ start: 8, end: 13 });
   });
 });
