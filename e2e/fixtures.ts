@@ -37,3 +37,11 @@ export const shareUrl = async (page: Page): Promise<string> => {
   await page.locator('#btn-link-close').click();
   return url;
 };
+
+/** Hide the File System Access pickers, as in Firefox and Safari: Open… falls back to a file input. */
+export const withoutFileAccess = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'showOpenFilePicker', { value: undefined });
+    Object.defineProperty(window, 'showSaveFilePicker', { value: undefined });
+  });
+};

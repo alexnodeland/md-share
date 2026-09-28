@@ -84,8 +84,10 @@
             <span class="hide-mobile">Export</span>
           </button>
           <div class="dropdown" id="export-menu" style="right: 0">
+            <button type="button" id="btn-save-file" hidden>↓ &ensp;Save to file… (.md)</button>
             <button type="button" id="btn-export-md">↓ &ensp;Markdown (.md)</button>
             <button type="button" id="btn-export-docx">↓ &ensp;Word (.docx)</button>
+            <button type="button" id="btn-export-tex">↓ &ensp;LaTeX (.tex)</button>
             <button type="button" id="btn-export-html">↓ &ensp;HTML page (.html)</button>
             <button type="button" id="btn-copy-rich">⧉ &ensp;Copy formatted</button>
             <button type="button" id="btn-export-png">↓ &ensp;PNG image</button>
@@ -158,6 +160,7 @@
             <option value="atlassian">Atlassian</option>
             <option value="presentation">Presentation</option>
           </select>
+          <button type="button" id="file-status" class="pane-action file-status" hidden></button>
           <button
             type="button"
             id="btn-open"
@@ -348,7 +351,7 @@
         <h3 id="help-modal-title">Keyboard shortcuts</h3>
         <dl class="help-shortcuts">
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>S</kbd></dt>
-          <dd>Open share dialog</dd>
+          <dd>Save to the opened file · otherwise open the share dialog</dd>
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>E</kbd></dt>
           <dd>Toggle editor pane</dd>
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>B</kbd> · <kbd>I</kbd></dt>

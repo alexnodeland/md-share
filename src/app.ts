@@ -4,6 +4,7 @@ import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
 import { browserDocxReader } from './adapters/docxReader.ts';
 import { browserDocxWriter } from './adapters/docxWriter.ts';
+import { browserFileAccess } from './adapters/fileAccess.ts';
 import { browserHtmlToMarkdown } from './adapters/htmlToMarkdown.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
@@ -21,12 +22,13 @@ import { lineBounds } from './editorCommands.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { renderEmptyState } from './emptyState.ts';
 import { flavorForDocxImport } from './fileKind.ts';
-import { documentTitle, pageTitle } from './filename.ts';
+import { deriveFilename, documentTitle, pageTitle } from './filename.ts';
 import { flavorHasFootnotes, flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { languageFile } from './hljsAliases.ts';
 import { insertImageAtCursor } from './imageEmbed.ts';
+import { toLatex } from './latex.ts';
 import { type Diagnostic, lintDocument } from './lint.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
@@ -56,6 +58,7 @@ import { initEmbedMode } from './ui/embedMode.ts';
 import { initPrintExpansion } from './ui/expandDetails.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
 import { createFileImporter, initOpenFile } from './ui/fileImport.ts';
+import { type FileLinkControl, initFileLink } from './ui/fileLink.ts';
 import { initFindBar } from './ui/findBar.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
 import { initHeadingLinks } from './ui/headingLinks.ts';
@@ -457,7 +460,10 @@ const boot = async (): Promise<void> => {
       rerender();
     },
   });
+  // Set once the share dialog exists; replacing the document unlinks its file.
+  let fileLink: FileLinkControl | null = null;
   const loadSample = (key: SampleKey): void => {
+    fileLink?.unlink();
     switchFlavor(SAMPLE_FLAVOR[key]);
     // An untouched sample isn't worth a snapshot; anything else is.
     if (isSampleContent(editor.value) === null) snapshot(editor.value);
@@ -476,6 +482,7 @@ const boot = async (): Promise<void> => {
     onClear: () => {
       if (!editor.value) return;
       snapshot(editor.value);
+      fileLink?.unlink();
       showToast('Cleared — earlier text is in Recent versions');
       state.activeSample = null;
       setSampleSelectValue(null);
@@ -501,6 +508,7 @@ const boot = async (): Promise<void> => {
     now: () => Date.now(),
     onRestore: (text) => {
       snapshot(editor.value);
+      fileLink?.unlink();
       state.activeSample = isSampleContent(text);
       setSampleSelectValue(state.activeSample);
       applyEdit(editor, { value: text, start: 0, end: 0 });
@@ -521,7 +529,7 @@ const boot = async (): Promise<void> => {
     },
   });
   initDropdowns();
-  initShareModal({
+  const share = initShareModal({
     compressor: browserCompressor,
     clipboard: browserClipboard,
     nativeShare: browserNativeShare,
@@ -534,6 +542,13 @@ const boot = async (): Promise<void> => {
       return pickCurrentHeading(readHeadingPositions(), scroller?.scrollTop ?? 0, 40);
     },
   });
+  fileLink = initFileLink({
+    access: browserFileAccess,
+    editor,
+    onShare: () => share.open(),
+    suggestName: () => deriveFilename(editor.value, 'md'),
+  });
+  const linkedFile = fileLink;
   const presentation = initPresentationMode({
     getPreviewRoot: () => document.getElementById('preview'),
     rerender: () => rerender(),
@@ -546,6 +561,10 @@ const boot = async (): Promise<void> => {
     docxWriter: browserDocxWriter,
     rasterizer: browserRasterizer,
     getDocModel: () => buildDocModel(state.md.parse(parseFrontmatter(editor.value).body, {})),
+    getLatex: () => {
+      const { meta, body } = parseFrontmatter(editor.value);
+      return toLatex(state.md.parse(body, {}), { meta });
+    },
     getSource: () => editor.value,
     getPreviewHTML: () => {
       const el = document.getElementById('preview');
@@ -567,6 +586,7 @@ const boot = async (): Promise<void> => {
     onText: (text, fromDocx) => {
       if (fromDocx) switchFlavor(flavorForDocxImport(state.flavor));
       snapshot(editor.value);
+      linkedFile.unlink();
       applyEdit(editor, { value: text, start: 0, end: 0 });
       rerender();
     },
@@ -582,7 +602,7 @@ const boot = async (): Promise<void> => {
     },
   });
   if (!params.embed) initDropZone(importFile);
-  initOpenFile(importFile);
+  initOpenFile(importFile, { access: browserFileAccess, onOpenedInPlace: linkedFile.link });
   const findBar = initFindBar({
     editor,
     onEditorChange: () => {

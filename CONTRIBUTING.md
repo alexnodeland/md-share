@@ -90,8 +90,9 @@ The repo is organized around ports-and-adapters:
 - HTML and Markdown exports, theme persistence, and the 360 px phone toolbar and Edit/View toggle
 - the document check: badge, issue list, and jump-to-line
 - embed snippets (chrome hidden, read-only, viewer's draft untouched) and Web Share Target text
+- open-in-place and Save to file… (against stubbed File System Access pickers), unlinking when the document is replaced; the file-input fallback
 - heading-link and footnote autocomplete: keyboard and mouse selection, Esc dismissal
-- Academic citations and cross-references: numbering, reference list, scroll-to-reference, `@` autocomplete, Word export
+- Academic citations and cross-references: numbering, reference list, scroll-to-reference, `@` autocomplete, Word and LaTeX export
 - zero axe-core accessibility violations in both themes: empty state, four samples, the share dialog, and the document-check menu
 
 First run: `npx playwright install chromium`. To use a Chromium you already have, set `PW_CHROMIUM_PATH=/path/to/chrome`.
@@ -107,9 +108,11 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Cross-browser decode — copy a `#d=…` URL (`df1.` for most docs) from Chrome, open it in Firefox and Safari, confirm it renders identically; do the reverse too
 - [ ] Listen — speech plays, progress advances, skip fwd/back and seek-on-click work, speed change works, `Esc` stops
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds
+- [ ] In Chrome, Open… a real `.md` file, edit, `Ctrl+S` → the file on disk changes (grant the write prompt); Export → Save to file… creates one
 - [ ] Drop (or Open…) a real Word document with headings, a table, and a photo → it arrives as Markdown with the image compressed
 - [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
 - [ ] Word export opens cleanly in Word / Google Docs / LibreOffice: headings in the navigation pane, working numbered lists and footnotes, diagrams as pictures
+- [ ] LaTeX export of the Academic sample compiles with `pdflatex` (run twice for references) with no errors or undefined references
 - [ ] Copy a few paragraphs with a link and a list from Google Docs (or Word) and paste — it arrives as Markdown; `Ctrl/⌘+Shift+V` pastes plain
 - [ ] Theme toggle — mermaid re-renders with the matching theme
 - [ ] Offline — `npm run build && npx serve dist`, load it once, go offline in devtools, reload: the app and your draft still work. (`file://` is not supported: browsers block ES-module scripts there.)

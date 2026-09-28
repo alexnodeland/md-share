@@ -67,6 +67,7 @@ Not `speak(innerText)`. A DOM walker narrates structure:
 Users should always be able to leave:
 - ⬇️ **Markdown** (`.md`) — the source
 - ⬇️ **Word** (`.docx`) — real headings, numbered lists, footnotes, tables, tinted callouts, diagrams as images
+- ⬇️ **LaTeX** (`.tex`) — compiles as is: `\cite`, `\ref`, figure and table floats, labelled equations, the bibliography
 - ⬇️ **HTML page** — one self-contained file, styled like the preview
 - 📋 **Copy formatted** — paste into Docs, email, or Notion with formatting intact
 - 🖼️ **PNG** — for chat, slides, screenshots
@@ -79,9 +80,10 @@ Users should always be able to leave:
 - Split pane, 180ms debounced render
 - Paste from Google Docs, Word, Notion, or a web page — it arrives as Markdown (add `Shift` to paste plain text)
 - Open or drag & drop `.md` / `.txt` / Word `.docx` — Word documents arrive as Markdown, headings, lists, tables, links, and images intact
+- In Chrome and Edge, **Open…** edits a `.md` file in place: `Ctrl+S` writes it back (the header shows the file, with • for unsaved edits), and **Export → Save to file…** starts a new one
 - Document check: a badge flags skipped heading levels, images without alt text, broken in-page links, undefined footnotes, and unclosed code fences — click one to jump to the line
 - Recent versions: loading a sample, clearing, dropping a file, or opening someone's link keeps your previous text one click away
-- `Ctrl+S` · share dialog &nbsp; `Ctrl+E` · toggle editor &nbsp; `Esc` · close / stop
+- `Ctrl+S` · save to the opened file, else share dialog &nbsp; `Ctrl+E` · toggle editor &nbsp; `Esc` · close / stop
 - Type `](#` for heading-link suggestions, `[^` for footnotes, `@` for citations and figure/table/equation labels (Academic)
 - `Tab` / `Shift+Tab` indent and outdent the selected lines; `Esc` then `Tab` moves focus out of the editor
 - Mobile: Edit/View toggle instead of cramped split

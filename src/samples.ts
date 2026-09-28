@@ -58,7 +58,7 @@ fn fibonacci(n: u64) -> u64 {
 
 |Key     |Action                    |
 |--------|--------------------------|
-|\`Ctrl+S\`|Share dialog              |
+|\`Ctrl+S\`|Save to file, or share    |
 |\`Ctrl+E\`|Toggle editor             |
 |\`Esc\`   |Close dialogs / stop audio|
 

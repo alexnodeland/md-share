@@ -49,3 +49,20 @@ test('Word export carries structure, numbering, and the rendered diagram', async
   expect(media.length).toBeGreaterThanOrEqual(1); // the mermaid diagram, rasterized
   await expect(page.locator('#toast')).toContainText('Word document exported');
 });
+
+test('LaTeX export keeps citations, references, and the bibliography', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('#sample-select').selectOption('academic');
+  await page.locator('[data-dropdown="export-menu"]').click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#btn-export-tex').click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('academic-flavor-demo.tex');
+  const tex = await readFile((await download.path()) ?? '', 'utf8');
+  expect(tex).toContain('\\title{Academic Flavor Demo}');
+  expect(tex).toContain('Knuth~\\cite{knuth84}');
+  expect(tex).toContain('Equation~\\eqref{eq:gauss}');
+  expect(tex).toContain('\\begin{thebibliography}{3}');
+  await expect(page.locator('#toast')).toContainText('LaTeX exported');
+});

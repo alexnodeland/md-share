@@ -108,3 +108,23 @@ export interface Rasterizer {
   /** Render an inline SVG (e.g. a mermaid diagram) at `scale`× for sharpness. */
   svg(svg: SVGSVGElement, scale: number): Promise<ExportImage | null>;
 }
+
+/** A file on disk the document can be written back to. */
+export interface DiskFile {
+  readonly name: string;
+  write(text: string): Promise<void>;
+}
+
+export interface FilePickerType {
+  description: string;
+  accept: Record<string, string[]>;
+}
+
+/** File System Access: open a file for editing in place, or pick where to save. */
+export interface FileAccess {
+  /** False where the browser can't write files (Firefox, Safari): Open… and Download still work. */
+  readonly supported: boolean;
+  /** Null when the picker is cancelled. */
+  open(types: readonly FilePickerType[]): Promise<{ file: File; disk: DiskFile } | null>;
+  saveAs(suggestedName: string, types: readonly FilePickerType[]): Promise<DiskFile | null>;
+}
