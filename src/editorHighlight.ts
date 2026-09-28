@@ -1,12 +1,5 @@
 import type hljs from 'highlight.js';
-
-const escapeHtml = (s: string): string =>
-  s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+import { escapeHtml } from './escapeHtml.ts';
 
 export const needsTrailingNewline = (source: string): boolean =>
   source.length === 0 || source.endsWith('\n');

@@ -7,7 +7,8 @@ export const applyHighlighting = (
   onUnknownLanguage?: (lang: string) => void,
 ): void => {
   md.options.highlight = (str, lang) => {
-    if (lang === 'mermaid') return str;
+    // Empty string tells markdown-it to escape the source itself.
+    if (lang === 'mermaid') return '';
     if (lang) {
       if (highlighter.getLanguage(lang)) {
         try {

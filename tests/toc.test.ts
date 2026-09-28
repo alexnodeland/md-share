@@ -44,6 +44,12 @@ describe('parseHeadings', () => {
 });
 
 describe('renderTOC', () => {
+  it('escapes heading text so raw HTML in a heading cannot run', () => {
+    const html = generateTOC(['## <img src=x onerror=alert(1)>', '## b', '## c'].join('\n'));
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+  });
+
   it('returns empty string for fewer than 3 headings', () => {
     expect(renderTOC([])).toBe('');
     expect(

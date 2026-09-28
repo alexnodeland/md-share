@@ -1,5 +1,4 @@
-const escapeHtml = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+import { escapeHtml } from './escapeHtml.ts';
 
 export const buildMermaidError = (source: string, message: string): string => {
   const cleanMsg = message.replace(/^Error:\s*/i, '').trim();

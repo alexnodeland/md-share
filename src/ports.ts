@@ -44,3 +44,8 @@ export interface Storage {
   get(key: string): string | null;
   set(key: string, value: string): void;
 }
+
+/** Strips script-capable markup from rendered HTML before it reaches the DOM. */
+export interface Sanitizer {
+  sanitize(html: string): string;
+}

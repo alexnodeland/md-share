@@ -39,6 +39,7 @@
     ]
   },
   "dependencies": {
+    "dompurify": "^3.4.16",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "katex": "^0.16.45",
