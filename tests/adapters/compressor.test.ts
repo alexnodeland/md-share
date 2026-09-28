@@ -7,6 +7,16 @@ import { createCompressor } from '../../src/adapters/compressor.ts';
 const b64url = (buf: Buffer): string =>
   buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
+// Brotli streams exist in Node 22+ but not Node 20 or any browser yet.
+const hasBrotli = (() => {
+  try {
+    new DecompressionStream('brotli' as CompressionFormat);
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
 const LONG = `# Notes\n\n${'Markdown is a lightweight markup language. '.repeat(40)}\n\n- [ ] ünïcødé ✓ 日本語`;
 
 describe('browser compressor (adapter)', () => {
@@ -35,7 +45,14 @@ describe('browser compressor (adapter)', () => {
     const bytes = Buffer.from(LONG, 'utf8');
     expect(await codec.decode(`df1.${b64url(deflateRawSync(bytes))}`)).toBe(LONG);
     expect(await codec.decode(`gz1.${b64url(gzipSync(bytes))}`)).toBe(LONG);
-    expect(await codec.decode(`br1.${b64url(brotliCompressSync(bytes))}`)).toBe(LONG);
+  });
+
+  it('decodes br1 only where the runtime supports brotli streams', async () => {
+    const payload = `br1.${b64url(brotliCompressSync(Buffer.from(LONG, 'utf8')))}`;
+    expect(await codec.decode(payload)).toBe(hasBrotli ? LONG : null);
+  });
+
+  it('decodes untagged legacy lz-string payloads', async () => {
     expect(await codec.decode(LZString.compressToEncodedURIComponent(LONG))).toBe(LONG);
   });
 
