@@ -41,8 +41,9 @@ import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { renderTOC } from './toc.ts';
-import type { Flavor, RenderEnv, ShareParams, Theme } from './types.ts';
+import type { DocHeading, Flavor, RenderEnv, ShareParams, Theme } from './types.ts';
 import { applyEdit } from './ui/applyEdit.ts';
+import { initAutocomplete } from './ui/autocomplete.ts';
 import { initClearButton } from './ui/clearButton.ts';
 import { initCodeCopyButtons } from './ui/codeCopyButtons.ts';
 import { initDropdowns } from './ui/dropdown.ts';
@@ -82,6 +83,8 @@ interface AppState {
   deps: FlavorDeps;
   activeSample: SampleKey | null;
   reportDiagnostics: (diagnostics: Diagnostic[]) => void;
+  /** Outline of the latest render, for heading-link autocomplete. */
+  headings: DocHeading[];
 }
 
 type Mermaid = typeof import('mermaid').default;
@@ -152,6 +155,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
     const tokens = state.md.parse(body, env);
     const html = state.md.renderer.render(tokens, state.md.options, env);
     const headings = env.headings ?? [];
+    state.headings = headings;
     preview.innerHTML = browserSanitizer.sanitize(front + renderTOC(headings) + html);
     state.reportDiagnostics(
       lintDocument(tokens, {
@@ -355,6 +359,7 @@ const boot = async (): Promise<void> => {
     deps,
     activeSample: null,
     reportDiagnostics: () => {},
+    headings: [],
   };
 
   const ensureKatexFor = (f: Flavor): void => {
@@ -410,6 +415,12 @@ const boot = async (): Promise<void> => {
   const editorWrap = editor.parentElement;
   if (mirrorEl && editorWrap) {
     toolbar = initSelectionToolbar({ editor, mirror: mirrorEl, wrap: editorWrap });
+    initAutocomplete({
+      editor,
+      mirror: mirrorEl,
+      wrap: editorWrap,
+      getHeadings: () => state.headings,
+    });
   }
   initEditorUndo({ editor });
   const switchFlavor = (next: Flavor): void => {

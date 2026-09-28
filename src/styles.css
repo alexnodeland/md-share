@@ -2246,3 +2246,45 @@ html.theme-switching *::after {
   font-size: 12px;
   line-height: 1.4;
 }
+
+.completions {
+  position: absolute;
+  z-index: 30;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+}
+.completions[hidden] {
+  display: none;
+}
+.completions li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.completions li[aria-selected="true"] {
+  background: var(--accent-bg);
+  outline: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.completion-label {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.completion-detail {
+  color: var(--text-xdim);
+  flex-shrink: 0;
+}

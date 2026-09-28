@@ -89,6 +89,7 @@ The repo is organized around ports-and-adapters:
 - task checkboxes after frontmatter + comments, Tab/Shift+Tab, Esc→Tab focus escape, case-insensitive replace-all
 - HTML and Markdown exports, theme persistence, and the 360 px phone toolbar and Edit/View toggle
 - the document check: badge, issue list, and jump-to-line
+- heading-link and footnote autocomplete: keyboard and mouse selection, Esc dismissal
 - zero axe-core accessibility violations in both themes: empty state, four samples, the share dialog, and the document-check menu
 
 First run: `npx playwright install chromium`. To use a Chromium you already have, set `PW_CHROMIUM_PATH=/path/to/chrome`.
