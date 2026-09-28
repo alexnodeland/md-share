@@ -10,6 +10,8 @@ test('the share dialog produces an embed snippet that renders the document alone
   await page.locator('#btn-link').click();
   await page.locator('#link-embed-check').check();
   await expect(page.locator('#btn-link-copy')).toHaveText('Copy embed code');
+  // The box re-renders after the link is recompressed; wait for the snippet.
+  await expect(page.locator('#link-url')).toContainText('<iframe');
   const snippet = (await page.locator('#link-url').textContent()) ?? '';
   expect(snippet).toMatch(/^<iframe src="[^"]+&amp;e=1" title="Embedded"/);
   const src = snippet.match(/src="([^"]+)"/)?.[1]?.replaceAll('&amp;', '&') ?? '';
