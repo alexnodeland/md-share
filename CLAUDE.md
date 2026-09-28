@@ -31,9 +31,7 @@ Touching a new browser API? Add a port in `src/ports.ts`, an adapter in `src/ada
 
 ## Quality gate
 
-Single command: `npm run verify` → Biome (0 warnings) + `tsc --noEmit` + Vitest.
-
-Coverage: `npm run test:coverage` — 100% on pure modules, no asterisks.
+Single command: `npm run verify` → Biome (0 warnings) + `tsc --noEmit` + Vitest with coverage (100% on pure modules, no asterisks). Same as CI. Node version: `.nvmrc`.
 
 **Never** bypass with `--no-verify`, `biome-ignore`, or `@ts-ignore` without an explicit justification the user has approved. Fix the root cause.
 
