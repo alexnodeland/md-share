@@ -4,8 +4,11 @@ import type { Compressor } from '../ports.ts';
 /**
  * Payload format: `<tag>.<base64url body>`.
  *
- * - `df1.` deflate-raw — preferred: every modern browser decodes it, and it has
- *   no gzip header/trailer, so URLs are ~24 chars shorter than `gz1.`.
+ * - `dd1.` deflate-raw against a preset dictionary of Markdown syntax and common
+ *   English (src/assets/link-dictionary-v1.txt, frozen), via fflate: ~10–20%
+ *   shorter than `df1.`. Loaded on demand; any browser decodes it.
+ * - `df1.` deflate-raw — the browser's own compressor; no gzip header/trailer,
+ *   so URLs are ~24 chars shorter than `gz1.`.
  * - `lz1.` lz-string — pure JS; wins on very short documents.
  * - `gz1.` gzip — decode only (older links).
  * - `br1.` brotli — decode only, where the browser supports it.
@@ -70,6 +73,48 @@ const decodeStream = async (body: string, format: StreamFormat): Promise<string 
   }
 };
 
+interface DictCodec {
+  deflate(bytes: Uint8Array): Uint8Array;
+  inflate(bytes: Uint8Array): Uint8Array;
+}
+
+let dictCodec: Promise<DictCodec> | null = null;
+
+/** fflate plus the v1 dictionary (~25 KB gzipped), fetched once, on first use. */
+export const loadDictCodec = (): Promise<DictCodec> => {
+  dictCodec ??= Promise.all([import('fflate'), import('../assets/link-dictionary-v1.txt?raw')])
+    .then(([{ deflateSync, inflateSync }, { default: text }]) => {
+      const dictionary = new TextEncoder().encode(text);
+      return {
+        deflate: (bytes: Uint8Array) => deflateSync(bytes, { level: 9, mem: 12, dictionary }),
+        inflate: (bytes: Uint8Array) => inflateSync(bytes, { dictionary }),
+      };
+    })
+    .catch((err: unknown) => {
+      dictCodec = null; // e.g. offline before the chunk was cached: try again next time
+      throw err;
+    });
+  return dictCodec;
+};
+
+const encodeDict = async (text: string): Promise<string | null> => {
+  try {
+    const codec = await loadDictCodec();
+    return `dd1.${bytesToBase64Url(codec.deflate(new TextEncoder().encode(text)))}`;
+  } catch {
+    return null; // the other encodings still work
+  }
+};
+
+const decodeDict = async (body: string): Promise<string | null> => {
+  try {
+    const codec = await loadDictCodec();
+    return new TextDecoder('utf-8', { fatal: true }).decode(codec.inflate(base64UrlToBytes(body)));
+  } catch {
+    return null;
+  }
+};
+
 const decodeLz = (body: string): string | null => {
   try {
     return LZString.decompressFromEncodedURIComponent(body) || null;
@@ -80,12 +125,21 @@ const decodeLz = (body: string): string | null => {
 
 const encodeLz = (text: string): string => `lz1.${LZString.compressToEncodedURIComponent(text)}`;
 
-export const createCompressor = (canDeflate = supports('deflate-raw')): Compressor => ({
+const shortest = ([first, ...rest]: [string, ...(string | null)[]]): string =>
+  rest.reduce<string>((best, c) => (c !== null && c.length < best.length ? c : best), first);
+
+export const createCompressor = (
+  canDeflate = supports('deflate-raw'),
+  useDictionary = true,
+): Compressor => ({
   encode: async (text) => {
-    const lz = encodeLz(text);
-    if (!canDeflate) return lz;
-    const df = await encodeStream(text, 'deflate-raw', 'df1');
-    return df.length <= lz.length ? df : lz;
+    const [lz, df, dd] = await Promise.all([
+      encodeLz(text),
+      canDeflate ? encodeStream(text, 'deflate-raw', 'df1') : null,
+      useDictionary ? encodeDict(text) : null,
+    ]);
+    // Strictly shorter wins, so ties keep the older, more widely decodable format.
+    return shortest([df ?? lz, lz, dd]);
   },
   decode: async (payload) => {
     const dot = payload.indexOf('.');
@@ -93,6 +147,7 @@ export const createCompressor = (canDeflate = supports('deflate-raw')): Compress
     const tag = payload.slice(0, dot);
     const body = payload.slice(dot + 1);
     if (tag === 'lz1') return decodeLz(body);
+    if (tag === 'dd1') return decodeDict(body);
     const format = STREAM_TAGS[tag];
     return format ? decodeStream(body, format) : null;
   },

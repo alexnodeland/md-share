@@ -1,7 +1,7 @@
 import hljs from 'highlight.js/lib/core';
 import markdownGrammar from 'highlight.js/lib/languages/markdown';
 import { browserClipboard } from './adapters/clipboard.ts';
-import { browserCompressor } from './adapters/compressor.ts';
+import { browserCompressor, loadDictCodec } from './adapters/compressor.ts';
 import { browserDocxReader } from './adapters/docxReader.ts';
 import { browserDocxWriter } from './adapters/docxWriter.ts';
 import { browserFileAccess } from './adapters/fileAccess.ts';
@@ -219,6 +219,10 @@ const registerServiceWorker = (): void => {
     navigator.serviceWorker
       .register('./sw.js')
       .then((registration) => {
+        // Fetch the link codec once while online, so the service worker has it
+        // cached when a dd1. link is opened offline later.
+        const idle = window.requestIdleCallback ?? ((run: () => void) => setTimeout(run, 2000));
+        idle(() => void loadDictCodec().catch(() => {}));
         registration.addEventListener('updatefound', () => {
           const next = registration.installing;
           if (!next) return;

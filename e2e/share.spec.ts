@@ -1,3 +1,4 @@
+import { deflateRawSync } from 'node:zlib';
 import LZString from 'lz-string';
 import { editor, expect, preview, shareUrl, test, typeDoc } from './fixtures.ts';
 
@@ -9,7 +10,7 @@ test('a share link round-trips content and flavor, then forks on edit', async ({
   await page.locator('#flavor-select').selectOption('obsidian');
   await typeDoc(page, '# Shared\n\n==marked== text');
   const url = await shareUrl(page);
-  expect(url).toMatch(/#d=(df1|lz1)\./);
+  expect(url).toMatch(/#d=(dd1|df1|lz1)\./);
 
   const reader = await browser.newPage();
   await reader.goto(url);
@@ -39,6 +40,15 @@ test('legacy ?d= lz-string links still open', async ({ page }) => {
   await page.goto(`./?d=${payload}&f=gfm`);
   await expect(preview(page).locator('h1')).toHaveText('Legacy link');
   await expect(page.locator('#flavor-select')).toHaveValue('gfm');
+});
+
+test('new links use the dictionary encoding; older df1. links still open', async ({ page }) => {
+  await page.goto('./');
+  await typeDoc(page, '# Plans\n\n- [ ] Write the notes for the team');
+  expect(await shareUrl(page)).toContain('#d=dd1.');
+  const df1 = deflateRawSync(Buffer.from('# Older link')).toString('base64url');
+  await page.goto(`./#d=df1.${df1}`);
+  await expect(preview(page).locator('h1')).toHaveText('Older link');
 });
 
 test('an unreadable link says so and cleans the URL', async ({ page }) => {
