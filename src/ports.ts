@@ -56,3 +56,9 @@ export interface Sanitizer {
 export interface HtmlToMarkdown {
   convert(html: string): Promise<string>;
 }
+
+/** The OS share sheet (Web Share API). */
+export interface NativeShare {
+  isAvailable(): boolean;
+  share(data: { title: string; url: string }): Promise<void>;
+}

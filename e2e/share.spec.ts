@@ -85,3 +85,43 @@ test('opening a shared link keeps the previous draft in Recent versions', async 
   await page.locator('#history-menu .history-item', { hasText: 'My precious draft' }).click();
   await expect(editor(page)).toHaveValue('# My precious draft');
 });
+
+test('the share dialog offers a scannable QR code for short links', async ({ page }) => {
+  await page.goto('./');
+  await typeDoc(page, '# Phone handoff');
+  await page.locator('#btn-link').click();
+  await page.locator('#link-qr summary').click();
+  const svg = page.locator('#link-qr-code svg');
+  await expect(svg).toBeVisible();
+  await expect(svg).toHaveAttribute('aria-label', 'QR code for the share link');
+});
+
+test('long links explain why there is no QR code', async ({ page }) => {
+  await page.goto('./');
+  const noisy = Array.from({ length: 400 }, (_, i) => `${i.toString(36)}${Math.sin(i)}`).join(' ');
+  await typeDoc(page, noisy);
+  await page.locator('#btn-link').click();
+  await page.locator('#link-qr summary').click();
+  await expect(page.locator('#link-qr-code')).toContainText('too long to scan');
+});
+
+test('Share… hands the link to the OS share sheet when available', async ({ page }) => {
+  await page.addInitScript(() => {
+    const calls: unknown[] = [];
+    (window as unknown as { shareCalls: unknown[] }).shareCalls = calls;
+    Object.defineProperty(navigator, 'share', {
+      value: async (data: unknown) => {
+        calls.push(data);
+      },
+    });
+  });
+  await page.goto('./');
+  await typeDoc(page, '# Sheet');
+  await page.locator('#btn-link').click();
+  await page.locator('#btn-link-native').click();
+  await expect(page.locator('#link-modal')).not.toHaveClass(/open/);
+  const calls = await page.evaluate(
+    () => (window as unknown as { shareCalls: unknown[] }).shareCalls,
+  );
+  expect(calls).toEqual([{ title: 'Sheet', url: expect.stringContaining('#d=') }]);
+});

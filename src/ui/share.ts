@@ -1,16 +1,16 @@
-import type { Clipboard, Compressor, Location } from '../ports.ts';
-import { buildShareURL } from '../share.ts';
+import type { Clipboard, Compressor, Location, NativeShare } from '../ports.ts';
+import { fitsInQr, qrSvg } from '../qr.ts';
+import { buildShareURL, describeUrlLength } from '../share.ts';
 import type { Flavor } from '../types.ts';
 import { trapFocus } from './focusTrap.ts';
 import { showToast } from './toast.ts';
 
-const SOFT_URL_LENGTH = 2000;
-const HARD_URL_LENGTH = 8000;
-
 export interface ShareDeps {
   compressor: Compressor;
   clipboard: Clipboard;
+  nativeShare: NativeShare;
   location: Location;
+  getTitle: () => string | null;
   getSource: () => string;
   getFlavor: () => Flavor;
   getCurrentHeading: () => string | null;
@@ -26,6 +26,9 @@ export const initShareModal = (deps: ShareDeps): void => {
   const sectionToggle = document.getElementById('link-section-toggle');
   const sectionCheckbox = document.getElementById('link-section-check') as HTMLInputElement | null;
   const sectionSlug = document.getElementById('link-section-slug');
+  const qrDetails = document.getElementById('link-qr') as HTMLDetailsElement | null;
+  const qrBox = document.getElementById('link-qr-code');
+  const nativeBtn = document.getElementById('btn-link-native');
   if (
     !modal ||
     !urlBox ||
@@ -51,32 +54,52 @@ export const initShareModal = (deps: ShareDeps): void => {
       sectionCheckbox.checked ? heading : null,
     );
 
-  const describeLength = (len: number): { text: string; cls: string } => {
-    const n = len.toLocaleString();
-    if (len > HARD_URL_LENGTH) {
-      return {
-        text: `⚠ URL is ${n} chars — likely to exceed browser limits. Consider exporting as Markdown instead.`,
-        cls: 'url-warn over',
-      };
-    }
-    if (len > SOFT_URL_LENGTH) {
-      return {
-        text: `⚠ URL is ${n} chars — may not survive every mobile share sheet.`,
-        cls: 'url-warn soft',
-      };
-    }
-    return { text: `URL length: ${n} chars`, cls: 'url-warn' };
-  };
-
   const refreshURL = async () => {
     const gen = ++refreshGen;
     const url = await buildURL();
     if (gen !== refreshGen) return;
+    currentUrl = url;
     urlBox.textContent = url;
-    const { text, cls } = describeLength(url.length);
+    const { text, level } = describeUrlLength(url.length);
     warn.textContent = text;
-    warn.className = cls;
+    warn.className = level === 'ok' ? 'url-warn' : `url-warn ${level}`;
+    if (qrDetails?.open) void renderQr(url);
   };
+
+  // QR codes are rendered on demand (the encoder is lazy-loaded).
+  let currentUrl = '';
+  const renderQr = async (url: string) => {
+    if (!qrBox) return;
+    if (!fitsInQr(url)) {
+      qrBox.textContent = 'This link is too long to scan reliably — use Copy or Share instead.';
+      return;
+    }
+    const { encode } = await import('uqr');
+    if (url !== currentUrl) return;
+    qrBox.innerHTML = qrSvg(
+      encode(url, { ecc: 'L', border: 0 }).data,
+      'QR code for the share link',
+    );
+  };
+  qrDetails?.addEventListener('toggle', () => {
+    if (qrDetails.open && currentUrl) void renderQr(currentUrl);
+  });
+
+  if (nativeBtn && deps.nativeShare.isAvailable()) {
+    nativeBtn.hidden = false;
+    nativeBtn.addEventListener('click', () => {
+      buildURL()
+        .then((url) =>
+          deps.nativeShare.share({ title: deps.getTitle() ?? 'md-share document', url }),
+        )
+        .then(close)
+        .catch((err: unknown) => {
+          // Dismissing the share sheet rejects with AbortError — not a failure.
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          showToast('Sharing failed — use Copy URL instead');
+        });
+    });
+  }
 
   let previousFocus: HTMLElement | null = null;
 

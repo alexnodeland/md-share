@@ -47,7 +47,7 @@ Paste from the tool you already use — it just renders.
 <td width="50%" valign="top">
 
 ### 🔗 Shareable by URL
-Your whole document compressed into the URL fragment `#d=…`. Copy the link — the content travels with it, and because it rides in the fragment, it never reaches a server. A shared link works offline, forever, as long as someone has the HTML.
+Your whole document compressed into the URL fragment `#d=…`. Copy the link, hand it to your phone's share sheet, or scan the QR code to open it on another device — the content travels with it, and because it rides in the fragment, it never reaches a server. A shared link works offline, forever, as long as someone has the HTML.
 
 ### 🎧 Semantic Listen mode
 Not `speak(innerText)`. A DOM walker narrates structure:

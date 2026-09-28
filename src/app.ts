@@ -4,6 +4,7 @@ import { browserCompressor } from './adapters/compressor.ts';
 import { browserHtmlToMarkdown } from './adapters/htmlToMarkdown.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
+import { browserNativeShare } from './adapters/nativeShare.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserSanitizer } from './adapters/sanitizer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
@@ -12,7 +13,7 @@ import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { recordSnapshot } from './draftHistory.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { renderEmptyState } from './emptyState.ts';
-import { pageTitle } from './filename.ts';
+import { documentTitle, pageTitle } from './filename.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
@@ -443,6 +444,8 @@ const boot = async (): Promise<void> => {
   initShareModal({
     compressor: browserCompressor,
     clipboard: browserClipboard,
+    nativeShare: browserNativeShare,
+    getTitle: () => documentTitle(editor.value),
     location: window.location,
     getSource: () => editor.value,
     getFlavor: () => state.flavor,
