@@ -104,6 +104,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds
 - [ ] Drop (or Open…) a real Word document with headings, a table, and a photo → it arrives as Markdown with the image compressed
 - [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
+- [ ] Word export opens cleanly in Word / Google Docs / LibreOffice: headings in the navigation pane, working numbered lists and footnotes, diagrams as pictures
 - [ ] Copy a few paragraphs with a link and a list from Google Docs (or Word) and paste — it arrives as Markdown; `Ctrl/⌘+Shift+V` pastes plain
 - [ ] Theme toggle — mermaid re-renders with the matching theme
 - [ ] Offline — `npm run build && npx serve dist`, load it once, go offline in devtools, reload: the app and your draft still work. (`file://` is not supported: browsers block ES-module scripts there.)

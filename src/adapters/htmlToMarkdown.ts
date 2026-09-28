@@ -38,10 +38,22 @@ const create = async (): Promise<TurndownService> => {
     replacement: (content, node) =>
       content.trim() + ((node as HTMLElement).nextElementSibling ? ' ' : ''),
   });
-  // Word "Code" styles arrive as <pre> without an inner <code>.
+  // Word "Code" styles arrive as <pre> without an inner <code>, sometimes
+  // with <br> for line breaks.
   td.addRule('bareCodeBlock', {
     filter: (node) => node.nodeName === 'PRE' && node.firstElementChild?.nodeName !== 'CODE',
-    replacement: (_content, node) => `\n\n\`\`\`\n${node.textContent ?? ''}\n\`\`\`\n\n`,
+    replacement: (_content, node) => {
+      for (const br of Array.from((node as HTMLElement).querySelectorAll('br'))) {
+        br.replaceWith('\n');
+      }
+      return `\n\n\`\`\`\n${node.textContent ?? ''}\n\`\`\`\n\n`;
+    },
+  });
+  // GFM header cells are already bold; don't wrap their text in ** too.
+  td.addRule('headerCellBold', {
+    filter: (node) =>
+      (node.nodeName === 'STRONG' || node.nodeName === 'B') && node.closest('th') !== null,
+    replacement: (content) => content,
   });
   td.addRule('listItem', {
     filter: 'li',

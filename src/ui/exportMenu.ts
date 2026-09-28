@@ -1,5 +1,6 @@
+import type { DocModel } from '../docModel.ts';
 import { deriveFilename, documentTitle } from '../filename.ts';
-import type { Clipboard, Printer } from '../ports.ts';
+import type { Clipboard, DocxWriter, Printer, Rasterizer } from '../ports.ts';
 import { buildStandaloneHtml } from '../standaloneHtml.ts';
 import type { Theme } from '../types.ts';
 import { closeAllDropdowns } from './dropdown.ts';
@@ -10,6 +11,9 @@ export interface ExportDeps {
   printer: Printer;
   clipboard: Clipboard;
   getTheme: () => Theme;
+  docxWriter: DocxWriter;
+  rasterizer: Rasterizer;
+  getDocModel: () => DocModel;
   getKatexVersion: () => string | null;
   getSource: () => string;
   getPreviewHTML: () => string;
@@ -49,11 +53,12 @@ const collectAppCss = (): string => {
 export const initExportMenu = (deps: ExportDeps): void => {
   const btnMd = document.getElementById('btn-export-md');
   const btnHtml = document.getElementById('btn-export-html');
+  const btnDocx = document.getElementById('btn-export-docx');
   const btnCopy = document.getElementById('btn-copy-rich');
   const btnPng = document.getElementById('btn-export-png');
   const btnPdf = document.getElementById('btn-export-pdf');
   const btnPresent = document.getElementById('btn-present');
-  if (!btnMd || !btnHtml || !btnCopy || !btnPng || !btnPdf || !btnPresent) return;
+  if (!btnMd || !btnHtml || !btnDocx || !btnCopy || !btnPng || !btnPdf || !btnPresent) return;
 
   btnPresent.addEventListener('click', () => {
     closeAllDropdowns();
@@ -65,6 +70,31 @@ export const initExportMenu = (deps: ExportDeps): void => {
     const source = deps.getSource();
     download(new Blob([source], { type: 'text/markdown' }), deriveFilename(source, 'md'));
     showToast('Markdown exported', true);
+  });
+
+  btnDocx.addEventListener('click', () => {
+    closeAllDropdowns();
+    showToast('Building Word document…');
+    const source = deps.getSource();
+    // By container, not by <svg>: a diagram that failed to render has no SVG
+    // and must not shift the rest onto the wrong index.
+    const containers = Array.from(
+      deps.getPreviewElement()?.querySelectorAll('.mermaid-container') ?? [],
+    );
+    deps.docxWriter
+      .write(deps.getDocModel(), {
+        title: documentTitle(source),
+        image: (src) => deps.rasterizer.image(src),
+        diagram: async (index) => {
+          const svg = containers[index]?.querySelector('svg');
+          return svg ? deps.rasterizer.svg(svg, 2) : null;
+        },
+      })
+      .then((blob) => {
+        download(blob, deriveFilename(source, 'docx'));
+        showToast('Word document exported', true);
+      })
+      .catch(() => showToast('Word export failed'));
   });
 
   btnHtml.addEventListener('click', () => {

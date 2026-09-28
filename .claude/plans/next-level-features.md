@@ -11,7 +11,7 @@ A survey of candidate features that could bring md-share to the next level, each
 | 1 | QR code in share modal | ✅ Shipped (#26) — with OS share sheet; sized at whole px/module so it actually scans |
 | 2 | URL length meter | ◐ Meter shipped (`describeUrlLength`); overflow *suggestions* still open |
 | 3 | HTML / DOCX paste → Markdown | ✅ Rich HTML paste (#25) and `.docx` Open…/drop import |
-| 4 | Standalone `.html` / `.docx` export | ◐ Standalone HTML + Copy formatted shipped (#23); `.docx` still open |
+| 4 | Standalone `.html` / `.docx` export | ✅ Standalone HTML + Copy formatted (#23), Word `.docx` export |
 | 11 | Voice picker | ✅ Already present (`#audio-voice`) |
 | 15 | Local draft history | ✅ Shipped as "Recent versions" (#19) |
 | 21 | Paste image from clipboard | ✅ Already present (editor paste handler) |

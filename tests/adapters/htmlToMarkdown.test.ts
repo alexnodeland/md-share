@@ -49,6 +49,17 @@ describe('browserHtmlToMarkdown (adapter)', () => {
     expect(await convert('<pre>a < b\nc</pre>')).toBe('```\na < b\nc\n```');
   });
 
+  it('keeps <br> line breaks inside bare <pre> blocks', async () => {
+    expect(await convert('<pre>a<br>b</pre>')).toBe('```\na\nb\n```');
+  });
+
+  it('does not double-bold table header cells', async () => {
+    const md = await convert(
+      '<table><thead><tr><th><strong>A</strong></th></tr></thead><tbody><tr><td><b>x</b></td></tr></tbody></table>',
+    );
+    expect(md).toBe('| A |\n| --- |\n| **x** |');
+  });
+
   it('drops scripts and styles', async () => {
     expect(await convert('<style>p{}</style><script>x()</script><p>ok</p>')).toBe('ok');
   });
