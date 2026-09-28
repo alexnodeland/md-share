@@ -56,14 +56,15 @@ export const createPlayer = ({ synth, onStateChange }: PlayerDeps): Player => {
     const utterance = synth.createUtterance(chunk.text);
     utterance.rate = speed;
     utterance.voiceURI = voiceURI;
-    utterance.onend = () => {
+    // An error skips the chunk exactly like finishing it, so the last chunk
+    // erroring stops cleanly instead of reading past the end.
+    const advance = () => {
       if (!playing || utterance !== liveUtterance) return;
       if (index >= chunks.length - 1) stop();
       else speakAt(index + 1);
     };
-    utterance.onerror = () => {
-      if (playing && utterance === liveUtterance) speakAt(index + 1);
-    };
+    utterance.onend = advance;
+    utterance.onerror = advance;
     liveUtterance = utterance;
     synth.speak(utterance);
     emit();

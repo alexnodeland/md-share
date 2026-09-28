@@ -1,5 +1,4 @@
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+import { trapFocus } from './focusTrap.ts';
 
 export const initHelpModal = (): void => {
   const modal = document.getElementById('help-modal');
@@ -10,9 +9,6 @@ export const initHelpModal = (): void => {
   let previousFocus: HTMLElement | null = null;
 
   const isOpen = () => modal.classList.contains('open');
-
-  const focusables = (): HTMLElement[] =>
-    Array.from(modal.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
 
   const open = () => {
     previousFocus = (document.activeElement as HTMLElement) ?? null;
@@ -32,24 +28,7 @@ export const initHelpModal = (): void => {
     if (e.target === modal) close();
   });
 
-  modal.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab' || !isOpen()) return;
-    const items = focusables();
-    if (items.length === 0) {
-      e.preventDefault();
-      return;
-    }
-    const first = items[0]!;
-    const last = items[items.length - 1]!;
-    const active = document.activeElement;
-    if (e.shiftKey && active === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  });
+  trapFocus(modal, isOpen);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) close();

@@ -17,53 +17,58 @@ export interface ReplaceAllResult {
   count: number;
 }
 
-const norm = (s: string, cs: boolean): string => (cs ? s : s.toLowerCase());
+const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
 
+// Matching runs on the original text (never a lower-cased copy, whose length
+// can differ — "İ".toLowerCase() is two code units), so offsets stay exact.
+const pattern = (needle: string, opts: FindOptions): RegExp =>
+  new RegExp(needle.replace(REGEX_SPECIALS, '\\$&'), opts.caseSensitive ? 'gu' : 'giu');
+
+export const findAll = (haystack: string, needle: string, opts: FindOptions): Match[] => {
+  if (!needle) return [];
+  return Array.from(haystack.matchAll(pattern(needle, opts)), (m) => ({
+    start: m.index,
+    end: m.index + m[0].length,
+  }));
+};
+
+/** First match at or after `from`, wrapping to the top. */
 export const findNext = (
   haystack: string,
   needle: string,
   from: number,
   opts: FindOptions,
 ): Match | null => {
-  if (!needle) return null;
-  const hay = norm(haystack, opts.caseSensitive);
-  const nee = norm(needle, opts.caseSensitive);
-  let idx = hay.indexOf(nee, Math.max(0, from));
-  if (idx === -1 && from > 0) idx = hay.indexOf(nee);
-  if (idx === -1) return null;
-  return { start: idx, end: idx + needle.length };
+  const all = findAll(haystack, needle, opts);
+  return all.find((m) => m.start >= from) ?? all[0] ?? null;
 };
 
+/** Last match starting before `from`, wrapping to the bottom. */
 export const findPrev = (
   haystack: string,
   needle: string,
   from: number,
   opts: FindOptions,
 ): Match | null => {
-  if (!needle) return null;
-  const hay = norm(haystack, opts.caseSensitive);
-  const nee = norm(needle, opts.caseSensitive);
-  const ceiling = from - 1;
-  let idx = ceiling >= 0 ? hay.lastIndexOf(nee, ceiling) : -1;
-  if (idx === -1) idx = hay.lastIndexOf(nee);
-  if (idx === -1) return null;
-  return { start: idx, end: idx + needle.length };
+  const all = findAll(haystack, needle, opts);
+  return all.filter((m) => m.start < from).at(-1) ?? all.at(-1) ?? null;
 };
 
-export const findAll = (haystack: string, needle: string, opts: FindOptions): Match[] => {
-  if (!needle) return [];
-  const hay = norm(haystack, opts.caseSensitive);
-  const nee = norm(needle, opts.caseSensitive);
-  const out: Match[] = [];
-  let from = 0;
-  while (from <= hay.length) {
-    const idx = hay.indexOf(nee, from);
-    if (idx === -1) break;
-    out.push({ start: idx, end: idx + needle.length });
-    from = idx + Math.max(nee.length, 1);
-  }
-  return out;
-};
+/**
+ * The match Replace should act on: the selected one, else the one the caret
+ * is inside, else the next one, else the first. Adjacent matches share a
+ * boundary, so containment alone would pick the previous match.
+ */
+export const pickReplaceTarget = (
+  matches: readonly Match[],
+  selStart: number,
+  selEnd: number,
+): Match | null =>
+  matches.find((m) => m.start === selStart && m.end === selEnd) ??
+  matches.find((m) => m.start <= selStart && selStart < m.end) ??
+  matches.find((m) => m.start >= selStart) ??
+  matches[0] ??
+  null;
 
 export const replaceOne = (haystack: string, match: Match, replacement: string): ReplaceResult => ({
   value: haystack.slice(0, match.start) + replacement + haystack.slice(match.end),

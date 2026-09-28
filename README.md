@@ -76,7 +76,7 @@ Users should always be able to leave:
 - Drag & drop `.md` / `.markdown` / `.txt` anywhere
 - Recent versions: loading a sample, clearing, dropping a file, or opening someone's link keeps your previous text one click away
 - `Ctrl+S` · share dialog &nbsp; `Ctrl+E` · toggle editor &nbsp; `Esc` · close / stop
-- Tab inserts two spaces, doesn't leave the textarea
+- `Tab` / `Shift+Tab` indent and outdent the selected lines; `Esc` then `Tab` moves focus out of the editor
 - Mobile: Edit/View toggle instead of cramped split
 
 </td>

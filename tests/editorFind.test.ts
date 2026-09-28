@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { findAll, findNext, findPrev, replaceAll, replaceOne } from '../src/editorFind.ts';
+import {
+  findAll,
+  findNext,
+  findPrev,
+  pickReplaceTarget,
+  replaceAll,
+  replaceOne,
+} from '../src/editorFind.ts';
 
 const CS = { caseSensitive: true };
 const CI = { caseSensitive: false };
@@ -140,5 +147,44 @@ describe('replaceAll', () => {
 
   it('handles replacement shorter than needle (positions stable via reverse walk)', () => {
     expect(replaceAll('abc abc abc', 'abc', 'x', CS)).toEqual({ value: 'x x x', count: 3 });
+  });
+});
+
+describe('case-insensitive offsets', () => {
+  const ci = { caseSensitive: false };
+
+  it('keeps offsets exact when lower-casing changes string length', () => {
+    expect(findNext('İstanbul foo bar', 'foo', 0, ci)).toEqual({ start: 9, end: 12 });
+    expect(replaceAll('İİ foo FOO', 'foo', 'X', ci)).toEqual({ value: 'İİ X X', count: 2 });
+  });
+
+  it('treats regex metacharacters in the needle literally', () => {
+    expect(findAll('a.b a+b (x)', '.', ci)).toEqual([{ start: 1, end: 2 }]);
+    expect(findAll('a.b a+b (x)', '(x)', ci)).toEqual([{ start: 8, end: 11 }]);
+  });
+});
+
+describe('pickReplaceTarget', () => {
+  const matches = [
+    { start: 0, end: 2 },
+    { start: 2, end: 4 },
+    { start: 8, end: 10 },
+  ];
+
+  it('prefers the exactly selected match over an adjacent one', () => {
+    expect(pickReplaceTarget(matches, 2, 4)).toEqual({ start: 2, end: 4 });
+  });
+
+  it('falls back to the match containing the caret', () => {
+    expect(pickReplaceTarget(matches, 3, 3)).toEqual({ start: 2, end: 4 });
+  });
+
+  it('then to the next match, then wraps to the first', () => {
+    expect(pickReplaceTarget(matches, 5, 5)).toEqual({ start: 8, end: 10 });
+    expect(pickReplaceTarget(matches, 11, 11)).toEqual({ start: 0, end: 2 });
+  });
+
+  it('returns null without matches', () => {
+    expect(pickReplaceTarget([], 0, 0)).toBeNull();
   });
 });

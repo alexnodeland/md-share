@@ -3,7 +3,9 @@ import {
   continueIndent,
   continueList,
   type EditResult,
+  indentLines,
   isUrl,
+  outdentLines,
   toggleWrap,
   wrapLink,
 } from '../editorCommands.ts';
@@ -64,47 +66,59 @@ export const initEditor = ({
 
   const hasModifier = (e: KeyboardEvent) => e.ctrlKey || e.metaKey;
 
+  // Esc, then Tab, moves focus out of the editor — otherwise keyboard users
+  // are trapped, since Tab indents.
+  let tabLeaves = false;
+
+  const onTab = (e: KeyboardEvent) => {
+    e.preventDefault();
+    const { value, selectionStart: s, selectionEnd: end } = editor;
+    if (e.shiftKey) apply(outdentLines(value, s, end));
+    else if (s !== end) apply(indentLines(value, s, end));
+    else apply({ value: `${value.slice(0, s)}  ${value.slice(end)}`, start: s + 2, end: s + 2 });
+  };
+
+  const FORMATS: Record<string, { command: FormatCommand; run: () => EditResult }> = {
+    b: {
+      command: 'bold',
+      run: () => toggleWrap(editor.value, editor.selectionStart, editor.selectionEnd, '**'),
+    },
+    i: {
+      command: 'italic',
+      run: () => toggleWrap(editor.value, editor.selectionStart, editor.selectionEnd, '*'),
+    },
+    k: {
+      command: 'link',
+      run: () => wrapLink(editor.value, editor.selectionStart, editor.selectionEnd, ''),
+    },
+  };
+
+  const onFormat = (e: KeyboardEvent) => {
+    const format = FORMATS[e.key.toLowerCase()];
+    if (!format) return;
+    e.preventDefault();
+    apply(format.run());
+    onFormatCommand?.(format.command);
+  };
+
+  const onEnter = (e: KeyboardEvent) => {
+    if (editor.selectionStart !== editor.selectionEnd) return;
+    const pos = editor.selectionStart;
+    const r = continueList(editor.value, pos) ?? continueIndent(editor.value, pos);
+    if (!r) return;
+    e.preventDefault();
+    apply({ value: r.value, start: r.cursor, end: r.cursor });
+  };
+
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const s = editor.selectionStart;
-      const eEnd = editor.selectionEnd;
-      apply({
-        value: `${editor.value.substring(0, s)}  ${editor.value.substring(eEnd)}`,
-        start: s + 2,
-        end: s + 2,
-      });
-      return;
-    }
-    if (hasModifier(e) && !e.altKey && !e.shiftKey) {
-      const key = e.key.toLowerCase();
-      if (key === 'b') {
-        e.preventDefault();
-        apply(toggleWrap(editor.value, editor.selectionStart, editor.selectionEnd, '**'));
-        onFormatCommand?.('bold');
-        return;
-      }
-      if (key === 'i') {
-        e.preventDefault();
-        apply(toggleWrap(editor.value, editor.selectionStart, editor.selectionEnd, '*'));
-        onFormatCommand?.('italic');
-        return;
-      }
-      if (key === 'k') {
-        e.preventDefault();
-        apply(wrapLink(editor.value, editor.selectionStart, editor.selectionEnd, ''));
-        onFormatCommand?.('link');
-        return;
-      }
-    }
-    if (e.key === 'Enter' && !e.shiftKey && !hasModifier(e) && !e.altKey) {
-      if (editor.selectionStart !== editor.selectionEnd) return;
-      const pos = editor.selectionStart;
-      const r = continueList(editor.value, pos) ?? continueIndent(editor.value, pos);
-      if (!r) return;
-      e.preventDefault();
-      apply({ value: r.value, start: r.cursor, end: r.cursor });
-    }
+    // Enter while an IME is composing confirms the candidate; leave it alone.
+    if (e.isComposing) return;
+    const leaving = tabLeaves;
+    tabLeaves = e.key === 'Escape';
+    const plain = !hasModifier(e) && !e.altKey;
+    if (e.key === 'Tab' && plain && !leaving) onTab(e);
+    else if (hasModifier(e) && !e.altKey && !e.shiftKey) onFormat(e);
+    else if (e.key === 'Enter' && plain && !e.shiftKey) onEnter(e);
   };
 
   const embedImageFile = async (file: File) => {

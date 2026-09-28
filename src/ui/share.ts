@@ -1,6 +1,7 @@
 import type { Clipboard, Compressor, Location } from '../ports.ts';
 import { buildShareURL } from '../share.ts';
 import type { Flavor } from '../types.ts';
+import { trapFocus } from './focusTrap.ts';
 import { showToast } from './toast.ts';
 
 const SOFT_URL_LENGTH = 2000;
@@ -79,8 +80,6 @@ export const initShareModal = (deps: ShareDeps): void => {
 
   let previousFocus: HTMLElement | null = null;
 
-  const focusables = (): HTMLElement[] => [copyBtn as HTMLElement, closeBtn as HTMLElement];
-
   const open = () => {
     heading = deps.getCurrentHeading();
     sectionCheckbox.checked = false;
@@ -120,21 +119,7 @@ export const initShareModal = (deps: ShareDeps): void => {
       .finally(close);
   });
 
-  modal.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab' || !isOpen()) return;
-    const items = focusables();
-    if (items.length === 0) return;
-    const first = items[0]!;
-    const last = items[items.length - 1]!;
-    const active = document.activeElement;
-    if (e.shiftKey && active === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  });
+  trapFocus(modal, isOpen);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) close();

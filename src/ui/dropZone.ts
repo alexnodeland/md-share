@@ -6,6 +6,9 @@ const TEXT_EXT = /\.(md|markdown|txt)$/i;
 
 const isTextFile = (file: File) => TEXT_EXT.test(file.name) || file.type.startsWith('text/');
 const isImageFile = (file: File) => file.type.startsWith('image/');
+// Only file drags are ours; text drags (moving a selection in the editor,
+// dropping text from another app) keep the browser's native behavior.
+const carriesFiles = (e: DragEvent) => e.dataTransfer?.types.includes('Files') ?? false;
 
 export interface DropZoneDeps {
   onText: (content: string) => void;
@@ -20,12 +23,14 @@ export const initDropZone = ({ onText, onImageInsert, compressImage }: DropZoneD
   let depth = 0;
 
   document.addEventListener('dragenter', (e) => {
+    if (!carriesFiles(e)) return;
     e.preventDefault();
     depth++;
     overlay.classList.add('visible');
   });
 
   document.addEventListener('dragleave', (e) => {
+    if (!carriesFiles(e)) return;
     e.preventDefault();
     if (--depth <= 0) {
       depth = 0;
@@ -33,9 +38,12 @@ export const initDropZone = ({ onText, onImageInsert, compressImage }: DropZoneD
     }
   });
 
-  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('dragover', (e) => {
+    if (carriesFiles(e)) e.preventDefault();
+  });
 
   document.addEventListener('drop', (e) => {
+    if (!carriesFiles(e)) return;
     e.preventDefault();
     depth = 0;
     overlay.classList.remove('visible');

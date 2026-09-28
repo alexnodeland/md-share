@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   continueIndent,
   continueList,
+  indentLines,
   isUrl,
+  outdentLines,
   toggleWrap,
   wrapLink,
 } from '../src/editorCommands.ts';
@@ -132,5 +134,46 @@ describe('isUrl', () => {
     expect(isUrl('mailto:x@y.z')).toBe(false);
     expect(isUrl('https://has spaces/bad')).toBe(false);
     expect(isUrl('')).toBe(false);
+  });
+});
+
+describe('indentLines', () => {
+  it('indents every line the selection touches, keeping the text', () => {
+    const v = 'a\nbb\nc';
+    const r = indentLines(v, 0, 4); // "a\nbb"
+    expect(r.value).toBe('  a\n  bb\nc');
+    expect(r).toMatchObject({ start: 2, end: 8 });
+  });
+
+  it('indents the whole line for a partial one-line selection', () => {
+    expect(indentLines('hello world', 6, 11)).toEqual({
+      value: '  hello world',
+      start: 8,
+      end: 13,
+    });
+  });
+
+  it('does not pull in the line after a trailing newline', () => {
+    expect(indentLines('a\nb\n', 0, 2).value).toBe('  a\nb\n');
+  });
+});
+
+describe('outdentLines', () => {
+  it('removes up to two spaces or one tab per line', () => {
+    const r = outdentLines('    a\n b\n\tc\nd', 0, 13);
+    expect(r.value).toBe('  a\nb\nc\nd');
+    expect(r).toMatchObject({ start: 0, end: 9 });
+  });
+
+  it('keeps the cursor on its line when it sits inside the indent', () => {
+    expect(outdentLines('  a', 1, 1)).toEqual({ value: 'a', start: 0, end: 0 });
+  });
+
+  it('shifts a selection left by what was removed', () => {
+    expect(outdentLines('x\n  abc', 5, 7)).toEqual({ value: 'x\nabc', start: 3, end: 5 });
+  });
+
+  it('is a no-op on unindented lines', () => {
+    expect(outdentLines('abc', 1, 2)).toEqual({ value: 'abc', start: 1, end: 2 });
   });
 });
