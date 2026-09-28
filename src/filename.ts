@@ -33,6 +33,12 @@ export const documentTitle = (source: string): string | null => {
   return title || firstHeadingText(body);
 };
 
+/** Browser tab title: the document's title, then the app name. */
+export const pageTitle = (source: string): string => {
+  const title = documentTitle(source);
+  return title ? `${title} · md-share` : 'md-share';
+};
+
 export const slugifyFilename = (text: string): string =>
   text
     .toLowerCase()

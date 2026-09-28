@@ -10,13 +10,21 @@ import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from '.
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { recordSnapshot } from './draftHistory.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
+import { renderEmptyState } from './emptyState.ts';
+import { pageTitle } from './filename.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
 import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { insertImageAtCursor } from './imageEmbed.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
-import { isSampleContent, SAMPLE_FLAVOR, type SampleKey, sampleFor } from './samples.ts';
+import {
+  isSampleContent,
+  isSampleKey,
+  SAMPLE_FLAVOR,
+  type SampleKey,
+  sampleFor,
+} from './samples.ts';
 import { hasSharePayload, parseShareParams } from './share.ts';
 import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
@@ -31,6 +39,7 @@ import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
 import { initEditorToggle } from './ui/editorToggle.ts';
 import { initEditorUndo } from './ui/editorUndo.ts';
+import { initPrintExpansion } from './ui/expandDetails.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
 import { initFindBar } from './ui/findBar.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
@@ -114,6 +123,11 @@ const renderPreview = async (state: AppState): Promise<void> => {
   const src = editor.value;
   const scrollTop = scroller?.scrollTop ?? 0;
   state.deps.mermaidCounter.reset();
+  document.title = pageTitle(src);
+  if (!src.trim()) {
+    preview.innerHTML = renderEmptyState();
+    return;
+  }
   try {
     const { meta, body } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
@@ -364,23 +378,28 @@ const boot = async (): Promise<void> => {
       rerender();
     },
   });
-  initSampleSelect({
-    onSelect: (key) => {
-      const nextFlavor = SAMPLE_FLAVOR[key];
-      if (nextFlavor !== state.flavor) {
-        state.flavor = nextFlavor;
-        state.md = buildMD(nextFlavor, state.deps);
-        browserStorage.set(FLAVOR_STORAGE_KEY, nextFlavor);
-        ensureKatexFor(nextFlavor);
-        setFlavorSelectValue(nextFlavor);
-        updatePlaceholder();
-      }
-      // An untouched sample isn't worth a snapshot; anything else is.
-      if (isSampleContent(editor.value) === null) snapshot(editor.value);
-      state.activeSample = key;
-      applyEdit(editor, { value: sampleFor(key), start: 0, end: 0 });
-      rerender();
-    },
+  const loadSample = (key: SampleKey): void => {
+    const nextFlavor = SAMPLE_FLAVOR[key];
+    if (nextFlavor !== state.flavor) {
+      state.flavor = nextFlavor;
+      state.md = buildMD(nextFlavor, state.deps);
+      browserStorage.set(FLAVOR_STORAGE_KEY, nextFlavor);
+      ensureKatexFor(nextFlavor);
+      setFlavorSelectValue(nextFlavor);
+      updatePlaceholder();
+    }
+    // An untouched sample isn't worth a snapshot; anything else is.
+    if (isSampleContent(editor.value) === null) snapshot(editor.value);
+    state.activeSample = key;
+    applyEdit(editor, { value: sampleFor(key), start: 0, end: 0 });
+    setSampleSelectValue(key);
+    rerender();
+  };
+  initSampleSelect({ onSelect: loadSample });
+  document.getElementById('preview')?.addEventListener('click', (e) => {
+    const key = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-sample]')?.dataset
+      .sample;
+    if (key && isSampleKey(key)) loadSample(key);
   });
   initClearButton({
     onClear: () => {
@@ -436,17 +455,23 @@ const boot = async (): Promise<void> => {
   });
   initExportMenu({
     printer: browserPrinter,
+    clipboard: browserClipboard,
+    getTheme: () => state.theme,
+    getKatexVersion: () => state.deps.katex?.version ?? null,
     getSource: () => editor.value,
     getPreviewHTML: () => {
       const el = document.getElementById('preview');
       if (!el) return '';
       const clone = el.cloneNode(true) as HTMLElement;
-      for (const btn of clone.querySelectorAll('.copy-code')) btn.remove();
+      for (const chrome of clone.querySelectorAll('.copy-code, .heading-anchor, .preview-empty')) {
+        chrome.remove();
+      }
       return clone.innerHTML;
     },
     getPreviewElement: () => document.getElementById('preview'),
     onPresent: () => presentation.enter(),
   });
+  initPrintExpansion(() => document.getElementById('preview'));
   initDropZone({
     onText: (text) => {
       snapshot(editor.value);

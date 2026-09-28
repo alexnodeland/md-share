@@ -64,9 +64,10 @@ Not `speak(innerText)`. A DOM walker narrates structure:
 ### 📤 First-class exports
 Users should always be able to leave:
 - ⬇️ **Markdown** (`.md`) — the source
-- ⬇️ **HTML** snippet — paste anywhere
+- ⬇️ **HTML page** — one self-contained file, styled like the preview
+- 📋 **Copy formatted** — paste into Docs, email, or Notion with formatting intact
 - 🖼️ **PNG** — for chat, slides, screenshots
-- 🖨️ **PDF** — via print CSS, properly themed
+- 🖨️ **PDF** — via print CSS, properly themed; folded sections print expanded
 
 </td>
 <td width="50%" valign="top">
