@@ -10,7 +10,7 @@ const USAGE = `Usage:
 Examples:
   node scripts/generate-share-link.mjs notes.md
   node scripts/generate-share-link.mjs notes.txt --flavor=gfm
-  node scripts/generate-share-link.mjs notes.md --base=https://alexnodeland.github.io/md-share/
+  node scripts/generate-share-link.mjs notes.md --base=https://md.alexnodeland.com/
 `;
 
 const ALLOWED_EXTS = new Set(['.md', '.markdown', '.txt']);
@@ -22,7 +22,7 @@ const ALLOWED_FLAVORS = new Set([
   'obsidian',
   'atlassian',
 ]);
-const DEFAULT_BASE = 'https://alexnodeland.github.io/md-share/';
+const DEFAULT_BASE = 'https://md.alexnodeland.com/';
 
 const normalizeSource = (text) => {
   const withoutBom = text.startsWith('\uFEFF') ? text.slice(1) : text;

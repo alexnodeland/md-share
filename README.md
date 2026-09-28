@@ -22,7 +22,7 @@ _The document **is** the URL._
 
 **Write → Share → Escape.** A lightweight markdown renderer that speaks six dialects, reads itself aloud, and compresses your whole document into a shareable URL. No backend. No account. No "session expired."
 
-[**🌐 Live demo**](https://alexnodeland.github.io/md-share/) · [**Philosophy**](./PHILOSOPHY.md) · [**Contributing**](./CONTRIBUTING.md) · [**License**](./LICENSE)
+[**🌐 Live demo**](https://md.alexnodeland.com/) · [**Philosophy**](./PHILOSOPHY.md) · [**Contributing**](./CONTRIBUTING.md) · [**License**](./LICENSE)
 
 </div>
 
