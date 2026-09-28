@@ -78,24 +78,31 @@ The repo is organized around ports-and-adapters:
 - **Don't test what a dependency already tests.** Don't write `expect(document.addEventListener).toHaveBeenCalled()` — that's verifying a DOM API, not your code.
 - **Don't chase coverage on UI wiring.** `src/app.ts`, `src/adapters/**`, `src/ui/**` are explicitly excluded. Their correctness is the manual smoke-test checklist below.
 
-### Manual smoke test (for user-facing UI changes)
+### E2E smoke suite (automated)
+
+`npm run test:e2e` builds the site and runs Playwright against `vite preview` (`e2e/`). CI runs it on every PR. It covers:
+
+- every sample renders with no error boxes, rendered diagrams, and TOC links that resolve
+- share round trip (content, flavor, read-only banner, fork on edit), CommonMark links, legacy `?d=` links, unreadable links, a new link pasted into an open tab
+- TOC clicks keep the `#d=` payload; Recent versions restore after a shared link overwrites the draft and after Clear
+- raw-HTML / crafted-fence XSS payloads stay inert
+- task checkboxes after frontmatter + comments, Tab/Shift+Tab, Esc→Tab focus escape, case-insensitive replace-all
+- HTML and Markdown exports, theme persistence, and the 360 px phone toolbar and Edit/View toggle
+
+First run: `npx playwright install chromium`. To use a Chromium you already have, set `PW_CHROMIUM_PATH=/path/to/chrome`.
+
+When you add a user-facing behavior, add its check to `e2e/` rather than to the list below.
+
+### Manual smoke test (what automation can't cover)
 
 Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 
-- [ ] Flavor switcher — each of the six flavors renders its default doc without errors
-- [ ] Share → modal shows URL → paste URL in new tab → read-only banner + content loads
-- [ ] Typing in a read-only doc clears the banner and strips the `#d=` payload from the URL (also verify with a legacy `?d=…` link)
 - [ ] Cross-browser decode — copy a `#d=…` URL (`df1.` for most docs) from Chrome, open it in Firefox and Safari, confirm it renders identically; do the reverse too
-- [ ] Listen — progress advances, skip fwd/back work, seek-on-click works, speed change works, `Esc` stops
-- [ ] Drop a `.md` file anywhere on the window → it loads into the editor
-- [ ] Recent versions — write a draft, open a shared link, type; the clock menu still lists the original draft and restores it
-- [ ] In-page links — on a shared link, click a TOC entry and a footnote; the URL keeps its `#d=` payload and a reload still shows the doc
-- [ ] Export: Markdown / HTML page / PNG / PDF all download or print; open the `.html` file on its own and it looks like the preview; Copy formatted pastes into a doc with formatting
+- [ ] Listen — speech plays, progress advances, skip fwd/back and seek-on-click work, speed change works, `Esc` stops
+- [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds
+- [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
 - [ ] Theme toggle — mermaid re-renders with the matching theme
-- [ ] Mobile (resize <900px) — Edit/View toggle works
-- [ ] Keyboard: `Ctrl+S`, `Ctrl+E`, `Esc`; `Tab`/`Shift+Tab` indent/outdent a multi-line selection; `Esc` then `Tab` leaves the editor; Tab cycles every control in the share dialog
-
-Also: run `npm run build && npx serve dist` and repeat on the built static output. Then open `dist/index.html` directly via `file://` and confirm it still works.
+- [ ] Open `dist/index.html` directly via `file://` after `npm run build` and confirm it still works
 
 ---
 
@@ -115,7 +122,7 @@ Also: run `npm run build && npx serve dist` and repeat on the built static outpu
 Before opening a PR, confirm:
 
 - [ ] `npm run verify` passes locally (Biome 0 warnings, tsc clean, all tests green, 100 % coverage on pure modules)
-- [ ] Manual smoke test above passes for any UI-touching change
+- [ ] `npm run test:e2e` passes, and the manual smoke items above pass for any UI-touching change
 - [ ] No new `--no-verify`, no `biome-ignore`, no `@ts-ignore` without a comment explaining why
 - [ ] The change answers the 7-question philosophy check in [PHILOSOPHY.md](./PHILOSOPHY.md) for user-facing features
 

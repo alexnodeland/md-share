@@ -5,3 +5,5 @@ coverage
 *.log
 .claude/settings.local.json
 .playwright-mcp/
+playwright-report
+test-results
