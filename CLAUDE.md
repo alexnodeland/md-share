@@ -25,13 +25,15 @@ Six flavors: CommonMark, Extended, Academic (KaTeX), GitHub (`gfm`), Obsidian, A
 | UI wiring | `src/ui/` | `initX(deps)` functions attaching event listeners. |
 | Composition | `src/app.ts` | The only file that imports adapters + UI and wires them. |
 
-Pure modules are tested with **100% statements/branches/functions/lines** (enforced in `vitest.config.ts`). `app.ts`, `adapters/**`, `ui/**`, `types.ts`, `ports.ts` are deliberately excluded — correctness verified by the manual smoke test in CONTRIBUTING.md.
+Pure modules are tested with **100% statements/branches/functions/lines** (enforced in `vitest.config.ts`). `app.ts`, `adapters/**`, `ui/**`, `types.ts`, `ports.ts` are deliberately excluded — their correctness is covered by the E2E suite (`e2e/`) plus the short manual smoke list in CONTRIBUTING.md.
 
 Touching a new browser API? Add a port in `src/ports.ts`, an adapter in `src/adapters/`, wire it in `app.ts`. The pure module takes the port as an argument.
 
 ## Quality gate
 
 Single command: `npm run verify` → Biome (0 warnings) + `tsc --noEmit` + Vitest with coverage (100% on pure modules, no asterisks). Same as CI. Node version: `.nvmrc`.
+
+E2E: `npm run test:e2e` (Playwright against the production build, `e2e/`). Add a check there for new user-facing behavior; the manual list in CONTRIBUTING is only for what a headless browser can't cover (speech, real file drops, cross-browser, `file://`).
 
 **Never** bypass with `--no-verify`, `biome-ignore`, or `@ts-ignore` without an explicit justification the user has approved. Fix the root cause.
 
