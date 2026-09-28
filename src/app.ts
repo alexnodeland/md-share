@@ -12,7 +12,7 @@ import { recordSnapshot } from './draftHistory.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
-import { parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
+import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { insertImageAtCursor } from './imageEmbed.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
@@ -21,8 +21,8 @@ import { hasSharePayload, parseShareParams } from './share.ts';
 import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
-import { generateTOC } from './toc.ts';
-import type { Flavor, ShareParams, Theme } from './types.ts';
+import { renderTOC } from './toc.ts';
+import type { Flavor, RenderEnv, ShareParams, Theme } from './types.ts';
 import { applyEdit } from './ui/applyEdit.ts';
 import { initClearButton } from './ui/clearButton.ts';
 import { initCodeCopyButtons } from './ui/codeCopyButtons.ts';
@@ -117,9 +117,9 @@ const renderPreview = async (state: AppState): Promise<void> => {
   try {
     const { meta, body } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
-    preview.innerHTML = browserSanitizer.sanitize(
-      front + generateTOC(body) + state.md.render(body),
-    );
+    const env: RenderEnv = { lineOffset: bodyLineOffset(src, body) };
+    const html = state.md.render(body, env);
+    preview.innerHTML = browserSanitizer.sanitize(front + renderTOC(env.headings ?? []) + html);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     preview.replaceChildren(renderError(message));

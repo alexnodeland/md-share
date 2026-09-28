@@ -28,6 +28,14 @@ export const parseFrontmatter = (source: string): Frontmatter => {
   return { meta, body };
 };
 
+/** How many source lines precede `body` (it is always a suffix of `source`). */
+export const bodyLineOffset = (source: string, body: string): number => {
+  let lines = 0;
+  const end = source.length - body.length;
+  for (let i = 0; i < end; i++) if (source[i] === '\n') lines++;
+  return lines;
+};
+
 export const renderFrontmatter = (
   meta: Record<string, string>,
   escapeHtml: (s: string) => string,

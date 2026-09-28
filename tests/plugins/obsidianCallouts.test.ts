@@ -66,3 +66,25 @@ describe('pluginObsidianCallouts', () => {
     expect(html).toContain('<!--C-->');
   });
 });
+
+describe('pluginObsidianCallouts — folding', () => {
+  it('renders [!type]- as a collapsed details element', () => {
+    const html = build().render('> [!tip]- Hidden tip\n> body');
+    expect(html).toContain('<details class="callout callout-tip"><summary class="callout-title">');
+    expect(html).toContain('Hidden tip</summary>');
+    expect(html).not.toContain('- Hidden tip');
+    expect(html).toContain('</div></details>');
+  });
+
+  it('renders [!type]+ as an expanded details element', () => {
+    const html = build().render('> [!faq]+\n> answer');
+    expect(html).toContain('<details class="callout callout-faq" open>');
+    expect(html).toContain('Faq</summary>');
+  });
+
+  it('keeps non-foldable callouts as plain divs', () => {
+    const html = build().render('> [!note] N\n> b');
+    expect(html).not.toContain('<details');
+    expect(html).toContain('</div></div>');
+  });
+});

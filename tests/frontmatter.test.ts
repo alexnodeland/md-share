@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFrontmatter, renderFrontmatter } from '../src/frontmatter.ts';
+import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from '../src/frontmatter.ts';
 
 const escapeHtml = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -66,5 +66,16 @@ describe('renderFrontmatter', () => {
 
   it('returns an empty string when no metadata is present', () => {
     expect(renderFrontmatter({}, escapeHtml)).toBe('');
+  });
+});
+
+describe('bodyLineOffset', () => {
+  it('counts the lines stripped before the body', () => {
+    const src = '---\ntitle: T\n---\n\n- [ ] a';
+    expect(bodyLineOffset(src, parseFrontmatter(src).body)).toBe(4);
+  });
+
+  it('is zero without frontmatter', () => {
+    expect(bodyLineOffset('# Hi', parseFrontmatter('# Hi').body)).toBe(0);
   });
 });

@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import { describe, expect, it } from 'vitest';
-import { addHeadingAnchors } from '../../src/plugins/anchors.ts';
+import { addHeadingAnchors, inlineText } from '../../src/plugins/anchors.ts';
+import type { RenderEnv } from '../../src/types.ts';
 
 const build = () => {
   const md = new MarkdownIt({ html: true });
@@ -22,13 +23,10 @@ describe('addHeadingAnchors', () => {
     expect(html).toContain('class="heading-anchor-icon"');
   });
 
-  it('does not emit an anchor link when the heading has no id', () => {
-    const md = build();
-    const parsed = md.parse('## Head', {});
-    const tokens = parsed.filter((t) => t.type !== 'inline');
-    const rule = md.renderer.rules.heading_open!;
-    const out = rule(tokens, 0, md.options, {}, md.renderer);
-    expect(out).not.toContain('heading-anchor');
+  it('skips headings whose text has no slug-able characters', () => {
+    const html = build().render('## !!!');
+    expect(html).toContain('<h2>!!!</h2>');
+    expect(html).not.toContain('heading-anchor');
   });
 
   it('applies to all heading levels', () => {
@@ -63,17 +61,39 @@ describe('addHeadingAnchors', () => {
     expect(second).toContain('<h2 id="same">');
   });
 
-  it('does not set id when there is no inline token following heading_open', () => {
-    const md = build();
-    const parsed = md.parse('## Head', {});
-    // Splice out the inline token so next is non-inline (heading_close)
-    const tokens = parsed.filter((t) => t.type !== 'inline');
-    let attrSetCalled = false;
-    tokens[0]!.attrSet = () => {
-      attrSetCalled = true;
-    };
-    const rule = md.renderer.rules.heading_open!;
-    rule(tokens, 0, md.options, {}, md.renderer);
-    expect(attrSetCalled).toBe(false);
+  it('records the outline in env.headings using rendered text', () => {
+    const env: RenderEnv = {};
+    build().render('# Doc\n## A `code` [link](u)\nSetext\n---\n```\n## not a heading\n```', env);
+    expect(env.headings).toEqual([
+      { level: 1, text: 'Doc', slug: 'doc' },
+      { level: 2, text: 'A code link', slug: 'a-code-link' },
+      { level: 2, text: 'Setext', slug: 'setext' },
+    ]);
+  });
+
+  it('dedupes across every level so the TOC and ids agree', () => {
+    const env: RenderEnv = {};
+    const html = build().render('# Intro\n## Intro', env);
+    expect(html).toContain('<h2 id="intro-2">');
+    expect(env.headings?.[1]?.slug).toBe('intro-2');
+  });
+
+  it('gives non-ASCII headings real ids', () => {
+    expect(build().render('## 日本語')).toContain('<h2 id="日本語">');
+  });
+});
+
+describe('inlineText', () => {
+  it('joins text, code, image alt text and line breaks, skipping raw HTML', () => {
+    const md = new MarkdownIt({ html: true, breaks: false });
+    const inline = md.parse('## a <b>b</b> `c` ![d](e.png)', {})[1]!;
+    expect(inlineText(inline)).toBe('a b c d');
+    const para = md.parse('x\ny  \nz', {})[1]!;
+    expect(inlineText(para)).toBe('x y z');
+  });
+
+  it('returns empty for a token without children', () => {
+    const md = new MarkdownIt();
+    expect(inlineText(md.parse('para', {})[0]!)).toBe('');
   });
 });

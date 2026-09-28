@@ -78,3 +78,76 @@ describe('pluginAtlassianBlocks — code', () => {
     expect(html).toContain('raw');
   });
 });
+
+describe('pluginAtlassianBlocks — structure', () => {
+  it('leaves macros inside fenced code literal', () => {
+    const html = build().render('```\n{info}\nHello\n{info}\n```');
+    expect(html).not.toContain('atl-panel');
+    expect(html).toContain('{info}\nHello\n{info}');
+  });
+
+  it('renders Markdown inside panels and nests other macros', () => {
+    const html = build().render('{expand:More}\n{note}\n**bold**\n{note}\n{expand}');
+    expect(html).toMatch(
+      /<details class="atl-expand">.*<div class="atl-panel atl-panel-note">.*<strong>bold<\/strong>/s,
+    );
+  });
+
+  it('supports the single-line form', () => {
+    const html = build().render('{tip}Keep *it* short{tip}');
+    expect(html).toContain('<div class="atl-panel atl-panel-tip">');
+    expect(html).toContain('<p>Keep <em>it</em> short</p>');
+  });
+
+  it('supports single-line code macros', () => {
+    expect(build().render('{code:sh}ls -la{code}')).toContain(
+      '<pre><code class="language-sh">ls -la\n</code></pre>',
+    );
+  });
+
+  it('reads title= among other panel parameters', () => {
+    const html = build().render('{info:icon=false|title=Heads up}\nx\n{info}');
+    expect(html).toContain('<div class="atl-panel-title">Heads up</div>');
+  });
+
+  it('falls back to the type when a panel has params but no title', () => {
+    expect(build().render('{warning:icon=false}\nx\n{warning}')).toContain(
+      '<div class="atl-panel-title">warning</div>',
+    );
+  });
+
+  it('interrupts a paragraph without a blank line', () => {
+    const html = build().render('Intro\n{info}\nbody\n{info}');
+    expect(html).toContain('<p>Intro</p>');
+    expect(html).toContain('atl-panel-info');
+  });
+
+  it('keeps unclosed macros and trailing text as literal text', () => {
+    expect(build().render('{info}\nno close')).not.toContain('atl-panel');
+    expect(build().render('{info}text with no closer')).not.toContain('atl-panel');
+  });
+
+  it('does not treat 4-space indented macros as blocks', () => {
+    expect(build().render('    {info}\n    x\n    {info}')).toContain('<pre><code>');
+  });
+
+  it('maps tokens to their source lines', () => {
+    const tokens = build().parse('a\n\n{info}\n- b\n{info}', {});
+    const open = tokens.find((t) => t.type === 'atl_panel_open');
+    const item = tokens.find((t) => t.type === 'list_item_open');
+    expect(open?.map).toEqual([2, 5]);
+    expect(item?.map?.[0]).toBe(3);
+  });
+
+  it('reports a match in silent mode without emitting tokens', () => {
+    const md = build();
+    const rule = (
+      md.block as unknown as {
+        ruler: { __rules__: { name: string; fn: (...a: unknown[]) => boolean }[] };
+      }
+    ).ruler.__rules__.find((r) => r.name === 'atl_macro')!.fn;
+    const state = new md.block.State('{info}\nx\n{info}', md, {}, []);
+    expect(rule(state, 0, 3, true)).toBe(true);
+    expect(state.tokens).toHaveLength(0);
+  });
+});

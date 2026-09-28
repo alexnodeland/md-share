@@ -1,11 +1,9 @@
-const STRIP_RE = /[*_`[\]#]/g;
-const NON_SLUG_RE = /[^\w\s-]/g;
+const NON_SLUG_RE = /[^\p{L}\p{M}\p{N}\s_-]/gu;
 const WHITESPACE_RE = /\s+/g;
 
-export const cleanHeadingText = (text: string): string => text.replace(STRIP_RE, '').trim();
-
+/** GitHub-style slug from a heading's plain text; keeps non-ASCII letters. */
 export const slugifyHeading = (text: string): string =>
-  cleanHeadingText(text).toLowerCase().replace(NON_SLUG_RE, '').replace(WHITESPACE_RE, '-');
+  text.trim().toLowerCase().replace(NON_SLUG_RE, '').replace(WHITESPACE_RE, '-');
 
 export const uniqueSlug = (base: string, used: Map<string, number>): string => {
   const n = used.get(base) ?? 0;

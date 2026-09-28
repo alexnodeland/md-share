@@ -30,13 +30,17 @@ export const CALLOUT_ICONS: Record<string, string> = {
   faq: '❓',
 };
 
-const CALLOUT_HEADER_RE = /^\[!([\w-]+)\][ \t]*(.*)/;
-const CALLOUT_STRIP_RE = /^\[!([\w-]+)\][ \t]*.*\n?/;
+const CALLOUT_HEADER_RE = /^\[!([\w-]+)\]([+-]?)[ \t]*(.*)/;
+const CALLOUT_STRIP_RE = /^\[!([\w-]+)\][+-]?[ \t]*.*\n?/;
+
+/** `[!tip]-` starts collapsed, `[!tip]+` starts open, `[!tip]` can't fold. */
+type Fold = 'open' | 'closed' | null;
 
 interface CalloutMeta {
   callout: true;
   type: string;
   title: string;
+  fold: Fold;
 }
 
 const hasCalloutMeta = (token: Token): token is Token & { meta: CalloutMeta } =>
@@ -53,13 +57,15 @@ const findInlineTokenIndex = (tokens: readonly Token[], start: number, level: nu
   return -1;
 };
 
-const parseCalloutHeader = (content: string): { type: string; title: string } | null => {
+const FOLDS: Record<string, Fold> = { '+': 'open', '-': 'closed', '': null };
+
+const parseCalloutHeader = (content: string): Omit<CalloutMeta, 'callout'> | null => {
   const match = content.match(CALLOUT_HEADER_RE);
   if (!match) return null;
   const type = match[1]!.toLowerCase();
-  const rawTitle = match[2]!.trim();
+  const rawTitle = match[3]!.trim();
   const title = rawTitle.length > 0 ? rawTitle : type.charAt(0).toUpperCase() + type.slice(1);
-  return { type, title };
+  return { type, title, fold: FOLDS[match[2]!]! };
 };
 
 export const pluginObsidianCallouts = (md: MarkdownIt): void => {
@@ -87,9 +93,14 @@ export const pluginObsidianCallouts = (md: MarkdownIt): void => {
   md.renderer.rules.blockquote_open = (tokens, idx, opts, env, self) => {
     const token = tokens[idx]!;
     if (hasCalloutMeta(token)) {
-      const { type, title } = token.meta;
+      const { type, title, fold } = token.meta;
       const icon = CALLOUT_ICONS[type] ?? 'ℹ';
-      return `<div class="callout callout-${type}"><div class="callout-title"><span class="callout-icon">${icon}</span> ${md.utils.escapeHtml(title)}</div><div class="callout-body">`;
+      const heading = `<span class="callout-icon">${icon}</span> ${md.utils.escapeHtml(title)}`;
+      if (fold === null) {
+        return `<div class="callout callout-${type}"><div class="callout-title">${heading}</div><div class="callout-body">`;
+      }
+      const openAttr = fold === 'open' ? ' open' : '';
+      return `<details class="callout callout-${type}"${openAttr}><summary class="callout-title">${heading}</summary><div class="callout-body">`;
     }
     return origOpen ? origOpen(tokens, idx, opts, env, self) : self.renderToken(tokens, idx, opts);
   };
@@ -99,7 +110,9 @@ export const pluginObsidianCallouts = (md: MarkdownIt): void => {
     for (let j = idx - 1; j >= 0; j--) {
       const token = tokens[j]!;
       if (token.type === 'blockquote_open' && token.level === closeLevel) {
-        if (hasCalloutMeta(token)) return '</div></div>';
+        if (hasCalloutMeta(token)) {
+          return token.meta.fold === null ? '</div></div>' : '</div></details>';
+        }
         break;
       }
     }

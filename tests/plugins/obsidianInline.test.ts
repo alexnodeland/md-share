@@ -59,9 +59,32 @@ describe('highlight', () => {
     expect(html).toContain('<mark>highlighted</mark>');
   });
 
-  it('escapes HTML inside highlight', () => {
-    const html = build().render('==<b>==');
-    expect(html).toContain('<mark>&lt;b&gt;</mark>');
+  it('escapes special characters inside highlight', () => {
+    expect(new MarkdownIt().use(pluginObsidianInline).render('==a < b==')).toContain(
+      '<mark>a &lt; b</mark>',
+    );
+  });
+
+  it('parses Markdown inside the highlight', () => {
+    expect(build().render('==**bold** and `code`==')).toContain(
+      '<mark><strong>bold</strong> and <code>code</code></mark>',
+    );
+  });
+
+  it('does not highlight when the markers hug whitespace (comparisons)', () => {
+    const html = build().render('if a == b and c == d');
+    expect(html).not.toContain('<mark>');
+    expect(build().render('x ==a == b')).not.toContain('<mark>');
+  });
+
+  it('ignores empty highlights', () => {
+    expect(build().render('a ==== b')).not.toContain('<mark>');
+  });
+
+  it('does not run past the end of an enclosing link label', () => {
+    expect(build().render('[==a](u) and ==b==')).toContain(
+      '<a href="u">==a</a> and <mark>b</mark>',
+    );
   });
 
   it('leaves unclosed == alone', () => {
