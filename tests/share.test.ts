@@ -4,6 +4,7 @@ import {
   buildShareURL,
   decodeDoc,
   encodeDoc,
+  hasSharePayload,
   normalizeSource,
   parseShareParams,
 } from '../src/share.ts';
@@ -160,7 +161,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
   it('decodes the source from the fragment', async () => {
     expect(await parseShareParams('', identityCompressor, '#d=hello%20world')).toEqual({
       source: 'hello world',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: null,
     });
   });
@@ -176,7 +177,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
   it('rejects an unknown flavor in the fragment', async () => {
     expect(await parseShareParams('', identityCompressor, '#d=x&f=bogus')).toEqual({
       source: 'x',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: null,
     });
   });
@@ -208,7 +209,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
   it('reads the anchor from the `a=` sub-param', async () => {
     expect(await parseShareParams('', identityCompressor, '#d=x&a=my%20section')).toEqual({
       source: 'x',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: 'my section',
     });
   });
@@ -216,7 +217,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
   it('ignores the query string when the fragment has the payload', async () => {
     expect(await parseShareParams('?d=ignored', identityCompressor, '#d=kept')).toEqual({
       source: 'kept',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: null,
     });
   });
@@ -226,7 +227,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
   it('decodes the source from the query', async () => {
     expect(await parseShareParams('?d=hello%20world', identityCompressor)).toEqual({
       source: 'hello world',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: null,
     });
   });
@@ -242,7 +243,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
   it('rejects an unknown flavor in the query', async () => {
     expect(await parseShareParams('?d=x&f=bogus', identityCompressor)).toEqual({
       source: 'x',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: null,
     });
   });
@@ -266,7 +267,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
   it('parses a percent-encoded hash fragment as an anchor', async () => {
     expect(await parseShareParams('?d=x', identityCompressor, '#my%20section')).toEqual({
       source: 'x',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: 'my section',
     });
   });
@@ -274,7 +275,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
   it('accepts a hash anchor without a leading #', async () => {
     expect(await parseShareParams('?d=x', identityCompressor, 'plain-slug')).toEqual({
       source: 'x',
-      flavor: null,
+      flavor: 'commonmark',
       anchor: 'plain-slug',
     });
   });
@@ -285,5 +286,34 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       flavor: null,
       anchor: '%FF',
     });
+  });
+});
+
+describe('hasSharePayload', () => {
+  it('detects a payload in the fragment, with or without the leading #', () => {
+    expect(hasSharePayload('#d=abc&f=gfm')).toBe(true);
+    expect(hasSharePayload('d=abc')).toBe(true);
+  });
+
+  it('detects a legacy payload in the query string', () => {
+    expect(hasSharePayload('', '?d=abc')).toBe(true);
+  });
+
+  it('ignores plain heading anchors and empty input', () => {
+    expect(hasSharePayload('#my-section')).toBe(false);
+    expect(hasSharePayload('')).toBe(false);
+    expect(hasSharePayload('#a=intro', '?f=gfm')).toBe(false);
+  });
+});
+
+describe('share round trip', () => {
+  it('pins CommonMark even though the URL omits `f=`', async () => {
+    const loc = { origin: 'https://md.example', pathname: '/' };
+    const url = new URL(
+      await buildShareURL(loc, '==not a highlight==', 'commonmark', identityCompressor),
+    );
+    expect(url.hash).not.toContain('f=');
+    const parsed = await parseShareParams(url.search, identityCompressor, url.hash);
+    expect(parsed.flavor).toBe('commonmark');
   });
 });

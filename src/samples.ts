@@ -19,7 +19,7 @@ A lightweight markdown renderer — share via URL, no backend.
 
 ## How it works
 
-Write markdown on the left. The preview updates live. Hit **Share** to generate a URL with the entire document compressed into the query string — no server needed.
+Write markdown on the left. The preview updates live. Hit **Share** to generate a URL with the entire document compressed into the URL fragment — it never even reaches a server.
 
 > Try the **Listen** button to hear this document read aloud. Tables are read row-by-row, diagrams are announced, and code blocks are summarized.
 

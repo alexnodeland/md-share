@@ -102,7 +102,7 @@ Also: run `npm run build && npx serve dist` and repeat on the built static outpu
 1. **Plugin file** — write `src/plugins/<flavor>.ts`. Export a function `(md: MarkdownIt, deps?) => void` that installs your rules. Keep it typed; use `deps` argument for anything framework-external.
 2. **Compose it** — add the flavor to the `Flavor` union in `src/types.ts`, the label in `FLAVOR_LABELS` in `src/flavors.ts`, and apply the plugin inside `applyFlavorPlugins`.
 3. **Write tests** — `tests/plugins/<flavor>.test.ts`. Cover every rule, every renderer, every silent-mode path. 100 % coverage is enforced.
-4. **Add a showcase default** — extend `src/defaults.ts` with a demo document that *actually uses every feature of the flavor*. Remember principle #2: defaults are test content.
+4. **Add a showcase sample** — extend `SAMPLES` in `src/samples.ts` with a demo document that *actually uses every feature of the flavor*, and add its `<option>` to `#sample-select` in `index.html`. Remember principle #7: samples are test content.
 5. **Update the UI** — add the `<option>` in `index.html` (in `#flavor-select`).
 6. **Run `npm run verify`** — if it's green, open a PR.
 

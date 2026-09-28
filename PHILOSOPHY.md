@@ -4,7 +4,7 @@ North-star reference. When a feature decision is ambiguous, it should answer to 
 
 ## 1. Serverless by conviction
 
-No backend, no account, no database. **The document *is* the URL.** Content is compressed with lz-string into the query string; sharing = copying a link.
+No backend, no account, no database. **The document *is* the URL.** Content is compressed (brotli, gzip, or lz-string — whatever the browser offers) into the URL fragment `#d=…`, which browsers never send to a server; sharing = copying a link.
 
 - State lives in the user's hands, never ours.
 - No signup wall, no storage quota, no "your session expired."
@@ -34,7 +34,7 @@ Implication: never flatten. When adding a block-level feature, decide what it *s
 
 ## 5. Live, low-friction editing
 
-Editing should feel weightless. Viewing a shared link shows a **read-only banner**; typing silently forks it (removes the banner, strips the query string). Shared docs are *suggestions*, not contracts.
+Editing should feel weightless. Viewing a shared link shows a **read-only banner**; typing silently forks it (removes the banner, strips the payload from the URL). Shared docs are *suggestions*, not contracts.
 
 Implication: the write → share loop is the core path. New UI must not add modal steps, confirmations, or "save" ceremony to it. (Exact shortcuts and interactions live in the README.)
 

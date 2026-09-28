@@ -13,7 +13,6 @@ _The document **is** the URL._
   <img alt="Vitest" src="https://img.shields.io/badge/Vitest-4-6E9F18?logo=vitest&logoColor=white">
   <img alt="Biome" src="https://img.shields.io/badge/Biome-2-60A5FA?logo=biome&logoColor=white">
   <br>
-  <img alt="Tests" src="https://img.shields.io/badge/tests-190%20passing-34d399">
   <img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-34d399">
   <img alt="Warnings" src="https://img.shields.io/badge/warnings-0-34d399">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-a78bfa">
