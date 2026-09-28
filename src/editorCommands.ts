@@ -147,3 +147,15 @@ export const outdentLines = (value: string, start: number, end: number): EditRes
     end: Math.max(newStart, end - total),
   };
 };
+
+/** Offsets spanning 1-based `line` (clamped to the document), for jumping the cursor there. */
+export const lineBounds = (value: string, line: number): { start: number; end: number } => {
+  let start = 0;
+  for (let n = 1; n < line; n++) {
+    const nl = value.indexOf('\n', start);
+    if (nl === -1) break;
+    start = nl + 1;
+  }
+  const nl = value.indexOf('\n', start);
+  return { start, end: nl === -1 ? value.length : nl };
+};

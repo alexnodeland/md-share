@@ -2190,3 +2190,59 @@ html.theme-switching *::after {
   margin: 0 auto;
   border-radius: 4px;
 }
+
+/* The pane header clips overflow; the document-check menu must escape it. */
+#preview-pane > .pane-header {
+  overflow: visible;
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+}
+.lint-wrap {
+  position: relative;
+  margin-left: auto;
+  display: inline-flex;
+}
+.lint-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  color: var(--warn-color);
+  border-color: color-mix(in srgb, var(--warn-color) 45%, transparent);
+  background: color-mix(in srgb, var(--warn-color) 8%, transparent);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.lint-badge[hidden] {
+  display: none;
+}
+.lint-badge svg {
+  width: 11px;
+  height: 11px;
+}
+.lint-menu {
+  top: calc(100% + 6px);
+  right: 0;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  max-height: 60vh;
+  overflow-y: auto;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.lint-menu .lint-item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 7px 10px;
+  white-space: normal;
+}
+.lint-line {
+  color: var(--text-xdim);
+  font-size: 10px;
+}
+.lint-message {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}

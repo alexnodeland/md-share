@@ -244,7 +244,20 @@
         tabindex="0"
       ></div>
       <section class="preview-pane" id="preview-pane" aria-label="Rendered preview">
-        <div class="pane-header">Preview</div>
+        <div class="pane-header">
+          Preview
+          <div class="lint-wrap">
+            <button type="button" id="btn-lint" class="lint-badge" data-dropdown="lint-menu" title="Document check" hidden>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span id="lint-count"></span>
+            </button>
+            <div class="dropdown lint-menu" id="lint-menu"></div>
+          </div>
+        </div>
         <div class="preview-scroll" id="preview-scroll">
           <div class="rendered" id="preview" tabindex="-1"></div>
         </div>

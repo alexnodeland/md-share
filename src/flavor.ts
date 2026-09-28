@@ -8,3 +8,7 @@ export const resolveInitialFlavor = (shared: Flavor | null, stored: string | nul
 
 export const flavorNeedsKatex = (flavor: Flavor): boolean =>
   flavor === 'academic' || flavor === 'obsidian';
+
+/** Flavors that parse `[^x]` footnotes (see applyFlavorPlugins). */
+export const flavorHasFootnotes = (flavor: Flavor): boolean =>
+  flavor === 'extended' || flavor === 'academic' || flavor === 'obsidian';

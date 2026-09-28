@@ -24,6 +24,15 @@ for (const theme of ['dark', 'light'] as const) {
       });
     }
 
+    test('document-check menu has no accessibility violations', async ({ page }) => {
+      await page.goto('./');
+      // A broken in-page link: a real issue, but not one axe also flags in the preview.
+      await page.locator('#editor').fill('# T\n\n[see](#missing)');
+      await page.locator('#btn-lint').click();
+      await expect(page.locator('#lint-menu .lint-item').first()).toBeVisible();
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    });
+
     test('share dialog has no accessibility violations', async ({ page }) => {
       await page.goto('./');
       await page.locator('#sample-select').selectOption('gfm');
