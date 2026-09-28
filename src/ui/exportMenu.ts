@@ -3,6 +3,7 @@ import { deriveFilename, documentTitle } from '../filename.ts';
 import type { Clipboard, DocxWriter, Printer, Rasterizer } from '../ports.ts';
 import { buildStandaloneHtml } from '../standaloneHtml.ts';
 import type { Theme } from '../types.ts';
+import { download } from './download.ts';
 import { closeAllDropdowns } from './dropdown.ts';
 import { expandDetails } from './expandDetails.ts';
 import { showToast } from './toast.ts';
@@ -22,14 +23,6 @@ export interface ExportDeps {
   getPreviewElement: () => HTMLElement | null;
   onPresent: () => void;
 }
-
-const download = (blob: Blob, name: string): void => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-};
 
 // The bundled KaTeX sheet uses relative font URLs that break in a standalone
 // file; the export links the version-pinned CDN copy instead.

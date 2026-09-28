@@ -71,3 +71,32 @@ test('Save to file… writes a new file named after the title and links it', asy
   await expect(page.locator('#file-status')).toHaveText('trip-plan.md');
   expect(await writes(page)).toEqual([{ name: 'trip-plan.md', text: '# Trip plan\n\nPack light' }]);
 });
+
+test('"Open with → md-share" opens the file in place (installed app)', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { writes: { name: string; text: string }[] };
+    const handle = {
+      kind: 'file',
+      name: 'launched.md',
+      getFile: async () => new File(['# Launched'], 'launched.md', { type: 'text/markdown' }),
+      createWritable: async () => ({
+        write: async (text: string) => {
+          w.writes.push({ name: 'launched.md', text });
+        },
+        close: async () => {},
+      }),
+    };
+    // Chromium has a native (read-only) launchQueue; replace it.
+    Object.defineProperty(window, 'launchQueue', {
+      value: { setConsumer: (consume: (p: unknown) => void) => consume({ files: [handle] }) },
+    });
+  });
+  await page.goto('./');
+  await expect(editor(page)).toHaveValue('# Launched');
+  await expect(page.locator('#file-status')).toHaveText('launched.md');
+  await editor(page).press('End');
+  await page.keyboard.type('!');
+  await page.keyboard.press('ControlOrMeta+s');
+  await expect(page.locator('#file-status')).toHaveText('launched.md');
+  expect(await writes(page)).toEqual([{ name: 'launched.md', text: '# Launched!' }]);
+});

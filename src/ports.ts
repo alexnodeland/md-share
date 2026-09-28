@@ -1,4 +1,5 @@
 import type { DocModel } from './docModel.ts';
+import type { SharedPayload } from './share.ts';
 
 export interface Compressor {
   encode(text: string): Promise<string>;
@@ -63,6 +64,9 @@ export interface HtmlToMarkdown {
 export interface NativeShare {
   isAvailable(): boolean;
   share(data: { title: string; url: string }): Promise<void>;
+  /** Whether the OS share sheet takes these files (mobile, and some desktops). */
+  canShareFiles(files: File[]): boolean;
+  shareFiles(data: { title: string; files: File[] }): Promise<void>;
 }
 
 export interface DocxImportResult {
@@ -127,4 +131,12 @@ export interface FileAccess {
   /** Null when the picker is cancelled. */
   open(types: readonly FilePickerType[]): Promise<{ file: File; disk: DiskFile } | null>;
   saveAs(suggestedName: string, types: readonly FilePickerType[]): Promise<DiskFile | null>;
+  /** Files the OS opened with the installed app ("Open with → md-share"). */
+  onLaunch(handler: (file: File, disk: DiskFile) => void): void;
+}
+
+/** What the service worker kept from a share into the installed app (Android "Share → md-share"). */
+export interface SharedInbox {
+  /** The waiting share, removed as it is read; null when there is none. */
+  take(): Promise<SharedPayload | null>;
 }

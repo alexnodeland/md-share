@@ -20,6 +20,13 @@ const unlessCancelled = async <T>(pick: () => Promise<T>): Promise<T | null> => 
 };
 
 export const browserFileAccess: FileAccess = {
+  onLaunch: (handler) =>
+    window.launchQueue?.setConsumer(async ({ files }) => {
+      const [handle] = files;
+      if (handle?.kind !== 'file') return;
+      const fileHandle = handle as FileSystemFileHandle;
+      handler(await fileHandle.getFile(), diskFile(fileHandle));
+    }),
   supported: typeof window.showOpenFilePicker === 'function',
   open: (types) =>
     unlessCancelled(async () => {

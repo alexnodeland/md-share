@@ -35,12 +35,41 @@
     }
   ],
   "share_target": {
-    "action": "./",
-    "method": "GET",
+    "action": "./share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
     "params": {
       "title": "title",
       "text": "text",
-      "url": "url"
+      "url": "url",
+      "files": [
+        {
+          "name": "file",
+          "accept": [
+            "text/markdown",
+            "text/plain",
+            ".md",
+            ".markdown",
+            ".txt"
+          ]
+        }
+      ]
     }
-  }
+  },
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "text/markdown": [
+          ".md",
+          ".markdown",
+          ".mdown",
+          ".mkd"
+        ],
+        "text/plain": [
+          ".txt"
+        ]
+      }
+    }
+  ]
 }

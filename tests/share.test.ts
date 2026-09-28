@@ -9,6 +9,7 @@ import {
   hasSharePayload,
   normalizeSource,
   parseShareParams,
+  sharedDocument,
   shareTargetDocument,
 } from '../src/share.ts';
 
@@ -362,7 +363,7 @@ describe('describeUrlLength', () => {
     const { level, text } = describeUrlLength(90_000);
     expect(level).toBe('over');
     expect(text).toBe(
-      'Link: 90,000 chars — opens in browsers, but too long to paste into most chat apps. Send the file instead.',
+      'Link: 90,000 chars — opens in browsers, but too long to paste into most chat apps. Use Send file… instead.',
     );
   });
 });
@@ -406,5 +407,29 @@ describe('shareTargetDocument', () => {
     expect(shareTargetDocument('')).toBeNull();
     expect(shareTargetDocument('?title=%20%20')).toBeNull();
     expect(shareTargetDocument('?d=abc&f=gfm')).toBeNull();
+  });
+});
+
+describe('sharedDocument', () => {
+  const payload = { title: 'T', text: 'Body', url: 'https://x.dev', files: [] };
+
+  it('prefers shared Markdown or text files, joining several with rules', () => {
+    expect(
+      sharedDocument({
+        ...payload,
+        files: [
+          { name: 'a.md', type: 'text/markdown', text: '# A' },
+          { name: 'photo.jpg', type: 'image/jpeg', text: '' },
+          { name: 'b.txt', type: 'text/plain', text: 'B' },
+        ],
+      }),
+    ).toBe('# A\n\n---\n\nB');
+  });
+
+  it('falls back to the title, text, and link when no file is readable', () => {
+    expect(
+      sharedDocument({ ...payload, files: [{ name: 'x.png', type: 'image/png', text: '' }] }),
+    ).toBe('# T\n\nBody\n\nhttps://x.dev');
+    expect(sharedDocument({ title: ' ', text: '', url: '', files: [] })).toBeNull();
   });
 });

@@ -49,7 +49,7 @@ Paste from the tool you already use — it just renders.
 ### 🔗 Shareable by URL
 Your whole document compressed into the URL fragment `#d=…`. Copy the link, hand it to your phone's share sheet, or scan the QR code to open it on another device — the content travels with it, and because it rides in the fragment, it never reaches a server. A shared link works offline, forever, as long as someone has the HTML. Links can be long: the share dialog tells you where yours fits (a QR code, Discord, Slack, WhatsApp) and can leave embedded images out when they're what makes it too long.
 
-Tick **Embed code** in the share dialog for an `<iframe>` snippet that shows just the document on your own site. Installed as an app on Android, md-share appears in the share sheet: text shared from another app opens as a new document.
+Tick **Embed code** in the share dialog for an `<iframe>` snippet that shows just the document on your own site. Installed as an app, md-share appears in Android's share sheet (text or `.md` files) and in desktop "Open with" menus for `.md` files, which open in place so `Ctrl+S` saves back. For a document too big for any link, **Send file…** in the share dialog hands over the `.md` file itself — any size, images included.
 
 ### 🎧 Semantic Listen mode
 Not `speak(innerText)`. A DOM walker narrates structure:

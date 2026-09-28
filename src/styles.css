@@ -1526,6 +1526,7 @@ details.atl-expand .expand-body {
 }
 .modal-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
   margin-top: 12px;

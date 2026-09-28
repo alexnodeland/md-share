@@ -12,6 +12,7 @@ import { browserNativeShare } from './adapters/nativeShare.ts';
 import { browserPrinter } from './adapters/printer.ts';
 import { browserRasterizer } from './adapters/rasterizer.ts';
 import { browserSanitizer } from './adapters/sanitizer.ts';
+import { browserSharedInbox } from './adapters/sharedInbox.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { citationTargets } from './completions.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
@@ -39,7 +40,7 @@ import {
   type SampleKey,
   sampleFor,
 } from './samples.ts';
-import { hasSharePayload, parseShareParams, shareTargetDocument } from './share.ts';
+import { hasSharePayload, parseShareParams, sharedDocument, shareTargetDocument } from './share.ts';
 import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
@@ -317,13 +318,30 @@ const stripUrlPayload = (): void => {
   window.history.replaceState(null, '', window.location.pathname);
 };
 
-/** Android "Share → md-share" (Web Share Target): the shared text becomes the document. */
-const loadShareTarget = (editor: HTMLTextAreaElement): boolean => {
-  const shared = shareTargetDocument(window.location.search);
+const SHARE_PARAMS = ['shared', 'title', 'text', 'url'];
+
+/**
+ * A share into the installed app: files and text arrive by POST (the service
+ * worker keeps them in the inbox and opens `?shared=1`); older installs send
+ * text as `?title=&text=&url=`.
+ */
+const readShare = async (): Promise<string | null> => {
+  const search = new URLSearchParams(window.location.search);
+  if (!search.has('shared')) return shareTargetDocument(window.location.search);
+  const payload = await browserSharedInbox.take();
+  return payload && sharedDocument(payload);
+};
+
+/** Android "Share → md-share" (Web Share Target): the shared text or file becomes the document. */
+const loadShareTarget = (editor: HTMLTextAreaElement, shared: string | null): boolean => {
+  const search = new URLSearchParams(window.location.search);
+  if (SHARE_PARAMS.some((p) => search.has(p)) && shared === null) stripUrlPayload();
   if (shared === null) return false;
   const draft = loadDraft(browserStorage);
   if (draft) snapshot(draft);
   editor.value = shared;
+  // The share is the draft now, so a reload before any edit keeps it.
+  saveDraft(browserStorage, shared);
   stripUrlPayload();
   showToast('Added from share — your previous draft is in Recent versions', true);
   return true;
@@ -334,6 +352,7 @@ const loadInitialDocument = (
   params: ShareParams,
   editor: HTMLTextAreaElement,
   banner: HTMLElement | null,
+  shared: string | null,
 ): void => {
   if (params.source !== null) {
     editor.value = params.source;
@@ -351,7 +370,7 @@ const loadInitialDocument = (
     editor.addEventListener('input', clearBanner);
     return;
   }
-  if (loadShareTarget(editor)) return;
+  if (loadShareTarget(editor, shared)) return;
   const unreadableLink = hasSharePayload(window.location.hash, window.location.search);
   if (unreadableLink) stripUrlPayload();
   const draft = loadDraft(browserStorage);
@@ -408,7 +427,7 @@ const boot = async (): Promise<void> => {
     editor.placeholder = `${pasteHint} to paste ${FLAVOR_LABELS[state.flavor]} markdown…`;
   };
 
-  loadInitialDocument(params, editor, banner);
+  loadInitialDocument(params, editor, banner, params.source === null ? await readShare() : null);
   if (params.embed) initEmbedMode(editor);
   state.activeSample = editor.value ? isSampleContent(editor.value) : null;
   setSampleSelectValue(state.activeSample);
@@ -540,6 +559,7 @@ const boot = async (): Promise<void> => {
     getTitle: () => documentTitle(editor.value),
     location: window.location,
     getSource: () => editor.value,
+    getFileName: () => deriveFilename(editor.value, 'md'),
     getFlavor: () => state.flavor,
     getCurrentHeading: () => {
       const scroller = document.getElementById('preview-scroll');
@@ -607,6 +627,10 @@ const boot = async (): Promise<void> => {
   });
   if (!params.embed) initDropZone(importFile);
   initOpenFile(importFile, { access: browserFileAccess, onOpenedInPlace: linkedFile.link });
+  // "Open with → md-share" on a .md file (installed app): opened in place, so Ctrl+S saves back.
+  browserFileAccess.onLaunch(async (file, disk) => {
+    if ((await importFile(file)) === 'text') linkedFile.link(disk);
+  });
   const findBar = initFindBar({
     editor,
     onEditorChange: () => {
