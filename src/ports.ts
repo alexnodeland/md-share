@@ -51,3 +51,8 @@ export interface Storage {
 export interface Sanitizer {
   sanitize(html: string): string;
 }
+
+/** Converts pasted rich text (HTML) into Markdown. */
+export interface HtmlToMarkdown {
+  convert(html: string): Promise<string>;
+}

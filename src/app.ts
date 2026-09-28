@@ -1,6 +1,7 @@
 import hljs from 'highlight.js/lib/common';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
+import { browserHtmlToMarkdown } from './adapters/htmlToMarkdown.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
@@ -360,6 +361,7 @@ const boot = async (): Promise<void> => {
     },
     highlightSource: (s) => highlightMarkdownSource(s, hljs),
     compressImage,
+    htmlToMarkdown: browserHtmlToMarkdown,
     onFormatCommand: (cmd) => toolbar?.pulse(cmd),
   });
   const mirrorEl = document.getElementById('editor-mirror');

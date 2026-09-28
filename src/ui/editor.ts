@@ -10,6 +10,8 @@ import {
   wrapLink,
 } from '../editorCommands.ts';
 import { insertImageAtCursor } from '../imageEmbed.ts';
+import type { HtmlToMarkdown } from '../ports.ts';
+import { isWorthConverting, shouldPasteAsMarkdown } from '../richPaste.ts';
 import { applyEdit } from './applyEdit.ts';
 import { fmtBytes, IMAGE_EMBED_CONFIRM, IMAGE_MAX_DIM, IMAGE_QUALITY } from './imageConsts.ts';
 import { showToast } from './toast.ts';
@@ -22,6 +24,7 @@ export interface EditorDeps {
   onChange: () => void;
   highlightSource: (source: string) => string;
   compressImage: ImageCompressor;
+  htmlToMarkdown: HtmlToMarkdown;
   onFormatCommand?: (command: FormatCommand) => void;
 }
 
@@ -29,6 +32,7 @@ export const initEditor = ({
   onChange,
   highlightSource,
   compressImage,
+  htmlToMarkdown,
   onFormatCommand,
 }: EditorDeps): (() => void) => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
@@ -110,9 +114,13 @@ export const initEditor = ({
     apply({ value: r.value, start: r.cursor, end: r.cursor });
   };
 
+  // Mod+Shift+V asks for plain text: the paste event itself can't tell.
+  let plainPaste = false;
+
   const onKeyDown = (e: KeyboardEvent) => {
     // Enter while an IME is composing confirms the candidate; leave it alone.
     if (e.isComposing) return;
+    plainPaste = hasModifier(e) && e.shiftKey && e.key.toLowerCase() === 'v';
     const leaving = tabLeaves;
     tabLeaves = e.key === 'Escape';
     const plain = !hasModifier(e) && !e.altKey;
@@ -141,7 +149,37 @@ export const initEditor = ({
     }
   };
 
+  /** Rich text (Docs, Word, web pages) arrives as HTML; paste it as Markdown. */
+  const pasteAsMarkdown = (html: string, plain: string) => {
+    const { selectionStart: start, selectionEnd: end, value: before } = editor;
+    const insert = (text: string, converted: boolean) => {
+      const unchanged = editor.value === before;
+      const s = unchanged ? start : editor.selectionStart;
+      const eEnd = unchanged ? end : editor.selectionEnd;
+      const cursor = s + text.length;
+      apply({
+        value: editor.value.slice(0, s) + text + editor.value.slice(eEnd),
+        start: cursor,
+        end: cursor,
+      });
+      if (converted) showToast('Pasted as Markdown — add Shift to paste plain text', true);
+    };
+    htmlToMarkdown
+      .convert(html)
+      .then((md) => (md && isWorthConverting(md, plain) ? insert(md, true) : insert(plain, false)))
+      .catch(() => insert(plain, false));
+  };
+
   const onPaste = (e: ClipboardEvent) => {
+    const html = e.clipboardData?.getData('text/html') ?? '';
+    const plain = e.clipboardData?.getData('text/plain') ?? '';
+    const wantsPlain = plainPaste;
+    plainPaste = false;
+    if (!wantsPlain && shouldPasteAsMarkdown(html, plain)) {
+      e.preventDefault();
+      pasteAsMarkdown(html, plain);
+      return;
+    }
     const items = e.clipboardData?.items;
     if (items) {
       for (const item of items) {
@@ -155,13 +193,12 @@ export const initEditor = ({
         }
       }
     }
-    const text = e.clipboardData?.getData('text/plain') ?? '';
-    if (!isUrl(text)) return;
+    if (!isUrl(plain)) return;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
     if (start === end) return;
     e.preventDefault();
-    apply(wrapLink(editor.value, start, end, text.trim()));
+    apply(wrapLink(editor.value, start, end, plain.trim()));
   };
 
   const onInput = () => {
