@@ -27,3 +27,25 @@ test('Markdown export downloads the source under the document title', async ({ p
   ]);
   expect(download.suggestedFilename()).toBe('trip-plan.md');
 });
+
+test('Word export carries structure, numbering, and the rendered diagram', async ({ page }) => {
+  const JSZip = (await import('jszip')).default;
+  await page.goto('./');
+  await page.locator('#sample-select').selectOption('gfm');
+  await expect(page.locator('#preview .mermaid-container svg')).toHaveCount(1);
+  await page.locator('[data-dropdown="export-menu"]').click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#btn-export-docx').click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('md-share.docx');
+  const zip = await JSZip.loadAsync(await readFile((await download.path()) ?? ''));
+  const doc = (await zip.file('word/document.xml')?.async('string')) ?? '';
+  expect(doc).toContain('w:val="Heading1"');
+  expect(doc).toContain('<w:numPr>');
+  expect(doc).toContain('Syntax highlighting');
+  expect(doc).toContain('w:val="SourceCode"');
+  const media = Object.keys(zip.files).filter((f) => f.startsWith('word/media/'));
+  expect(media.length).toBeGreaterThanOrEqual(1); // the mermaid diagram, rasterized
+  await expect(page.locator('#toast')).toContainText('Word document exported');
+});

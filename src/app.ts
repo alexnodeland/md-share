@@ -3,14 +3,17 @@ import markdownGrammar from 'highlight.js/lib/languages/markdown';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
 import { browserDocxReader } from './adapters/docxReader.ts';
+import { browserDocxWriter } from './adapters/docxWriter.ts';
 import { browserHtmlToMarkdown } from './adapters/htmlToMarkdown.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserNativeShare } from './adapters/nativeShare.ts';
 import { browserPrinter } from './adapters/printer.ts';
+import { browserRasterizer } from './adapters/rasterizer.ts';
 import { browserSanitizer } from './adapters/sanitizer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
+import { buildDocModel } from './docModel.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { recordSnapshot } from './draftHistory.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
@@ -473,6 +476,9 @@ const boot = async (): Promise<void> => {
     clipboard: browserClipboard,
     getTheme: () => state.theme,
     getKatexVersion: () => state.deps.katex?.version ?? null,
+    docxWriter: browserDocxWriter,
+    rasterizer: browserRasterizer,
+    getDocModel: () => buildDocModel(state.md.parse(parseFrontmatter(editor.value).body, {})),
     getSource: () => editor.value,
     getPreviewHTML: () => {
       const el = document.getElementById('preview');

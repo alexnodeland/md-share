@@ -1,3 +1,5 @@
+import type { DocModel } from './docModel.ts';
+
 export interface Compressor {
   encode(text: string): Promise<string>;
   decode(text: string): Promise<string | null>;
@@ -76,4 +78,33 @@ export interface DocxReader {
     data: ArrayBuffer,
     embedImage: (bytes: Uint8Array, contentType: string) => Promise<string | null>,
   ): Promise<DocxImportResult>;
+}
+
+export interface ExportImage {
+  data: Uint8Array;
+  width: number;
+  height: number;
+  type: 'png' | 'jpg' | 'gif' | 'bmp';
+}
+
+/** Writes the document model as a Word (.docx) file. */
+export interface DocxWriter {
+  write(
+    model: DocModel,
+    options: {
+      title: string | null;
+      /** Bytes and size for an image `src`, or null to fall back to its alt text. */
+      image: (src: string) => Promise<ExportImage | null>;
+      /** The rendered diagram with this index, or null to fall back to its source. */
+      diagram: (index: number) => Promise<ExportImage | null>;
+    },
+  ): Promise<Blob>;
+}
+
+/** Turns images and rendered SVG into bitmap bytes for export formats. */
+export interface Rasterizer {
+  /** Load an image URL (data:, same-origin, or CORS-enabled). */
+  image(src: string): Promise<ExportImage | null>;
+  /** Render an inline SVG (e.g. a mermaid diagram) at `scale`× for sharpness. */
+  svg(svg: SVGSVGElement, scale: number): Promise<ExportImage | null>;
 }
