@@ -38,6 +38,17 @@ describe('browserHtmlToMarkdown (adapter)', () => {
     expect(md).toBe('3. c\n   - nested\n4. d');
   });
 
+  it('keeps multi-paragraph table cells on one row', async () => {
+    const md = await convert(
+      '<table><thead><tr><th><p>A</p></th></tr></thead><tbody><tr><td><p>one</p><p>two</p></td></tr></tbody></table>',
+    );
+    expect(md).toBe('| A |\n| --- |\n| one two |');
+  });
+
+  it('fences <pre> blocks that have no inner <code>', async () => {
+    expect(await convert('<pre>a < b\nc</pre>')).toBe('```\na < b\nc\n```');
+  });
+
   it('drops scripts and styles', async () => {
     expect(await convert('<style>p{}</style><script>x()</script><p>ok</p>')).toBe('ok');
   });

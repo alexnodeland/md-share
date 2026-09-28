@@ -102,6 +102,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Cross-browser decode — copy a `#d=…` URL (`df1.` for most docs) from Chrome, open it in Firefox and Safari, confirm it renders identically; do the reverse too
 - [ ] Listen — speech plays, progress advances, skip fwd/back and seek-on-click work, speed change works, `Esc` stops
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds
+- [ ] Drop (or Open…) a real Word document with headings, a table, and a photo → it arrives as Markdown with the image compressed
 - [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
 - [ ] Copy a few paragraphs with a link and a list from Google Docs (or Word) and paste — it arrives as Markdown; `Ctrl/⌘+Shift+V` pastes plain
 - [ ] Theme toggle — mermaid re-renders with the matching theme

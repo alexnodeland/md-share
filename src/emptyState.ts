@@ -21,7 +21,7 @@ export const renderEmptyState = (samples: readonly SampleKey[] = EMPTY_STATE_SAM
   return [
     '<div class="preview-empty">',
     '<p class="preview-empty-title">Nothing to preview yet</p>',
-    '<p>Type or paste Markdown in the editor, or drop a <code>.md</code> file anywhere.</p>',
+    '<p>Type or paste in the editor, drop a <code>.md</code> or Word <code>.docx</code> file anywhere, or use Open.</p>',
     `<p class="preview-empty-samples">Or start from a sample: ${buttons}</p>`,
     '<p class="preview-empty-note">Nothing leaves your browser. Share puts the whole document inside the link.</p>',
     '</div>',

@@ -31,6 +31,18 @@ const create = async (): Promise<TurndownService> => {
     filter: ['del', 's', 'strike' as keyof HTMLElementTagNameMap],
     replacement: (content) => `~~${content}~~`,
   });
+  // Word and Google Docs wrap every table cell's text in <p>; the default
+  // paragraph rule's blank lines would break the GFM table row.
+  td.addRule('cellParagraph', {
+    filter: (node) => node.nodeName === 'P' && /^T[DH]$/.test(node.parentNode?.nodeName ?? ''),
+    replacement: (content, node) =>
+      content.trim() + ((node as HTMLElement).nextElementSibling ? ' ' : ''),
+  });
+  // Word "Code" styles arrive as <pre> without an inner <code>.
+  td.addRule('bareCodeBlock', {
+    filter: (node) => node.nodeName === 'PRE' && node.firstElementChild?.nodeName !== 'CODE',
+    replacement: (_content, node) => `\n\n\`\`\`\n${node.textContent ?? ''}\n\`\`\`\n\n`,
+  });
   td.addRule('listItem', {
     filter: 'li',
     replacement: (content, node) => {
