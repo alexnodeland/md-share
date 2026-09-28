@@ -27,25 +27,20 @@ describe('applyHighlighting', () => {
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
   });
 
-  it('falls back to auto-detect for unknown languages', () => {
-    const md = build();
-    const result = md.options.highlight?.('function f() { return 1 }', 'bogusLang', '');
-    expect(typeof result).toBe('string');
+  it('leaves unlabelled fences plain (escaped by markdown-it)', () => {
+    const html = build().render('```\n<b>x</b>\n```');
+    expect(html).toContain('<pre><code>&lt;b&gt;x&lt;/b&gt;\n</code></pre>');
   });
 
-  it('returns empty string when auto-detect throws', () => {
+  it('reports unloaded languages and renders them plain meanwhile', () => {
+    const seen: string[] = [];
     const md = new MarkdownIt();
-    applyHighlighting(md, {
-      ...hljs,
-      getLanguage: () => undefined,
-      highlightAuto: () => {
-        throw new Error('boom');
-      },
-    } as unknown as typeof hljs);
-    expect(md.options.highlight?.('x', '', '')).toBe('');
+    applyHighlighting(md, hljs, (lang) => seen.push(lang));
+    expect(md.options.highlight?.('x', 'bogusLang', '')).toBe('');
+    expect(seen).toEqual(['bogusLang']);
   });
 
-  it('falls through auto-detect when language highlight throws', () => {
+  it('returns empty (plain) when the grammar throws', () => {
     const md = new MarkdownIt();
     applyHighlighting(md, {
       ...hljs,
@@ -54,6 +49,6 @@ describe('applyHighlighting', () => {
         throw new Error('boom');
       },
     } as unknown as typeof hljs);
-    expect(typeof md.options.highlight?.('x', 'js', '')).toBe('string');
+    expect(md.options.highlight?.('x', 'js', '')).toBe('');
   });
 });

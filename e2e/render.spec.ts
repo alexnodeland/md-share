@@ -80,3 +80,29 @@ test('theme toggle switches and persists', async ({ page }) => {
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', after ?? '');
 });
+
+test('code grammars load on demand, aliases included', async ({ page }) => {
+  await page.goto('./');
+  await typeDoc(
+    page,
+    [
+      '```js',
+      'const x = 1;',
+      '```',
+      '',
+      '```clj',
+      '(defn f [x] x)',
+      '```',
+      '',
+      '```',
+      'plain',
+      '```',
+    ].join('\n'),
+  );
+  const blocks = preview(page).locator('pre code');
+  await expect(blocks.nth(0).locator('.hljs-keyword')).toHaveText('const');
+  await expect(blocks.nth(1).locator('[class^="hljs-"]').first()).toBeAttached();
+  await expect(blocks.nth(2).locator('[class^="hljs-"]')).toHaveCount(0);
+  // The editor mirror picks up the same grammar.
+  await expect(page.locator('#editor-mirror .hljs-keyword', { hasText: 'const' })).toBeAttached();
+});
