@@ -17,6 +17,8 @@ A survey of candidate features that could bring md-share to the next level, each
 | 15 | Local draft history | ✅ Shipped as "Recent versions" (#19) |
 | 21 | Paste image from clipboard | ✅ Already present (editor paste handler) |
 | 9 | Document linter pane | ✅ Document check: heading skips, alt text, broken anchors, empty links, undefined footnotes, unclosed fences |
+| 17 | Web Share Target | ✅ `share_target` in the manifest: text shared from another app becomes the document (previous draft kept in Recent versions) |
+| 18 | Embed mode | ✅ Share dialog's **Embed code** checkbox → `<iframe>` snippet; `&e=1` hides all chrome, read-only, with an "Open in md-share" link |
 | 24 | Accessibility checks | ✅ axe-core runs in E2E for both themes (#27); user-color contrast in a linter is still open |
 
 Also shipped outside this list: sanitized rendering (#18), E2E smoke suite (#24), lazy code grammars (#28).

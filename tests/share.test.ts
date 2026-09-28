@@ -4,10 +4,12 @@ import {
   buildShareURL,
   decodeDoc,
   describeUrlLength,
+  embedSnippet,
   encodeDoc,
   hasSharePayload,
   normalizeSource,
   parseShareParams,
+  shareTargetDocument,
 } from '../src/share.ts';
 
 const identityCompressor: Compressor = {
@@ -156,6 +158,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: null,
       flavor: null,
       anchor: null,
+      embed: false,
     });
   });
 
@@ -164,6 +167,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: 'hello world',
       flavor: 'commonmark',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -172,6 +176,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: 'x',
       flavor: 'atlassian',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -180,6 +185,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: 'x',
       flavor: 'commonmark',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -188,6 +194,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: null,
       flavor: null,
       anchor: null,
+      embed: false,
     });
   });
 
@@ -196,6 +203,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: null,
       flavor: null,
       anchor: null,
+      embed: false,
     });
   });
 
@@ -204,6 +212,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: 'hi',
       flavor: 'gfm',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -212,6 +221,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: 'x',
       flavor: 'commonmark',
       anchor: 'my section',
+      embed: false,
     });
   });
 
@@ -220,6 +230,7 @@ describe('parseShareParams (new hash-based scheme)', () => {
       source: 'kept',
       flavor: 'commonmark',
       anchor: null,
+      embed: false,
     });
   });
 });
@@ -230,6 +241,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: 'hello world',
       flavor: 'commonmark',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -238,6 +250,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: 'x',
       flavor: 'atlassian',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -246,6 +259,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: 'x',
       flavor: 'commonmark',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -254,6 +268,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: null,
       flavor: null,
       anchor: null,
+      embed: false,
     });
   });
 
@@ -262,6 +277,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: 'hi',
       flavor: 'gfm',
       anchor: null,
+      embed: false,
     });
   });
 
@@ -270,6 +286,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: 'x',
       flavor: 'commonmark',
       anchor: 'my section',
+      embed: false,
     });
   });
 
@@ -278,6 +295,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: 'x',
       flavor: 'commonmark',
       anchor: 'plain-slug',
+      embed: false,
     });
   });
 
@@ -286,6 +304,7 @@ describe('parseShareParams (legacy query-string scheme)', () => {
       source: null,
       flavor: null,
       anchor: '%FF',
+      embed: false,
     });
   });
 });
@@ -333,5 +352,47 @@ describe('describeUrlLength', () => {
     const { level, text } = describeUrlLength(9000);
     expect(level).toBe('over');
     expect(text).toContain('9,000');
+  });
+});
+
+describe('embed mode', () => {
+  const loc = { origin: 'https://md.example', pathname: '/' };
+
+  it('round-trips the e=1 flag through the fragment', async () => {
+    const url = new URL(await buildShareURL(loc, '# Hi', 'gfm', identityCompressor, null, true));
+    expect(url.hash).toContain('&e=1');
+    expect((await parseShareParams(url.search, identityCompressor, url.hash)).embed).toBe(true);
+  });
+
+  it('is off unless the fragment says e=1', async () => {
+    expect((await parseShareParams('', identityCompressor, '#d=x&e=0')).embed).toBe(false);
+    expect((await parseShareParams('?d=x&e=1', identityCompressor)).embed).toBe(false);
+  });
+
+  it('builds an escaped, lazy, titled iframe snippet', () => {
+    expect(embedSnippet('https://md.example/#d=a&e=1', 'Q&A "notes"')).toBe(
+      '<iframe src="https://md.example/#d=a&amp;e=1" title="Q&amp;A &quot;notes&quot;" width="100%" height="600" style="border:0" loading="lazy"></iframe>',
+    );
+    expect(embedSnippet('u', null)).toContain('title="Document"');
+  });
+});
+
+describe('shareTargetDocument', () => {
+  it('builds a document from shared title, text, and url', () => {
+    expect(shareTargetDocument('?title=Trip&text=Pack%20light&url=https%3A%2F%2Fx.dev')).toBe(
+      '# Trip\n\nPack light\n\nhttps://x.dev',
+    );
+  });
+
+  it('does not repeat a url that is already in the text', () => {
+    expect(shareTargetDocument('?text=Read%20https%3A%2F%2Fx.dev&url=https%3A%2F%2Fx.dev')).toBe(
+      'Read https://x.dev',
+    );
+  });
+
+  it('is null when nothing was shared', () => {
+    expect(shareTargetDocument('')).toBeNull();
+    expect(shareTargetDocument('?title=%20%20')).toBeNull();
+    expect(shareTargetDocument('?d=abc&f=gfm')).toBeNull();
   });
 });

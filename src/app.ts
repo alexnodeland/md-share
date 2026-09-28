@@ -36,7 +36,7 @@ import {
   type SampleKey,
   sampleFor,
 } from './samples.ts';
-import { hasSharePayload, parseShareParams } from './share.ts';
+import { hasSharePayload, parseShareParams, shareTargetDocument } from './share.ts';
 import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
@@ -51,6 +51,7 @@ import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
 import { initEditorToggle } from './ui/editorToggle.ts';
 import { initEditorUndo } from './ui/editorUndo.ts';
+import { initEmbedMode } from './ui/embedMode.ts';
 import { initPrintExpansion } from './ui/expandDetails.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
 import { createFileImporter, initOpenFile } from './ui/fileImport.ts';
@@ -308,6 +309,18 @@ const stripUrlPayload = (): void => {
   window.history.replaceState(null, '', window.location.pathname);
 };
 
+/** Android "Share → md-share" (Web Share Target): the shared text becomes the document. */
+const loadShareTarget = (editor: HTMLTextAreaElement): boolean => {
+  const shared = shareTargetDocument(window.location.search);
+  if (shared === null) return false;
+  const draft = loadDraft(browserStorage);
+  if (draft) snapshot(draft);
+  editor.value = shared;
+  stripUrlPayload();
+  showToast('Added from share — your previous draft is in Recent versions', true);
+  return true;
+};
+
 /** Fill the editor from a shared link, else from the saved draft. */
 const loadInitialDocument = (
   params: ShareParams,
@@ -315,10 +328,12 @@ const loadInitialDocument = (
   banner: HTMLElement | null,
 ): void => {
   if (params.source !== null) {
+    editor.value = params.source;
+    // An embed is a read-only view on someone else's site: no drafts, no banner.
+    if (params.embed) return;
     // The first edit forks the shared doc into the draft slot; keep the old draft.
     const draft = loadDraft(browserStorage);
     if (draft && draft !== params.source) snapshot(draft);
-    editor.value = params.source;
     banner?.classList.add('visible');
     const clearBanner = () => {
       banner?.classList.remove('visible');
@@ -328,6 +343,7 @@ const loadInitialDocument = (
     editor.addEventListener('input', clearBanner);
     return;
   }
+  if (loadShareTarget(editor)) return;
   const unreadableLink = hasSharePayload(window.location.hash, window.location.search);
   if (unreadableLink) stripUrlPayload();
   const draft = loadDraft(browserStorage);
@@ -385,6 +401,7 @@ const boot = async (): Promise<void> => {
   };
 
   loadInitialDocument(params, editor, banner);
+  if (params.embed) initEmbedMode(editor);
   state.activeSample = editor.value ? isSampleContent(editor.value) : null;
   setSampleSelectValue(state.activeSample);
   updatePlaceholder();
@@ -562,7 +579,7 @@ const boot = async (): Promise<void> => {
       rerender();
     },
   });
-  initDropZone(importFile);
+  if (!params.embed) initDropZone(importFile);
   initOpenFile(importFile);
   const findBar = initFindBar({
     editor,
@@ -593,6 +610,7 @@ const boot = async (): Promise<void> => {
   });
   initTaskToggle({
     onToggle: (line) => {
+      if (editor.readOnly) return;
       const next = toggleTaskAtLine(editor.value, line);
       if (next === editor.value) return;
       applyEdit(editor, { value: next, start: editor.selectionStart, end: editor.selectionEnd });

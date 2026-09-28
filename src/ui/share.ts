@@ -1,6 +1,6 @@
 import type { Clipboard, Compressor, Location, NativeShare } from '../ports.ts';
 import { fitsInQr, qrSvg } from '../qr.ts';
-import { buildShareURL, describeUrlLength } from '../share.ts';
+import { buildShareURL, describeUrlLength, embedSnippet } from '../share.ts';
 import type { Flavor } from '../types.ts';
 import { trapFocus } from './focusTrap.ts';
 import { showToast } from './toast.ts';
@@ -26,6 +26,7 @@ export const initShareModal = (deps: ShareDeps): void => {
   const sectionToggle = document.getElementById('link-section-toggle');
   const sectionCheckbox = document.getElementById('link-section-check') as HTMLInputElement | null;
   const sectionSlug = document.getElementById('link-section-slug');
+  const embedCheckbox = document.getElementById('link-embed-check') as HTMLInputElement | null;
   const qrDetails = document.getElementById('link-qr') as HTMLDetailsElement | null;
   const qrBox = document.getElementById('link-qr-code');
   const nativeBtn = document.getElementById('btn-link-native');
@@ -45,21 +46,26 @@ export const initShareModal = (deps: ShareDeps): void => {
   let heading: string | null = null;
   let refreshGen = 0;
 
-  const buildURL = () =>
+  const buildURL = (embed = false) =>
     buildShareURL(
       deps.location,
       deps.getSource(),
       deps.getFlavor(),
       deps.compressor,
       sectionCheckbox.checked ? heading : null,
+      embed,
     );
+
+  /** What the box shows and Copy copies: the link, or the <iframe> snippet. */
+  const shareText = async (): Promise<string> =>
+    embedCheckbox?.checked ? embedSnippet(await buildURL(true), deps.getTitle()) : buildURL();
 
   const refreshURL = async () => {
     const gen = ++refreshGen;
-    const url = await buildURL();
+    const [url, shown] = await Promise.all([buildURL(), shareText()]);
     if (gen !== refreshGen) return;
     currentUrl = url;
-    urlBox.textContent = url;
+    urlBox.textContent = shown;
     const { text, level } = describeUrlLength(url.length);
     warn.textContent = text;
     warn.className = level === 'ok' ? 'url-warn' : `url-warn ${level}`;
@@ -106,6 +112,8 @@ export const initShareModal = (deps: ShareDeps): void => {
   const open = () => {
     heading = deps.getCurrentHeading();
     sectionCheckbox.checked = false;
+    if (embedCheckbox) embedCheckbox.checked = false;
+    copyBtn.textContent = 'Copy URL';
     if (heading) {
       sectionToggle.hidden = false;
       sectionSlug.textContent = heading;
@@ -131,13 +139,17 @@ export const initShareModal = (deps: ShareDeps): void => {
   sectionCheckbox.addEventListener('change', () => {
     void refreshURL();
   });
+  embedCheckbox?.addEventListener('change', () => {
+    copyBtn.textContent = embedCheckbox.checked ? 'Copy embed code' : 'Copy URL';
+    void refreshURL();
+  });
   modal.addEventListener('click', (e) => {
     if (e.target === modal) close();
   });
   copyBtn.addEventListener('click', () => {
-    buildURL()
-      .then((url) => deps.clipboard.write(url))
-      .then(() => showToast('URL copied', true))
+    shareText()
+      .then((text) => deps.clipboard.write(text))
+      .then(() => showToast(embedCheckbox?.checked ? 'Embed code copied' : 'URL copied', true))
       .catch(() => showToast('Copy failed — select the URL and copy manually'))
       .finally(close);
   });

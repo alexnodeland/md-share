@@ -1,3 +1,4 @@
+import { escapeHtml } from './escapeHtml.ts';
 import type { Compressor, Location } from './ports.ts';
 import { type Flavor, isFlavor, type ShareParams } from './types.ts';
 
@@ -19,6 +20,7 @@ export const buildShareURL = async (
   flavor: Flavor,
   compressor: Compressor,
   anchor: string | null = null,
+  embed = false,
 ): Promise<string> => {
   const base = loc.origin + loc.pathname;
   const normalized = normalizeSource(source);
@@ -29,6 +31,7 @@ export const buildShareURL = async (
   const parts = [`d=${encoded}`];
   if (flavor !== 'commonmark') parts.push(`f=${flavor}`);
   if (anchor) parts.push(`a=${encodeURIComponent(anchor)}`);
+  if (embed) parts.push('e=1');
   return `${base}#${parts.join('&')}`;
 };
 
@@ -65,7 +68,7 @@ export const parseShareParams = async (
       anchor = rawHash;
     }
   }
-  return { source, flavor, anchor };
+  return { source, flavor, anchor, embed: payloadInHash && hashParams.get('e') === '1' };
 };
 
 /** Past this, some chat apps, SMS gateways, and QR scanners mangle or refuse the link. */
@@ -90,4 +93,24 @@ export const describeUrlLength = (length: number): { level: UrlLengthLevel; text
     };
   }
   return { level: 'ok', text: `URL length: ${n} chars` };
+};
+
+/** HTML to paste into a blog or docs site: the rendered document in an iframe. */
+export const embedSnippet = (embedUrl: string, title: string | null): string =>
+  `<iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(title ?? 'Document')}" width="100%" height="600" style="border:0" loading="lazy"></iframe>`;
+
+/**
+ * The Web Share Target (Android "Share → md-share") delivers `title`,
+ * `text`, and `url` as query params; turn them into a document. Android
+ * often repeats the URL inside `text`, so it is only added once.
+ */
+export const shareTargetDocument = (search: string): string | null => {
+  const params = new URLSearchParams(search);
+  const title = params.get('title')?.trim() ?? '';
+  const text = params.get('text')?.trim() ?? '';
+  const url = params.get('url')?.trim() ?? '';
+  const parts = [title && `# ${title}`, text, url && !text.includes(url) ? url : ''].filter(
+    Boolean,
+  );
+  return parts.length ? parts.join('\n\n') : null;
 };
