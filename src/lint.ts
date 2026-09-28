@@ -1,5 +1,8 @@
 import type Token from 'markdown-it/lib/token.mjs';
 import { inlineText } from './plugins/anchors.ts';
+import { isRefKey } from './plugins/crossRef.ts';
+import type { MathBlockMeta } from './plugins/katex.ts';
+import type { BibliographyMeta, CitationMeta } from './plugins/pandocCite.ts';
 import type { DocHeading } from './types.ts';
 
 export type LintRule =
@@ -9,6 +12,7 @@ export type LintRule =
   | 'link-empty'
   | 'link-anchor'
   | 'footnote-undefined'
+  | 'citation-missing'
   | 'fence-unclosed';
 
 export interface Diagnostic {
@@ -65,7 +69,24 @@ const footnotes: ChildCheck = (child, _next, ctx) =>
       }))
     : null;
 
-const CHILD_CHECKS = [imageAlt, links, footnotes];
+// A bare `@name` that matches nothing is just text (a handle, say); anything
+// bracketed, or pointing at a figure/table/equation, was meant as a reference.
+const citations: ChildCheck = (child) =>
+  child.type === 'citation'
+    ? (child.meta as CitationMeta)
+        .resolved!.filter(
+          (r) =>
+            r.kind === 'missing' && (!(child.meta as CitationMeta).narrative || isRefKey(r.key)),
+        )
+        .map((r) => ({
+          rule: 'citation-missing' as const,
+          message: isRefKey(r.key)
+            ? `@${r.key} points at nothing — label it with {#${r.key}}`
+            : `Citation @${r.key} has no entry in the bibliography`,
+        }))
+    : null;
+
+const CHILD_CHECKS = [imageAlt, links, footnotes, citations];
 
 const inlineChecks = (inline: Token, ctx: LintContext, ids: ReadonlySet<string>): Diagnostic[] => {
   const line = lineOf(inline, ctx);
@@ -96,12 +117,25 @@ const unclosedFence = (token: Token, ctx: LintContext): Diagnostic | null => {
       };
 };
 
+/** Every id an in-page link can land on. */
+const targetIds = (tokens: readonly Token[], headings: readonly DocHeading[]): Set<string> => {
+  const ids = new Set(headings.map((h) => h.slug));
+  for (const t of tokens) {
+    const id = t.attrGet('id');
+    if (id) ids.add(id);
+    // Footnote ids render as fn1, fnref1…; they are valid targets too.
+    if (t.type === 'footnote_open') ids.add(`fn${(t.meta as { id: number }).id + 1}`);
+    if (t.type === 'math_block' && (t.meta as MathBlockMeta).label)
+      ids.add((t.meta as MathBlockMeta).label!);
+    if (t.type === 'bibliography')
+      for (const item of (t.meta as BibliographyMeta).items) ids.add(`ref-${item.entry.key}`);
+  }
+  return ids;
+};
+
 /** Problems a reader would hit: broken navigation, missing alt text, swallowed content. */
 export const lintDocument = (tokens: readonly Token[], ctx: LintContext): Diagnostic[] => {
-  const ids = new Set(ctx.headings.map((h) => h.slug));
-  // Footnote ids render as fn1, fnref1…; they are valid targets too.
-  for (const t of tokens)
-    if (t.type === 'footnote_open') ids.add(`fn${(t.meta as { id: number }).id + 1}`);
+  const ids = targetIds(tokens, ctx.headings);
   const out: Diagnostic[] = [];
   let lastLevel = 0;
   tokens.forEach((token, i) => {

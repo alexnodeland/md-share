@@ -12,6 +12,7 @@ import { browserPrinter } from './adapters/printer.ts';
 import { browserRasterizer } from './adapters/rasterizer.ts';
 import { browserSanitizer } from './adapters/sanitizer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
+import { citationTargets } from './completions.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
 import { buildDocModel } from './docModel.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
@@ -437,6 +438,7 @@ const boot = async (): Promise<void> => {
       mirror: mirrorEl,
       wrap: editorWrap,
       getHeadings: () => state.headings,
+      getCitations: () => (state.flavor === 'academic' ? citationTargets(editor.value) : []),
     });
   }
   initEditorUndo({ editor });

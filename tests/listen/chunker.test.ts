@@ -66,6 +66,27 @@ describe('extractSpeakableChunks', () => {
     expect(chunks[0]!.text).toBe('A mathematical equation is displayed.');
   });
 
+  it('names numbered equations by their tag', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot('<div class="katex-display" id="eq:e">E=mc^2<span class="tag">(2)</span></div>'),
+    );
+    expect(chunks[0]!.text).toBe('Equation (2) is displayed.');
+  });
+
+  it('reads a figure as its caption, not its parts', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot(
+        '<figure><img src="p.png" alt="A plot"><figcaption><span>Figure 1:</span> A <em>nice</em> plot</figcaption></figure>',
+      ),
+    );
+    expect(chunks.map((c) => c.text)).toEqual(['Figure 1: A nice plot']);
+  });
+
+  it('describes a figure without a caption', () => {
+    const chunks = extractSpeakableChunks(makeRoot('<figure><img src="p.png" alt=""></figure>'));
+    expect(chunks[0]!.text).toBe('A figure is shown.');
+  });
+
   it('announces code blocks with language when present', () => {
     const chunks = extractSpeakableChunks(
       makeRoot('<pre><code class="language-rust">fn f() {}</code></pre>'),
@@ -88,6 +109,15 @@ describe('extractSpeakableChunks', () => {
       'A table with columns: Name, Status.',
       'Row 1. Name: Alice. Status: Done.',
     ]);
+  });
+
+  it('opens a captioned table with its caption', () => {
+    const chunks = extractSpeakableChunks(
+      makeRoot(
+        '<table><caption>Table 1: Results</caption><thead><tr><th>A</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>',
+      ),
+    );
+    expect(chunks[0]!.text).toBe('Table 1: Results. A table with columns: A.');
   });
 
   it('degrades to "A table is shown." when headers or rows are missing', () => {

@@ -91,6 +91,7 @@ The repo is organized around ports-and-adapters:
 - the document check: badge, issue list, and jump-to-line
 - embed snippets (chrome hidden, read-only, viewer's draft untouched) and Web Share Target text
 - heading-link and footnote autocomplete: keyboard and mouse selection, Esc dismissal
+- Academic citations and cross-references: numbering, reference list, scroll-to-reference, `@` autocomplete, Word export
 - zero axe-core accessibility violations in both themes: empty state, four samples, the share dialog, and the document-check menu
 
 First run: `npx playwright install chromium`. To use a Chromium you already have, set `PW_CHROMIUM_PATH=/path/to/chrome`.

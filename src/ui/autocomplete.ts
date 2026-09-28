@@ -16,15 +16,24 @@ export interface AutocompleteDeps {
   wrap: HTMLElement;
   /** The outline from the latest render. */
   getHeadings: () => readonly DocHeading[];
+  /** What `@` can cite (Academic only; empty elsewhere). */
+  getCitations: () => readonly Completion[];
 }
 
 const LIST_ID = 'editor-completions';
 
 /**
- * Suggests heading slugs after `](#` and footnote labels after `[^`.
+ * Suggests heading slugs after `](#`, footnote labels after `[^`, and
+ * (Academic) bibliography keys and figure/table/equation labels after `@`.
  * ↑/↓ choose, Enter/Tab accept, Esc dismisses.
  */
-export const initAutocomplete = ({ editor, mirror, wrap, getHeadings }: AutocompleteDeps): void => {
+export const initAutocomplete = ({
+  editor,
+  mirror,
+  wrap,
+  getHeadings,
+  getCitations,
+}: AutocompleteDeps): void => {
   const list = document.createElement('ul');
   list.id = LIST_ID;
   list.className = 'completions';
@@ -84,7 +93,12 @@ export const initAutocomplete = ({ editor, mirror, wrap, getHeadings }: Autocomp
         : null;
     if (!ctx || ctx.from === dismissedAt) return close();
     dismissedAt = null;
-    items = suggest(ctx, getHeadings(), footnoteLabels(editor.value));
+    items = suggest(
+      ctx,
+      getHeadings(),
+      footnoteLabels(editor.value),
+      ctx.kind === 'citation' ? getCitations() : [],
+    );
     if (items.length === 0) return close();
     active = 0;
     render();

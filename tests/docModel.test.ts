@@ -249,3 +249,74 @@ describe('calloutTone', () => {
     expect(calloutTone('quote')).toBe('neutral');
   });
 });
+
+describe('buildDocModel — Academic citations and cross-references', () => {
+  const src = [
+    'As @knuth84 showed [@knuth84, p. 2].',
+    '',
+    '![A plot](p.png){#fig:p}',
+    '',
+    '| a |',
+    '|---|',
+    '| 1 |',
+    '',
+    ': Results {#tbl:r}',
+    '',
+    '```bibliography',
+    '@book{knuth84, author = {Donald Knuth}, title = {TeX}, url = {https://tex.org}}',
+    '@misc{other, title = {Other}}',
+    '```',
+  ].join('\n');
+  const { blocks } = model(src, 'academic');
+
+  it('keeps citations as their rendered text', () => {
+    expect(blocks[0]).toMatchObject({
+      type: 'paragraph',
+      content: [
+        { type: 'text', text: 'As ' },
+        { type: 'text', text: 'Knuth [1]' },
+        { type: 'text', text: ' showed ' },
+        { type: 'text', text: '[1, p. 2]' },
+        { type: 'text', text: '.' },
+      ],
+    });
+  });
+
+  it('puts a figure caption on its own line under the image', () => {
+    expect(blocks[1]).toMatchObject({
+      type: 'paragraph',
+      content: [
+        { type: 'image', src: 'p.png', alt: 'A plot' },
+        { type: 'break' },
+        { type: 'text', text: 'Figure 1: A plot', marks: { italic: true } },
+      ],
+    });
+  });
+
+  it('puts a table caption, in italics, before its table', () => {
+    expect(blocks[2]).toMatchObject({
+      type: 'paragraph',
+      content: [
+        { type: 'text', text: 'Table 1: ', marks: { italic: true } },
+        { type: 'text', text: 'Results', marks: { italic: true } },
+      ],
+    });
+    expect(blocks[3]).toMatchObject({ type: 'table' });
+  });
+
+  it('turns the bibliography into one numbered list', () => {
+    const items = blocks.slice(4);
+    expect(items.map((b) => (b.type === 'paragraph' ? b.list : null))).toEqual([
+      { id: 0, ordered: true, level: 0, start: 1, checked: null },
+      { id: 0, ordered: true, level: 0, start: 2, checked: null },
+    ]);
+    expect(items[0]).toMatchObject({
+      content: [
+        { type: 'text', text: 'Donald Knuth. ', marks: {} },
+        { type: 'text', text: 'TeX.', marks: { italic: true } },
+        { type: 'text', text: ' ', marks: {} },
+        { type: 'text', text: 'https://tex.org', marks: { link: 'https://tex.org' } },
+      ],
+    });
+  });
+});

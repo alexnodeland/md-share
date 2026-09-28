@@ -12,7 +12,8 @@ A survey of candidate features that could bring md-share to the next level, each
 | 2 | URL length meter | ◐ Meter shipped (`describeUrlLength`); overflow *suggestions* still open |
 | 3 | HTML / DOCX paste → Markdown | ✅ Rich HTML paste (#25) and `.docx` Open…/drop import |
 | 4 | Standalone `.html` / `.docx` export | ✅ Standalone HTML + Copy formatted (#23), Word `.docx` export |
-| 13 | Autocomplete for refs / footnotes | ✅ `](#` heading slugs and `[^` footnote labels (wikilink targets need a vault, so not applicable) |
+| 13 | Autocomplete for refs / footnotes | ✅ `](#` heading slugs, `[^` footnote labels, and (Academic) `@` citation keys and cross-ref labels (wikilink targets need a vault, so not applicable) |
+| 5 | Academic depth (Pandoc-ish) | ✅ `[@key]` / `@key` numbered citations from a ```` ```bibliography ```` BibTeX block; `{#fig:…}` figures, `: caption {#tbl:…}` tables, `$$ … $$ {#eq:…}` equations, referenced as `@fig:x`; carried into lint, Listen, and Word export |
 | 11 | Voice picker | ✅ Already present (`#audio-voice`) |
 | 15 | Local draft history | ✅ Shipped as "Recent versions" (#19) |
 | 21 | Paste image from clipboard | ✅ Already present (editor paste handler) |
