@@ -157,6 +157,18 @@
             <option value="atlassian">Atlassian</option>
             <option value="presentation">Presentation</option>
           </select>
+          <button
+            type="button"
+            id="btn-open"
+            class="pane-action pane-action-icon"
+            title="Open a Markdown, text, or Word file"
+            aria-label="Open file"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1" />
+              <path d="M3 7v11a2 2 0 0 0 2 2h13l3-8H7l-3 8" />
+            </svg>
+          </button>
           <div class="history-wrap">
             <button
               type="button"
@@ -315,7 +327,7 @@
     </footer>
 
     <div class="drop-overlay" id="drop-overlay">
-      <div class="drop-overlay-inner">Drop .md file to load</div>
+      <div class="drop-overlay-inner">Drop a Markdown or Word file to load</div>
     </div>
     <div class="modal-overlay" id="help-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">

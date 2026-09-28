@@ -2,6 +2,7 @@ import hljs from 'highlight.js/lib/core';
 import markdownGrammar from 'highlight.js/lib/languages/markdown';
 import { browserClipboard } from './adapters/clipboard.ts';
 import { browserCompressor } from './adapters/compressor.ts';
+import { browserDocxReader } from './adapters/docxReader.ts';
 import { browserHtmlToMarkdown } from './adapters/htmlToMarkdown.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
@@ -14,6 +15,7 @@ import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { recordSnapshot } from './draftHistory.ts';
 import { highlightMarkdownSource } from './editorHighlight.ts';
 import { renderEmptyState } from './emptyState.ts';
+import { flavorForDocxImport } from './fileKind.ts';
 import { documentTitle, pageTitle } from './filename.ts';
 import { flavorNeedsKatex, resolveInitialFlavor } from './flavor.ts';
 import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './flavors.ts';
@@ -45,6 +47,7 @@ import { initEditorToggle } from './ui/editorToggle.ts';
 import { initEditorUndo } from './ui/editorUndo.ts';
 import { initPrintExpansion } from './ui/expandDetails.ts';
 import { initExportMenu } from './ui/exportMenu.ts';
+import { createFileImporter, initOpenFile } from './ui/fileImport.ts';
 import { initFindBar } from './ui/findBar.ts';
 import { initFlavorSelect, setFlavorSelectValue } from './ui/flavorSelect.ts';
 import { initHeadingLinks } from './ui/headingLinks.ts';
@@ -381,26 +384,23 @@ const boot = async (): Promise<void> => {
     toolbar = initSelectionToolbar({ editor, mirror: mirrorEl, wrap: editorWrap });
   }
   initEditorUndo({ editor });
+  const switchFlavor = (next: Flavor): void => {
+    if (next === state.flavor) return;
+    state.flavor = next;
+    state.md = buildMD(next, state.deps);
+    browserStorage.set(FLAVOR_STORAGE_KEY, next);
+    ensureKatexFor(next);
+    setFlavorSelectValue(next);
+    updatePlaceholder();
+  };
   initFlavorSelect({
     onChange: (next) => {
-      state.flavor = next;
-      state.md = buildMD(next, state.deps);
-      browserStorage.set(FLAVOR_STORAGE_KEY, next);
-      ensureKatexFor(next);
-      updatePlaceholder();
+      switchFlavor(next);
       rerender();
     },
   });
   const loadSample = (key: SampleKey): void => {
-    const nextFlavor = SAMPLE_FLAVOR[key];
-    if (nextFlavor !== state.flavor) {
-      state.flavor = nextFlavor;
-      state.md = buildMD(nextFlavor, state.deps);
-      browserStorage.set(FLAVOR_STORAGE_KEY, nextFlavor);
-      ensureKatexFor(nextFlavor);
-      setFlavorSelectValue(nextFlavor);
-      updatePlaceholder();
-    }
+    switchFlavor(SAMPLE_FLAVOR[key]);
     // An untouched sample isn't worth a snapshot; anything else is.
     if (isSampleContent(editor.value) === null) snapshot(editor.value);
     state.activeSample = key;
@@ -487,8 +487,12 @@ const boot = async (): Promise<void> => {
     onPresent: () => presentation.enter(),
   });
   initPrintExpansion(() => document.getElementById('preview'));
-  initDropZone({
-    onText: (text) => {
+  const importFile = createFileImporter({
+    docxReader: browserDocxReader,
+    htmlToMarkdown: browserHtmlToMarkdown,
+    compressImage,
+    onText: (text, fromDocx) => {
+      if (fromDocx) switchFlavor(flavorForDocxImport(state.flavor));
       snapshot(editor.value);
       applyEdit(editor, { value: text, start: 0, end: 0 });
       rerender();
@@ -503,8 +507,9 @@ const boot = async (): Promise<void> => {
       applyEdit(editor, { value: r.value, start: r.cursor, end: r.cursor });
       rerender();
     },
-    compressImage,
   });
+  initDropZone(importFile);
+  initOpenFile(importFile);
   const findBar = initFindBar({
     editor,
     onEditorChange: () => {

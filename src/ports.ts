@@ -62,3 +62,18 @@ export interface NativeShare {
   isAvailable(): boolean;
   share(data: { title: string; url: string }): Promise<void>;
 }
+
+export interface DocxImportResult {
+  html: string;
+  images: number;
+  skippedImages: number;
+}
+
+/** Reads a Word (.docx) file into HTML, ready for HtmlToMarkdown. */
+export interface DocxReader {
+  /** `embedImage` turns an image's bytes into a `src`, or null to drop it. */
+  toHtml(
+    data: ArrayBuffer,
+    embedImage: (bytes: Uint8Array, contentType: string) => Promise<string | null>,
+  ): Promise<DocxImportResult>;
+}

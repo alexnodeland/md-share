@@ -75,7 +75,7 @@ Users should always be able to leave:
 ### ⚡ Weightless editing
 - Split pane, 180ms debounced render
 - Paste from Google Docs, Word, Notion, or a web page — it arrives as Markdown (add `Shift` to paste plain text)
-- Drag & drop `.md` / `.markdown` / `.txt` anywhere
+- Open or drag & drop `.md` / `.txt` / Word `.docx` — Word documents arrive as Markdown, headings, lists, tables, links, and images intact
 - Recent versions: loading a sample, clearing, dropping a file, or opening someone's link keeps your previous text one click away
 - `Ctrl+S` · share dialog &nbsp; `Ctrl+E` · toggle editor &nbsp; `Esc` · close / stop
 - `Tab` / `Shift+Tab` indent and outdent the selected lines; `Esc` then `Tab` moves focus out of the editor
