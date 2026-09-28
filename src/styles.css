@@ -6,8 +6,9 @@
   --border: #232328;
   --border-focus: #3a3a42;
   --text: #e4e4e7;
-  --text-dim: #636370;
-  --text-xdim: #46464f;
+  /* Both pass WCAG AA (4.5:1) on every dark surface, hover included. */
+  --text-dim: #9a9aa7;
+  --text-xdim: #858592;
   --accent: #a78bfa;
   --accent-strong: #7c3aed;
   --accent-bg: rgba(167, 139, 250, 0.07);
@@ -32,15 +33,17 @@
   --border: #e0e0e5;
   --border-focus: #c0c0c8;
   --text: #1a1a2e;
-  --text-dim: #6b6b80;
-  --text-xdim: #9999aa;
+  /* Both pass WCAG AA (4.5:1) on every light surface, hover included. */
+  --text-dim: #5f5f73;
+  --text-xdim: #66667a;
   --accent: #7c3aed;
   --accent-strong: #6d28d9;
   --accent-bg: rgba(124, 58, 237, 0.06);
-  --danger: #dc2626;
-  --success: #16a34a;
-  --warn-color: #d97706;
-  --info-color: #2563eb;
+  /* Deep enough for AA on the tinted callout/panel backgrounds. */
+  --danger: #b91c1c;
+  --success: #166534;
+  --warn-color: #a14a0b;
+  --info-color: #1d4ed8;
   --code-bg: #f1f0f5;
   --preview-bg: #f8f8fa;
   --rendered-text: #374151;
@@ -1056,6 +1059,11 @@ html[data-presenting="true"] .present-controls {
 .katex-display {
   margin: 1em 0;
   overflow-x: auto;
+}
+/* Only our (focusable) wrapper scrolls; KaTeX's inner block must not. */
+.katex-display > .katex-display {
+  margin: 0;
+  overflow: visible;
 }
 .rendered code.katex-error,
 .rendered pre.katex-error {

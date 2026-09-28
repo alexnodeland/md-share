@@ -56,7 +56,8 @@ export const pluginKaTeX = (md: MarkdownIt, katex: typeof katexNs): void => {
     const token = tokens[idx]!;
     const content = token.content;
     try {
-      return `<div class="katex-display">${katex.renderToString(content, {
+      // Focusable so keyboard users can scroll equations wider than the page.
+      return `<div class="katex-display" tabindex="0">${katex.renderToString(content, {
         displayMode: true,
         throwOnError: true,
       })}</div>`;

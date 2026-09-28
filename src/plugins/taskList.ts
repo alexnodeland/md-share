@@ -1,6 +1,7 @@
 import type MarkdownIt from 'markdown-it';
 import type Token from 'markdown-it/lib/token.mjs';
 import type { RenderEnv } from '../types.ts';
+import { inlineText } from './anchors.ts';
 
 const TASK_RE = /^\[([ xX])\]\s/;
 
@@ -47,7 +48,9 @@ export const pluginTaskList = (md: MarkdownIt): void => {
     const meta: unknown = tokens[idx]!.meta;
     if (isTaskMeta(meta)) {
       const checkedAttr = meta.checked ? ' checked' : '';
-      return `<li class="task-list-item"><input type="checkbox"${checkedAttr} data-task-line="${meta.line}"> `;
+      // The checkbox's accessible name is the task's own text.
+      const label = md.utils.escapeHtml(inlineText(tokens[idx + 2]!));
+      return `<li class="task-list-item"><input type="checkbox"${checkedAttr} data-task-line="${meta.line}" aria-label="${label}"> `;
     }
     return origRule ? origRule(tokens, idx, opts, env, self) : self.renderToken(tokens, idx, opts);
   };

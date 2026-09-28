@@ -149,7 +149,7 @@ describe('pluginKaTeX', () => {
 });
 
 describe('pluginKaTeX — display math forms', () => {
-  const count = (html: string) => html.split('<div class="katex-display">').length - 1;
+  const count = (html: string) => html.split('<div class="katex-display" tabindex="0">').length - 1;
 
   it('renders $$…$$ on a single line as display math', () => {
     const html = build().render('$$E=mc^2$$');
