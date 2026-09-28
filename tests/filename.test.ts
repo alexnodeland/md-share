@@ -3,6 +3,7 @@ import {
   deriveFilename,
   documentTitle,
   firstHeadingText,
+  pageTitle,
   slugifyFilename,
 } from '../src/filename.ts';
 
@@ -114,5 +115,15 @@ describe('unicode filenames', () => {
 
   it('uses the frontmatter title for the filename', () => {
     expect(deriveFilename('---\ntitle: Trip Plan\n---\n# Day 1', 'md')).toBe('trip-plan.md');
+  });
+});
+
+describe('pageTitle', () => {
+  it('leads with the document title', () => {
+    expect(pageTitle('# Trip plan')).toBe('Trip plan · md-share');
+  });
+
+  it('is just the app name for untitled documents', () => {
+    expect(pageTitle('')).toBe('md-share');
   });
 });

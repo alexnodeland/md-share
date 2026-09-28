@@ -2118,3 +2118,42 @@ html.theme-switching *::after {
     border-color: transparent;
   }
 }
+
+.preview-empty {
+  max-width: 440px;
+  margin: 12vh auto 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  text-align: center;
+}
+.preview-empty p {
+  margin: 0 0 14px;
+}
+.preview-empty code {
+  color: var(--rendered-code-color);
+}
+.preview-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rendered-heading);
+}
+.preview-empty-samples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+.preview-empty .preview-empty-sample {
+  color: var(--accent);
+  border-color: var(--border);
+}
+.preview-empty .preview-empty-sample:hover {
+  border-color: var(--accent);
+}
+.preview-empty-note {
+  font-size: 11px;
+  color: var(--text-xdim);
+}

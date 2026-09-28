@@ -29,6 +29,8 @@ export interface Synth {
 
 export interface Clipboard {
   write(text: string): Promise<void>;
+  /** Formatted copy: rich targets (docs, email) take `html`, plain ones take `text`. */
+  writeRich(html: string, text: string): Promise<void>;
 }
 
 export interface Printer {

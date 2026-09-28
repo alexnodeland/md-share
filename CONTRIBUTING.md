@@ -90,7 +90,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor
 - [ ] Recent versions — write a draft, open a shared link, type; the clock menu still lists the original draft and restores it
 - [ ] In-page links — on a shared link, click a TOC entry and a footnote; the URL keeps its `#d=` payload and a reload still shows the doc
-- [ ] Export: Markdown / HTML / PNG / PDF all download or print
+- [ ] Export: Markdown / HTML page / PNG / PDF all download or print; open the `.html` file on its own and it looks like the preview; Copy formatted pastes into a doc with formatting
 - [ ] Theme toggle — mermaid re-renders with the matching theme
 - [ ] Mobile (resize <900px) — Edit/View toggle works
 - [ ] Keyboard: `Ctrl+S`, `Ctrl+E`, `Esc`; `Tab`/`Shift+Tab` indent/outdent a multi-line selection; `Esc` then `Tab` leaves the editor; Tab cycles every control in the share dialog
