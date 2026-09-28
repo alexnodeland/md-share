@@ -117,6 +117,17 @@ describe('createPlayer', () => {
     expect(p.getState().index).toBe(1);
   });
 
+  it('stops cleanly when the final utterance errors', () => {
+    const states: unknown[] = [];
+    const p = createPlayer({ synth: ctx.synth, onStateChange: (s) => states.push(s) });
+    p.start(CHUNKS);
+    ctx.triggerEnd();
+    ctx.triggerEnd();
+    expect(() => ctx.triggerError()).not.toThrow();
+    expect(p.getState()).toMatchObject({ active: false, playing: false, index: -1 });
+    expect(states.at(-1)).toMatchObject({ active: false });
+  });
+
   it('onerror does not advance when paused', () => {
     const p = createPlayer({ synth: ctx.synth });
     p.start(CHUNKS);

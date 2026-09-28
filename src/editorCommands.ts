@@ -102,3 +102,48 @@ export const continueIndent = (value: string, cursor: number): ContinueResult | 
 };
 
 export const isUrl = (text: string): boolean => URL_PATTERN.test(text.trim());
+
+const INDENT = '  ';
+
+/** Bounds of the full lines a selection touches; a trailing newline doesn't pull in the next line. */
+const touchedLines = (value: string, start: number, end: number): [number, number] => {
+  const from = value.lastIndexOf('\n', start - 1) + 1;
+  const last = end > start && value[end - 1] === '\n' ? end - 1 : end;
+  const nl = value.indexOf('\n', last);
+  return [from, nl === -1 ? value.length : nl];
+};
+
+/** Tab with a selection: indent every touched line instead of replacing the text. */
+export const indentLines = (value: string, start: number, end: number): EditResult => {
+  const [from, to] = touchedLines(value, start, end);
+  const lines = value.slice(from, to).split('\n');
+  const body = lines.map((l) => INDENT + l).join('\n');
+  return {
+    value: value.slice(0, from) + body + value.slice(to),
+    start: start + INDENT.length,
+    end: end + INDENT.length * lines.length,
+  };
+};
+
+const outdentAmount = (line: string): number => {
+  if (line.startsWith('\t')) return 1;
+  let n = 0;
+  while (n < INDENT.length && line[n] === ' ') n++;
+  return n;
+};
+
+/** Shift+Tab: remove one level (two spaces or a tab) from every touched line. */
+export const outdentLines = (value: string, start: number, end: number): EditResult => {
+  const [from, to] = touchedLines(value, start, end);
+  const lines = value.slice(from, to).split('\n');
+  const cuts = lines.map(outdentAmount);
+  const body = lines.map((l, i) => l.slice(cuts[i])).join('\n');
+  const total = cuts.reduce((a, b) => a + b, 0);
+  const firstCut = Math.min(cuts[0]!, start - from);
+  const newStart = start - firstCut;
+  return {
+    value: value.slice(0, from) + body + value.slice(to),
+    start: newStart,
+    end: Math.max(newStart, end - total),
+  };
+};

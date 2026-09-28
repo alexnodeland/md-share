@@ -1,4 +1,12 @@
-import { findAll, findNext, findPrev, type Match, replaceAll, replaceOne } from '../editorFind.ts';
+import {
+  findAll,
+  findNext,
+  findPrev,
+  type Match,
+  pickReplaceTarget,
+  replaceAll,
+  replaceOne,
+} from '../editorFind.ts';
 import { applyEdit } from './applyEdit.ts';
 
 export interface FindBarDeps {
@@ -143,16 +151,11 @@ export const initFindBar = ({ editor, onEditorChange }: FindBarDeps): FindBar =>
   const goPrev = () =>
     select(findPrev(editor.value, findInput.value, editor.selectionStart, opts()));
 
-  const targetMatch = (matches: Match[], pos: number): Match =>
-    matches.find((m) => m.start <= pos && pos <= m.end) ??
-    matches.find((m) => m.start >= pos) ??
-    (matches[0] as Match);
-
   const doReplaceOne = () => {
     if (!findInput.value) return;
     const matches = findAll(editor.value, findInput.value, opts());
-    if (matches.length === 0) return;
-    const target = targetMatch(matches, editor.selectionStart);
+    const target = pickReplaceTarget(matches, editor.selectionStart, editor.selectionEnd);
+    if (!target) return;
     const { value, cursor } = replaceOne(editor.value, target, replaceInput.value);
     applyEdit(editor, { value, start: cursor, end: cursor });
     onEditorChange();
