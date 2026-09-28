@@ -63,6 +63,10 @@
   padding: 0;
   box-sizing: border-box;
 }
+/* Author `display` rules (e.g. button's inline-flex) would otherwise beat the UA's [hidden]. */
+[hidden] {
+  display: none !important;
+}
 html,
 body {
   height: 100%;
@@ -243,6 +247,19 @@ button.active-listen {
   border-color: var(--border);
   background: var(--bg-raised);
   color: var(--text);
+}
+/* The file this document is saved to; click (or Ctrl+S) to save. */
+.file-status {
+  max-width: 16em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  border-color: var(--border);
 }
 
 .main {

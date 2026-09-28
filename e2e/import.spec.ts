@@ -1,7 +1,10 @@
 import { buildSampleDocx } from '../tests/adapters/docxFixture.ts';
-import { editor, expect, preview, test } from './fixtures.ts';
+import { editor, expect, preview, test, withoutFileAccess } from './fixtures.ts';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+// The file-input path (Firefox, Safari); opening in place is in files.spec.ts.
+test.beforeEach(({ page }) => withoutFileAccess(page));
 
 test('Open… imports a Word document as Markdown', async ({ page }) => {
   await page.goto('./');

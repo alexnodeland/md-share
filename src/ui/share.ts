@@ -16,7 +16,7 @@ export interface ShareDeps {
   getCurrentHeading: () => string | null;
 }
 
-export const initShareModal = (deps: ShareDeps): void => {
+export const initShareModal = (deps: ShareDeps): { open: () => void } => {
   const modal = document.getElementById('link-modal');
   const urlBox = document.getElementById('link-url');
   const warn = document.getElementById('url-warn');
@@ -41,7 +41,7 @@ export const initShareModal = (deps: ShareDeps): void => {
     !sectionCheckbox ||
     !sectionSlug
   )
-    return;
+    return { open: () => {} };
 
   let heading: string | null = null;
   let refreshGen = 0;
@@ -158,9 +158,7 @@ export const initShareModal = (deps: ShareDeps): void => {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) close();
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      open();
-    }
   });
+  // Ctrl+S is bound in fileLink.ts: it saves to an opened file, else shares.
+  return { open };
 };
