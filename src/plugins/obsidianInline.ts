@@ -27,20 +27,26 @@ export const pluginObsidianInline = (md: MarkdownIt): void => {
     return `<span class="wikilink" title="${md.utils.escapeHtml(target)}">${md.utils.escapeHtml(token.content)}</span>`;
   };
 
+  // `==text==`; the inner text is parsed as Markdown, and — like emphasis —
+  // it can't start or end with a space, so `a == b` stays plain text.
   md.inline.ruler.push('obsidian_highlight', (state, silent) => {
-    if (state.src.slice(state.pos, state.pos + 2) !== '==') return false;
-    const end = state.src.indexOf('==', state.pos + 2);
-    if (end < 0) return false;
+    const start = state.pos + 2;
+    if (!state.src.startsWith('==', state.pos)) return false;
+    const end = state.src.indexOf('==', start);
+    if (end < 0 || end > state.posMax - 2 || end === start) return false;
+    if (/\s/.test(state.src[start]!) || /\s/.test(state.src[end - 1]!)) return false;
     if (!silent) {
-      const token = state.push('obsidian_highlight', '', 0);
-      token.content = state.src.slice(state.pos + 2, end);
+      const oldMax = state.posMax;
+      state.push('mark_open', 'mark', 1);
+      state.pos = start;
+      state.posMax = end;
+      state.md.inline.tokenize(state);
+      state.posMax = oldMax;
+      state.push('mark_close', 'mark', -1);
     }
     state.pos = end + 2;
     return true;
   });
-
-  md.renderer.rules.obsidian_highlight = (tokens, idx) =>
-    `<mark>${md.utils.escapeHtml(tokens[idx]!.content)}</mark>`;
 
   md.inline.ruler.push('obsidian_tag', (state, silent) => {
     if (state.src[state.pos] !== '#') return false;

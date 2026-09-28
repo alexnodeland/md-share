@@ -1,35 +1,15 @@
 import { escapeHtml } from './escapeHtml.ts';
-import { cleanHeadingText, slugifyHeading, uniqueSlug } from './slug.ts';
-import type { TocHeading } from './types.ts';
-
-const HEADING_RE = /^(#{2,4})\s+(.+)/;
-const FENCE_RE = /^```/;
-
-export const parseHeadings = (source: string): TocHeading[] => {
-  const headings: TocHeading[] = [];
-  const used = new Map<string, number>();
-  let inFence = false;
-  for (const line of source.split('\n')) {
-    if (FENCE_RE.test(line.trim())) {
-      inFence = !inFence;
-      continue;
-    }
-    if (inFence) continue;
-    const match = line.match(HEADING_RE);
-    if (!match) continue;
-    const hashes = match[1] as string;
-    const text = cleanHeadingText(match[2] as string);
-    const level = hashes.length as 2 | 3 | 4;
-    headings.push({ level, text, slug: uniqueSlug(slugifyHeading(text), used) });
-  }
-  return headings;
-};
+import type { DocHeading } from './types.ts';
 
 const MIN_HEADINGS_FOR_TOC = 3;
+const TOC_MIN_LEVEL = 2;
+const TOC_MAX_LEVEL = 4;
 
-export const renderTOC = (headings: readonly TocHeading[]): string => {
-  if (headings.length < MIN_HEADINGS_FOR_TOC) return '';
-  const items = headings
+/** Renders h2–h4 from the outline the heading-anchor rule records. */
+export const renderTOC = (headings: readonly DocHeading[]): string => {
+  const entries = headings.filter((h) => h.level >= TOC_MIN_LEVEL && h.level <= TOC_MAX_LEVEL);
+  if (entries.length < MIN_HEADINGS_FOR_TOC) return '';
+  const items = entries
     .map(
       (h) =>
         `<li class="toc-h${h.level}"><a href="#${escapeHtml(h.slug)}">${escapeHtml(h.text)}</a></li>`,
@@ -37,5 +17,3 @@ export const renderTOC = (headings: readonly TocHeading[]): string => {
     .join('');
   return `<div class="toc-container"><div class="toc-title">Contents</div><ul>${items}</ul></div>`;
 };
-
-export const generateTOC = (source: string): string => renderTOC(parseHeadings(source));

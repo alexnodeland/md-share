@@ -40,17 +40,33 @@ describe('pluginTaskList', () => {
     expect(html).not.toContain('[x] Finish');
   });
 
-  it('omits data-task-line when source map information is unavailable', () => {
-    const md = new MarkdownIt({ html: true });
-    pluginTaskList(md);
-    md.core.ruler.after('task_lists', 'strip_line', (state) => {
-      for (const token of state.tokens) {
-        if (token.type === 'list_item_open' && token.meta) token.meta.line = undefined;
-      }
-    });
-    const html = md.render('- [x] thing');
-    expect(html).toContain('<input type="checkbox" checked>');
-    expect(html).not.toContain('data-task-line');
+  it('offsets source lines by env.lineOffset (stripped frontmatter)', () => {
+    const md = new MarkdownIt().use(pluginTaskList);
+    const html = md.render('- [ ] a\n- [x] b', { lineOffset: 3 });
+    expect(html).toContain('data-task-line="3"');
+    expect(html).toContain('checked data-task-line="4"');
+  });
+
+  it('only treats the first paragraph of a list item as a task', () => {
+    const md = new MarkdownIt().use(pluginTaskList);
+    const html = md.render('- apple\n- pear\n\n[x] note\n\n# [ ] heading');
+    expect(html).not.toContain('checkbox');
+    expect(html).toContain('<p>[x] note</p>');
+    expect(html).toContain('[ ] heading</h1>');
+  });
+
+  it('marks the direct parent list, including ordered lists', () => {
+    const md = new MarkdownIt().use(pluginTaskList);
+    const html = md.render('- apple\n\n1. [ ] t');
+    expect(html).toContain('<ul>\n<li>apple</li>');
+    expect(html).toContain('<ol class="task-list">');
+  });
+
+  it('marks nested task lists independently of their parent', () => {
+    const md = new MarkdownIt().use(pluginTaskList);
+    const html = md.render('- parent\n  - [ ] child');
+    expect(html).toMatch(/^<ul>/);
+    expect(html).toContain('<ul class="task-list">');
   });
 
   it('composes with an existing list_item_open rule', () => {

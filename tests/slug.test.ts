@@ -1,30 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { cleanHeadingText, slugifyHeading, uniqueSlug } from '../src/slug.ts';
-
-describe('cleanHeadingText', () => {
-  it('strips Markdown formatting chars and trims', () => {
-    expect(cleanHeadingText('  **Bold** and *italic* `code`  ')).toBe('Bold and italic code');
-  });
-
-  it('leaves plain text untouched', () => {
-    expect(cleanHeadingText('Plain heading')).toBe('Plain heading');
-  });
-
-  it('removes square brackets and hashes from inline links and headings', () => {
-    expect(cleanHeadingText('# [Title]')).toBe('Title');
-  });
-});
+import { slugifyHeading, uniqueSlug } from '../src/slug.ts';
 
 describe('slugifyHeading', () => {
   it('lowercases and hyphenates spaces', () => {
     expect(slugifyHeading('Hello World')).toBe('hello-world');
   });
 
-  it('strips common Markdown formatting chars', () => {
-    expect(slugifyHeading('*Italic* and **bold**')).toBe('italic-and-bold');
+  it('keeps non-ASCII letters, digits, and combining marks', () => {
+    expect(slugifyHeading('Café Ελληνικά 日本語 2')).toBe('café-ελληνικά-日本語-2');
+    expect(slugifyHeading('नमस्ते')).toBe('नमस्ते');
   });
 
-  it('strips inline backticks and brackets', () => {
+  it('keeps underscores like GitHub does', () => {
+    expect(slugifyHeading('snake_case name')).toBe('snake_case-name');
+  });
+
+  it('strips punctuation such as backticks and brackets', () => {
     expect(slugifyHeading('A `code` [link]')).toBe('a-code-link');
   });
 

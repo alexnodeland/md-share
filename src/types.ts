@@ -18,10 +18,18 @@ export interface ShareParams {
   anchor: string | null;
 }
 
-export interface TocHeading {
-  level: 2 | 3 | 4;
+export interface DocHeading {
+  level: number;
   text: string;
   slug: string;
+}
+
+/** The markdown-it `env` object md-share's plugins read from and write to. */
+export interface RenderEnv {
+  /** Filled by the heading-anchor rule: every heading with an id, in order. */
+  headings?: DocHeading[];
+  /** Source lines stripped before rendering (frontmatter), so line maps point into the editor. */
+  lineOffset?: number;
 }
 
 export interface SpeechChunk {

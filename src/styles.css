@@ -1113,6 +1113,25 @@ html[data-presenting="true"] .present-controls {
 .callout-title .callout-icon {
   font-size: 14px;
 }
+summary.callout-title {
+  cursor: pointer;
+  list-style: none;
+}
+summary.callout-title::-webkit-details-marker {
+  display: none;
+}
+summary.callout-title::after {
+  content: "›";
+  margin-left: auto;
+  font-size: 16px;
+  transition: transform 0.15s ease;
+}
+details.callout[open] > summary.callout-title::after {
+  transform: rotate(90deg);
+}
+details.callout:not([open]) > summary.callout-title {
+  margin-bottom: 0;
+}
 .callout-body p:first-child {
   margin-top: 0;
 }

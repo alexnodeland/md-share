@@ -147,3 +147,63 @@ describe('pluginKaTeX', () => {
     expect(pushed).toBe(false);
   });
 });
+
+describe('pluginKaTeX — display math forms', () => {
+  const count = (html: string) => html.split('<div class="katex-display">').length - 1;
+
+  it('renders $$…$$ on a single line as display math', () => {
+    const html = build().render('$$E=mc^2$$');
+    expect(count(html)).toBe(1);
+    expect(html).not.toContain('<p>$');
+  });
+
+  it('keeps text between two single-line blocks as text', () => {
+    const html = build().render('$$a+b$$\n\nsome text\n\n$$c+d$$');
+    expect(count(html)).toBe(2);
+    expect(html).toContain('<p>some text</p>');
+  });
+
+  it('accepts content on the opening and closing lines', () => {
+    const tokens = build().parse('$$ a +\nb +\nc $$', {});
+    expect(tokens[0]!.type).toBe('math_block');
+    expect(tokens[0]!.content).toBe('a +\nb +\nc');
+    expect(tokens[0]!.map).toEqual([0, 3]);
+  });
+});
+
+describe('pluginKaTeX — inline delimiters (Pandoc rules)', () => {
+  it('leaves currency amounts alone', () => {
+    const html = build().render('I paid $5 for coffee and $3 for tea.');
+    expect(html).not.toContain('katex');
+    expect(build().render('From $20,000 to $30,000.')).not.toContain('katex');
+  });
+
+  it('renders math that follows prices in the same paragraph', () => {
+    const html = build().render('Price $5 and $10, or $3.50. Area $x^2$.');
+    expect(html.split('class="katex"').length - 1).toBe(1);
+    expect(html).toContain('Price $5 and $10, or $3.50. Area');
+  });
+
+  it('still renders math that starts with a digit', () => {
+    expect(build().render('$2^n$ and $2x$')).toContain('class="katex"');
+    expect(build().render('$2^n$ and $2x$').split('class="katex"').length - 1).toBe(2);
+  });
+
+  it('requires non-space after the opening $', () => {
+    expect(build().render('a $ x$ b')).not.toContain('katex');
+  });
+
+  it('skips closers preceded by space, escaped, or followed by a digit', () => {
+    const tokens = build().parseInline('$a $ b\\$ c$1 d$ e', {})[0]!.children!;
+    const math = tokens.find((t) => t.type === 'math_inline');
+    expect(math?.content).toBe('a $ b\\$ c$1 d');
+  });
+
+  it('does not close math past the end of an enclosing link label', () => {
+    expect(build().render('[$x](u) costs $5')).toContain('<a href="u">$x</a> costs $5');
+  });
+
+  it('does not treat a lone trailing $ as math', () => {
+    expect(build().render('price: $')).not.toContain('katex');
+  });
+});
