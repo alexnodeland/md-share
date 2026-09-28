@@ -71,28 +71,45 @@ export const parseShareParams = async (
   return { source, flavor, anchor, embed: payloadInHash && hashParams.get('e') === '1' };
 };
 
-/** Past this, some chat apps, SMS gateways, and QR scanners mangle or refuse the link. */
+/** QR codes past this stop scanning reliably; Discord caps messages here too. */
 export const SOFT_URL_LENGTH = 2000;
-/** Past this, some browsers and servers truncate URLs outright. */
-export const HARD_URL_LENGTH = 8000;
+/**
+ * Past this, most chat apps refuse or truncate the message. The payload rides
+ * in the fragment, which never reaches a server, so server URL limits (~8 KB)
+ * don't apply; browsers themselves accept far more (Chromium: 2 MB).
+ */
+export const LONG_URL_LENGTH = 65_536;
+
+/** Where people paste links, and the longest message each accepts. */
+export const LINK_DESTINATIONS: readonly { name: string; max: number }[] = [
+  { name: 'a QR code', max: SOFT_URL_LENGTH },
+  { name: 'Discord', max: 2000 },
+  { name: 'Slack', max: 40_000 },
+  { name: 'WhatsApp', max: LONG_URL_LENGTH },
+];
 
 export type UrlLengthLevel = 'ok' | 'soft' | 'over';
 
+const joinWords = (items: readonly string[], last: string): string =>
+  items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} ${last} ${items.at(-1)}`;
+
+/** How far a link of this length will travel: which apps take it, which don't. */
 export const describeUrlLength = (length: number): { level: UrlLengthLevel; text: string } => {
-  const n = length.toLocaleString('en-US');
-  if (length > HARD_URL_LENGTH) {
+  const n = `Link: ${length.toLocaleString('en-US')} chars`;
+  if (length <= SOFT_URL_LENGTH)
+    return { level: 'ok', text: `${n} — fits anywhere, even a QR code` };
+  if (length > LONG_URL_LENGTH) {
     return {
       level: 'over',
-      text: `⚠ URL is ${n} chars — likely to exceed browser limits. Consider exporting as Markdown instead.`,
+      text: `${n} — opens in browsers, but too long to paste into most chat apps. Send the file instead.`,
     };
   }
-  if (length > SOFT_URL_LENGTH) {
-    return {
-      level: 'soft',
-      text: `⚠ URL is ${n} chars — may not survive every chat app or QR scanner.`,
-    };
-  }
-  return { level: 'ok', text: `URL length: ${n} chars` };
+  const fits = LINK_DESTINATIONS.filter((d) => length <= d.max).map((d) => d.name);
+  const not = LINK_DESTINATIONS.filter((d) => length > d.max).map((d) => d.name);
+  return {
+    level: 'soft',
+    text: `${n} — fits ${joinWords(fits, 'and')}; too long for ${joinWords(not, 'or')}`,
+  };
 };
 
 /** HTML to paste into a blog or docs site: the rendered document in an iframe. */

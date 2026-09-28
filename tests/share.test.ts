@@ -339,19 +339,31 @@ describe('share round trip', () => {
 });
 
 describe('describeUrlLength', () => {
-  it('reports short URLs plainly', () => {
-    expect(describeUrlLength(1234)).toEqual({ level: 'ok', text: 'URL length: 1,234 chars' });
-  });
-
-  it('warns softly past the chat-app / QR limit', () => {
-    expect(describeUrlLength(2001).level).toBe('soft');
+  it('says a short link fits anywhere', () => {
+    expect(describeUrlLength(1234)).toEqual({
+      level: 'ok',
+      text: 'Link: 1,234 chars — fits anywhere, even a QR code',
+    });
     expect(describeUrlLength(2000).level).toBe('ok');
   });
 
-  it('warns hard past browser limits', () => {
-    const { level, text } = describeUrlLength(9000);
+  it('names which apps take a longer link and which do not', () => {
+    expect(describeUrlLength(2001)).toEqual({
+      level: 'soft',
+      text: 'Link: 2,001 chars — fits Slack and WhatsApp; too long for a QR code or Discord',
+    });
+    expect(describeUrlLength(40_001).text).toBe(
+      'Link: 40,001 chars — fits WhatsApp; too long for a QR code, Discord or Slack',
+    );
+    expect(describeUrlLength(65_536).level).toBe('soft');
+  });
+
+  it('suggests sending the file past what chat apps take', () => {
+    const { level, text } = describeUrlLength(90_000);
     expect(level).toBe('over');
-    expect(text).toContain('9,000');
+    expect(text).toBe(
+      'Link: 90,000 chars — opens in browsers, but too long to paste into most chat apps. Send the file instead.',
+    );
   });
 });
 

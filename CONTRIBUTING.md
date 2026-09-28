@@ -90,6 +90,7 @@ The repo is organized around ports-and-adapters:
 - HTML and Markdown exports, theme persistence, and the 360 px phone toolbar and Edit/View toggle
 - the document check: badge, issue list, and jump-to-line
 - embed snippets (chrome hidden, read-only, viewer's draft untouched) and Web Share Target text
+- link-length guidance by destination, and sharing without embedded images
 - open-in-place and Save to file… (against stubbed File System Access pickers), unlinking when the document is replaced; the file-input fallback
 - heading-link and footnote autocomplete: keyboard and mouse selection, Esc dismissal
 - Academic citations and cross-references: numbering, reference list, scroll-to-reference, `@` autocomplete, Word and LaTeX export
