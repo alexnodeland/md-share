@@ -4,6 +4,21 @@ A survey of candidate features that could bring md-share to the next level, each
 
 > Excluded from this doc by request: command palette, editor slash-commands, remix lineage.
 
+## Status (updated after the #17–#28 iteration)
+
+| # | Item | Status |
+|---|---|---|
+| 1 | QR code in share modal | ✅ Shipped (#26) — with OS share sheet; sized at whole px/module so it actually scans |
+| 2 | URL length meter | ◐ Meter shipped (`describeUrlLength`); overflow *suggestions* still open |
+| 3 | HTML / DOCX paste → Markdown | ◐ Rich HTML paste shipped (#25); `.docx` drop still open |
+| 4 | Standalone `.html` / `.docx` export | ◐ Standalone HTML + Copy formatted shipped (#23); `.docx` still open |
+| 11 | Voice picker | ✅ Already present (`#audio-voice`) |
+| 15 | Local draft history | ✅ Shipped as "Recent versions" (#19) |
+| 21 | Paste image from clipboard | ✅ Already present (editor paste handler) |
+| 24 | Accessibility checks | ✅ axe-core runs in E2E for both themes (#27); user-color contrast in a linter is still open |
+
+Also shipped outside this list: sanitized rendering (#18), E2E smoke suite (#24), lazy code grammars (#28).
+
 The seven gates are shorthanded as:
 1. No server? 2. Respects existing flavors? 3. Export parity? 4. Degrades for listen/print/mobile? 5. No friction on write → share? 6. Pure-logic with injected deps? 7. Ships under the `verify` gate at 100% pure-module coverage?
 
@@ -12,14 +27,14 @@ The seven gates are shorthanded as:
 ## Tier 1 — High impact, perfectly aligned
 
 ### 1. QR code in share modal
-A QR of the current `?d=…` URL, rendered client-side (e.g. `qrcode` npm). Solves "open this on my phone" with zero backend. Fits beside the existing copy-link button.
+A QR of the current `#d=…` URL, rendered client-side (e.g. `qrcode` npm). Solves "open this on my phone" with zero backend. Fits beside the existing copy-link button.
 
 - **Why now:** the share URL already *is* the document — a QR is just another rendering of the same string.
 - **Shape:** new `src/qr.ts` pure (takes string → matrix), `src/adapters/qr.ts` or UI-level canvas draw, toggled in `ui/share.ts`.
 - **Gate:** 1✅ 2 n/a 3✅ 4 (graceful hide on print) 5✅ 6✅ 7✅.
 
 ### 2. URL length meter + overflow strategy
-Long `?d=` URLs get mangled by SMS, Slack, Discord, QR scanners. Show a live indicator in the share modal (green < 1 KB, amber < 2 KB, red above) and when we cross the threshold, suggest:
+Long `#d=` URLs get mangled by SMS, Slack, Discord, QR scanners. Show a live indicator in the share modal (green < 1 KB, amber < 2 KB, red above) and when we cross the threshold, suggest:
 - Strip embedded base64 images (`imageEmbed.ts` already is the choke point)
 - "Download .md + share that" hint
 - "Copy as data URL" for paste-into-email
