@@ -12,10 +12,17 @@ describe('pluginTaskList', () => {
   it('renders task items with interactive checkboxes carrying the source line', () => {
     const html = build().render('- [x] done\n- [ ] todo');
     expect(html).toContain(
-      '<li class="task-list-item"><input type="checkbox" checked data-task-line="0">',
+      '<li class="task-list-item"><input type="checkbox" checked data-task-line="0" aria-label="done">',
     );
-    expect(html).toContain('<li class="task-list-item"><input type="checkbox" data-task-line="1">');
+    expect(html).toContain(
+      '<li class="task-list-item"><input type="checkbox" data-task-line="1" aria-label="todo">',
+    );
     expect(html).not.toContain('disabled');
+  });
+
+  it('names each checkbox with its task text, escaped', () => {
+    const html = build().render('- [ ] buy **milk** & "eggs"');
+    expect(html).toContain('aria-label="buy milk &amp; &quot;eggs&quot;"');
   });
 
   it('accepts uppercase X as checked', () => {

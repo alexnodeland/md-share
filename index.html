@@ -41,10 +41,10 @@
   <body>
     <a class="skip-link" href="#preview">Skip to content</a>
     <header class="topbar" role="banner" aria-label="Toolbar">
-      <div class="logo">md<span>-share</span></div>
+      <h1 class="logo">md<span>-share</span></h1>
       <div class="sep"></div>
       <span class="flavor-label hide-mobile">Flavor</span>
-      <select id="flavor-select" title="Markdown flavor">
+      <select id="flavor-select" title="Markdown flavor" aria-label="Markdown flavor">
         <option value="commonmark" selected>CommonMark</option>
         <option value="extended">Extended</option>
         <option value="academic">Academic</option>
@@ -147,7 +147,7 @@
       <section class="editor-pane mobile-visible" id="editor-pane" aria-label="Editor">
         <div class="pane-header">
           Editor
-          <select id="sample-select" class="sample-select" title="Load a sample document">
+          <select id="sample-select" class="sample-select" title="Load a sample document" aria-label="Load a sample document">
             <option value="" disabled selected>Samples</option>
             <option value="commonmark">CommonMark</option>
             <option value="extended">Extended</option>
@@ -318,8 +318,8 @@
       <div class="drop-overlay-inner">Drop .md file to load</div>
     </div>
     <div class="modal-overlay" id="help-modal">
-      <div class="modal">
-        <h3>Keyboard shortcuts</h3>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+        <h3 id="help-modal-title">Keyboard shortcuts</h3>
         <dl class="help-shortcuts">
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>S</kbd></dt>
           <dd>Open share dialog</dd>
@@ -350,14 +350,14 @@
       </div>
     </div>
     <div class="modal-overlay" id="link-modal">
-      <div class="modal">
-        <h3>Share this document</h3>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
+        <h3 id="link-modal-title">Share this document</h3>
         <label class="link-section-toggle" id="link-section-toggle" hidden>
           <input type="checkbox" id="link-section-check" />
           <span>Link to current section (<code id="link-section-slug"></code>)</span>
         </label>
         <div class="url-warn" id="url-warn"></div>
-        <div class="url-box" id="link-url"></div>
+        <div class="url-box" id="link-url" tabindex="0" aria-label="Share link"></div>
         <details class="link-qr" id="link-qr">
           <summary>Open on your phone</summary>
           <div class="link-qr-code" id="link-qr-code"></div>
@@ -369,7 +369,7 @@
         </div>
       </div>
     </div>
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <script type="module" src="/src/app.ts"></script>
   </body>
