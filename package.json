@@ -51,13 +51,16 @@
     "markdown-it": "^14.1.1",
     "markdown-it-deflist": "^3.0.0",
     "markdown-it-footnote": "^4.0.0",
-    "mermaid": "^11.14.0"
+    "mermaid": "^11.14.0",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
     "@playwright/test": "^1.63.0",
     "@types/katex": "^0.16.8",
     "@types/markdown-it": "^14.1.2",
+    "@types/turndown": "^5.0.6",
     "@vitest/coverage-v8": "^4.1.11",
     "happy-dom": "^20.9.0",
     "lint-staged": "^16.4.0",

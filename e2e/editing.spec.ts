@@ -48,3 +48,48 @@ test('find and replace-all handle case-insensitive matches exactly', async ({ pa
   await page.locator('#find-replace-all').click();
   await expect(editor(page)).toHaveValue('İİ X X');
 });
+
+const pasteClipboard = (page: import('@playwright/test').Page, data: Record<string, string>) =>
+  editor(page).evaluate((el, items) => {
+    const dt = new DataTransfer();
+    for (const [type, value] of Object.entries(items)) dt.setData(type, value);
+    el.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }),
+    );
+  }, data);
+
+test('pasting rich text (Google Docs) inserts Markdown', async ({ page }) => {
+  await page.goto('./');
+  await editor(page).focus();
+  await pasteClipboard(page, {
+    'text/plain': 'Plan\nRead the docs first.',
+    'text/html':
+      '<meta charset="utf-8"><b style="font-weight:normal;" id="docs-internal-guid-1"><h2>Plan</h2><p>Read <a href="https://x.dev">the docs</a> <span style="font-weight:700">first</span>.</p></b>',
+  });
+  await expect(editor(page)).toHaveValue('## Plan\n\nRead [the docs](https://x.dev) **first**.');
+  await expect(page.locator('#toast')).toContainText('Pasted as Markdown');
+});
+
+// A synthetic paste isn't inserted by the browser, so "left for the browser
+// to paste as plain text" shows up as an untouched editor.
+test('code-editor HTML is left as plain text', async ({ page }) => {
+  await page.goto('./');
+  await editor(page).focus();
+  await pasteClipboard(page, {
+    'text/plain': 'const x = 1;',
+    'text/html': '<div style="color:#d4d4d4"><span style="color:#569cd6">const</span> x = 1;</div>',
+  });
+  await expect(editor(page)).toHaveValue('');
+});
+
+test('Mod+Shift+V skips the Markdown conversion', async ({ page }) => {
+  await page.goto('./');
+  await editor(page).focus();
+  await editor(page).evaluate((el) => {
+    el.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'V', ctrlKey: true, shiftKey: true, bubbles: true }),
+    );
+  });
+  await pasteClipboard(page, { 'text/plain': 'Title', 'text/html': '<h1>Title</h1>' });
+  await expect(editor(page)).toHaveValue('');
+});

@@ -101,6 +101,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Listen — speech plays, progress advances, skip fwd/back and seek-on-click work, speed change works, `Esc` stops
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds
 - [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
+- [ ] Copy a few paragraphs with a link and a list from Google Docs (or Word) and paste — it arrives as Markdown; `Ctrl/⌘+Shift+V` pastes plain
 - [ ] Theme toggle — mermaid re-renders with the matching theme
 - [ ] Open `dist/index.html` directly via `file://` after `npm run build` and confirm it still works
 
