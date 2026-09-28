@@ -83,6 +83,44 @@ describe('lintDocument', () => {
     expect(lint('{code}\nx\n{code}', 'atlassian')).toEqual([]);
   });
 
+  it('flags citations and cross-references that resolve to nothing', () => {
+    const bib = '```bibliography\n@misc{real, title = {Real}}\n```';
+    expect(
+      lint(`[@real; @fake] @fig:gone, @someone.\n\n[@tbl:gone]\n\n${bib}`, 'academic'),
+    ).toEqual([
+      {
+        rule: 'citation-missing',
+        line: 1,
+        message: 'Citation @fake has no entry in the bibliography',
+      },
+      {
+        rule: 'citation-missing',
+        line: 1,
+        message: '@fig:gone points at nothing — label it with {#fig:gone}',
+      },
+      {
+        rule: 'citation-missing',
+        line: 3,
+        message: '@tbl:gone points at nothing — label it with {#tbl:gone}',
+      },
+    ]);
+  });
+
+  it('accepts links to figures, tables, equations, and references', () => {
+    const doc = [
+      '![P](p.png){#fig:p}',
+      '',
+      '| a |\n|---|\n| 1 |\n\n: T {#tbl:t}',
+      '',
+      '$$ x $$ {#eq:x}',
+      '',
+      '[f](#fig:p) [t](#tbl:t) [e](#eq:x) [r](#ref-real)',
+      '',
+      '```bibliography\n@misc{real, title = {Real}}\n```',
+    ].join('\n');
+    expect(lint(doc, 'academic')).toEqual([]);
+  });
+
   it('reports editor lines, counting stripped frontmatter', () => {
     expect(lint('![](x.png)', 'gfm', 3)[0]?.line).toBe(4);
   });

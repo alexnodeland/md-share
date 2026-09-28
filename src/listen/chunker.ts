@@ -83,7 +83,9 @@ const chunksFromTable = (el: Element, fm: FootnoteMap): SpeechChunk[] => {
   if (headers.length === 0 || rows.length === 0) {
     return [{ text: 'A table is shown.', el }];
   }
-  const out: SpeechChunk[] = [{ text: `A table with columns: ${headers.join(', ')}.`, el }];
+  const caption = el.querySelector('caption');
+  const intro = caption ? `${collapse(caption.textContent!)}. A table` : 'A table';
+  const out: SpeechChunk[] = [{ text: `${intro} with columns: ${headers.join(', ')}.`, el }];
   rows.forEach((tr, ri) => {
     const side: SpeechChunk[] = [];
     const cells = [...tr.querySelectorAll('td')].map((td) => speakableText(td, fm, tr, side));
@@ -171,6 +173,20 @@ const describeMermaid = (el: Element): string => {
   return 'A diagram is shown here.';
 };
 
+// Numbered equations (Academic `{#eq:x}`) say which one it is.
+const chunkFromEquation = (el: Element): SpeechChunk => {
+  const number = el.querySelector('.tag')?.textContent;
+  return {
+    text: number ? `Equation ${number} is displayed.` : 'A mathematical equation is displayed.',
+    el,
+  };
+};
+
+const chunkFromFigure = (el: Element, fm: FootnoteMap, side: SpeechChunk[]): SpeechChunk => {
+  const caption = el.querySelector('figcaption');
+  return { text: caption ? speakableText(caption, fm, el, side) : 'A figure is shown.', el };
+};
+
 const processElement = (el: Element, out: SpeechChunk[], fm: FootnoteMap): void => {
   const tag = el.tagName.toLowerCase();
   const classes = el.classList;
@@ -191,7 +207,14 @@ const processElement = (el: Element, out: SpeechChunk[], fm: FootnoteMap): void 
   }
 
   if (classes.contains('katex-display')) {
-    out.push({ text: 'A mathematical equation is displayed.', el });
+    out.push(chunkFromEquation(el));
+    return;
+  }
+
+  if (tag === 'figure') {
+    const side: SpeechChunk[] = [];
+    out.push(chunkFromFigure(el, fm, side));
+    out.push(...side);
     return;
   }
 

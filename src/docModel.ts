@@ -1,4 +1,6 @@
 import type Token from 'markdown-it/lib/token.mjs';
+import type { Segment } from './bibtex.ts';
+import type { BibliographyMeta } from './plugins/pandocCite.ts';
 
 /**
  * A format-neutral model of a rendered document, built from markdown-it's
@@ -127,6 +129,11 @@ export const buildInlines = (token: Token, base: Marks = {}): Inline[] => {
       case 'atl_status':
         text((child.meta as { title: string }).title, { bold: true });
         break;
+      case 'xref_caption':
+        // A numbered figure: the caption goes under the image.
+        out.push({ type: 'break' });
+        text(child.content, { italic: true });
+        break;
       default:
         // Wikilinks and any other plugin text; raw HTML and footnote anchors carry none.
         if (child.content && child.type !== 'html_inline') text(child.content);
@@ -134,6 +141,12 @@ export const buildInlines = (token: Token, base: Marks = {}): Inline[] => {
   }
   return out;
 };
+
+const segmentInline = (s: Segment): Inline => ({
+  type: 'text',
+  text: s.text,
+  marks: { ...(s.italic ? { italic: true as const } : {}), ...(s.link ? { link: s.link } : {}) },
+});
 
 export const buildDocModel = (tokens: readonly Token[]): DocModel => {
   const blocks: Block[] = [];
@@ -286,6 +299,18 @@ export const buildDocModel = (tokens: readonly Token[]): DocModel => {
     html_block: (t) => {
       const text = t.content.replace(/<[^>]*>/g, '').trim();
       if (text) paragraph([{ type: 'text', text, marks: {} }]);
+      return 0;
+    },
+    table_caption_open: (_t, i) => {
+      paragraph(buildInlines(tokens[i + 1]!, { italic: true }));
+      return 2;
+    },
+    bibliography: (t) => {
+      const id = listIds++;
+      for (const { number, segments } of (t.meta as BibliographyMeta).items) {
+        const item: ListInfo = { id, ordered: true, level: 0, start: number, checked: null };
+        paragraph(segments.map(segmentInline), item);
+      }
       return 0;
     },
     table_open: () => {

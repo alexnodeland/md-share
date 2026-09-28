@@ -8,12 +8,14 @@ import { addHeadingAnchors } from './plugins/anchors.ts';
 import { pluginAtlassianBlocks } from './plugins/atlassianBlocks.ts';
 import { pluginAtlassianInline } from './plugins/atlassianInline.ts';
 import { addCodeLangLabels } from './plugins/codeLang.ts';
+import { pluginCrossRef } from './plugins/crossRef.ts';
 import { applyHighlighting } from './plugins/highlighting.ts';
 import { pluginKaTeX } from './plugins/katex.ts';
 import { createMermaidCounter, type MermaidCounter, wrapMermaidFences } from './plugins/mermaid.ts';
 import { pluginObsidianCallouts } from './plugins/obsidianCallouts.ts';
 import { pluginObsidianComments } from './plugins/obsidianComments.ts';
 import { pluginObsidianInline } from './plugins/obsidianInline.ts';
+import { pluginPandocCite } from './plugins/pandocCite.ts';
 import { applySafeLinks } from './plugins/safeLinks.ts';
 import { pluginTaskList } from './plugins/taskList.ts';
 import type { Flavor } from './types.ts';
@@ -54,6 +56,11 @@ const applyFlavorPlugins = (md: MarkdownIt, flavor: Flavor, deps: FlavorDeps): v
 
   if ((flavor === 'academic' || flavor === 'obsidian') && deps.katex) {
     pluginKaTeX(md, deps.katex);
+  }
+
+  if (flavor === 'academic') {
+    pluginCrossRef(md);
+    pluginPandocCite(md);
   }
 
   if (flavor === 'obsidian') {

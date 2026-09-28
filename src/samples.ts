@@ -187,7 +187,7 @@ D --> E[Extended]
 
 const academic = `# Academic Flavor Demo
 
-The Academic flavor adds **LaTeX math** to the Extended feature set --- ideal for technical writing, papers, and lecture notes.
+The Academic flavor adds **LaTeX math**, **citations**, and **numbered cross-references** to the Extended feature set --- ideal for technical writing, papers, and lecture notes.
 
 ## Inline math
 
@@ -203,7 +203,7 @@ The Gaussian integral:
 
 $$
 \\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}
-$$
+$$ {#eq:gauss}
 
 Maxwell's equations in differential form:
 
@@ -231,6 +231,15 @@ Fourier transform
 | Def. lists |    ✓     |    ✓     |
 | Typographer|    ✓     |    ✓     |
 | KaTeX math |   ---    |    ✓     |
+| Citations  |   ---    |    ✓     |
+
+: What each flavor adds {#tbl:flavors}
+
+## Citations & cross-references
+
+KaTeX follows the typesetting rules of @knuth84, the same ones LaTeX builds on [@lamport94, ch. 3]. Cite with \`[@key]\` and put the sources, as BibTeX, in a \`bibliography\` block; they become the numbered list below, in the order they are first cited [@pandoc].
+
+Label an equation, table, or figure --- \`{#eq:gauss}\` after the closing \`$$\`, \`: Caption {#tbl:flavors}\` under a table, \`![Caption](plot.png){#fig:plot}\` --- and refer to it by label: @eq:gauss is the Gaussian integral, and @tbl:flavors compares the flavors. The numbers keep themselves in order as you edit.
 
 ## Code
 
@@ -246,6 +255,31 @@ graph TD
 A[Raw Markdown] --> B[Extended plugins]
 B --> C[KaTeX renderer]
 C --> D[Rendered paper]
+\`\`\`
+
+## References
+
+\`\`\`bibliography
+@book{knuth84,
+  author    = {Donald E. Knuth},
+  title     = {The {\\TeX}book},
+  publisher = {Addison-Wesley},
+  year      = {1984}
+}
+
+@book{lamport94,
+  author    = {Leslie Lamport},
+  title     = {{\\LaTeX}: A Document Preparation System},
+  edition   = {2},
+  publisher = {Addison-Wesley},
+  year      = {1994}
+}
+
+@misc{pandoc,
+  author = {John MacFarlane},
+  title  = {Pandoc User's Guide},
+  url    = {https://pandoc.org/MANUAL.html}
+}
 \`\`\`
 `;
 

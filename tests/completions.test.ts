@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { applyCompletion, completionContext, footnoteLabels, suggest } from '../src/completions.ts';
+import {
+  applyCompletion,
+  citationTargets,
+  completionContext,
+  footnoteLabels,
+  suggest,
+} from '../src/completions.ts';
 
 const at = (text: string) => completionContext(text.replace('|', ''), text.indexOf('|'));
 
@@ -17,6 +23,17 @@ describe('completionContext', () => {
     expect(at('text\n[^so|')).toBeNull();
   });
 
+  it('detects a citation or cross-reference being typed', () => {
+    expect(at('[@kn|')).toEqual({ kind: 'citation', from: 2, to: 4, query: 'kn' });
+    expect(at('As @|')).toEqual({ kind: 'citation', from: 4, to: 4, query: '' });
+    expect(at('[@a; @fig:p|')).toEqual({ kind: 'citation', from: 6, to: 11, query: 'fig:p' });
+    expect(at('@|')).toEqual({ kind: 'citation', from: 1, to: 1, query: '' });
+  });
+
+  it('ignores an @ inside a word, like an email', () => {
+    expect(at('me@exa|')).toBeNull();
+  });
+
   it('only looks at the current line and needs the trigger', () => {
     expect(at('[a](#x\nplain|')).toBeNull();
     expect(at('plain text|')).toBeNull();
@@ -29,6 +46,37 @@ describe('footnoteLabels', () => {
     expect(
       footnoteLabels('a[^x]\n\n[^src]: one\n[^1]: two\n[^src]: dup\n  [^no]: indented'),
     ).toEqual(['src', '1']);
+  });
+});
+
+describe('citationTargets', () => {
+  it('lists bibliography keys and labels once each, in order', () => {
+    const doc = [
+      'See ![P](p.png){#fig:plot} and $$ x $$ {#eq:x}',
+      '',
+      '| a |',
+      '',
+      ': T {#tbl:t}',
+      '',
+      '```bibliography',
+      '@book{knuth84, author = {Donald Knuth}, title = {TeX}}',
+      '@misc{knuth84, title = {Dup}}',
+      '```',
+      '',
+      '```bibtex',
+      '@misc{notcited, title = {Just code}}',
+      '```',
+    ].join('\n');
+    expect(citationTargets(doc)).toEqual([
+      { label: 'knuth84', value: 'knuth84', detail: 'Knuth' },
+      { label: 'fig:plot', value: 'fig:plot', detail: 'figure' },
+      { label: 'eq:x', value: 'eq:x', detail: 'equation' },
+      { label: 'tbl:t', value: 'tbl:t', detail: 'table' },
+    ]);
+  });
+
+  it('is empty for a document without any', () => {
+    expect(citationTargets('# Plain')).toEqual([]);
   });
 });
 
@@ -69,6 +117,16 @@ describe('suggest', () => {
     ]);
   });
 
+  it('suggests citation targets only for citations', () => {
+    const cites = [
+      { label: 'knuth84', value: 'knuth84', detail: 'Knuth' },
+      { label: 'fig:plot', value: 'fig:plot', detail: 'figure' },
+    ];
+    const ctx = { kind: 'citation' as const, from: 0, to: 2, query: 'kn' };
+    expect(suggest(ctx, headings, ['kn'], cites)).toEqual([cites[0]]);
+    expect(suggest(ctx, headings, ['kn'])).toEqual([]);
+  });
+
   it('caps the list', () => {
     const many = Array.from({ length: 20 }, (_, i) => `n${i}`);
     expect(suggest({ kind: 'footnote', from: 0, to: 0, query: '' }, [], many)).toHaveLength(8);
@@ -83,6 +141,16 @@ describe('applyCompletion', () => {
       value: 'See [x](#installation)',
       start: 22,
       end: 22,
+    });
+  });
+
+  it('inserts a citation key with no closer', () => {
+    const value = 'As [@kn] said';
+    const ctx = completionContext(value, 7)!;
+    expect(applyCompletion(value, ctx, { label: 'k', value: 'knuth84', detail: '' })).toEqual({
+      value: 'As [@knuth84] said',
+      start: 12,
+      end: 12,
     });
   });
 

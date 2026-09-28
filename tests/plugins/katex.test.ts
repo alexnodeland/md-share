@@ -56,7 +56,7 @@ describe('pluginKaTeX', () => {
       },
     } as unknown as typeof katex);
     const rule = md.renderer.rules.math_block!;
-    const token = { content: 'x', map: null };
+    const token = { content: 'x', map: null, meta: { label: null } };
     const html = rule(
       [token] as unknown as Parameters<typeof rule>[0],
       0,

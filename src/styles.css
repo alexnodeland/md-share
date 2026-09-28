@@ -1037,6 +1037,52 @@ html[data-presenting="true"] .present-controls {
   font-family: var(--mono);
   font-size: 0.8em;
 }
+/* Academic: numbered figures, table captions, citations, reference list. */
+.rendered figure.figure {
+  margin: 1.4em 0;
+  text-align: center;
+}
+.rendered figcaption,
+.rendered table caption {
+  margin-top: 0.5em;
+  font-size: 0.9em;
+  color: var(--text-dim);
+}
+.rendered table caption {
+  caption-side: top;
+  margin: 0 0 0.5em;
+  text-align: left;
+}
+.rendered .xref-label {
+  font-weight: 600;
+  color: var(--rendered-heading);
+}
+.rendered .citation a,
+.rendered a.xref {
+  text-decoration: none;
+}
+.rendered .citation-missing,
+.rendered .bibliography-empty {
+  color: var(--danger);
+}
+.rendered .citation-missing {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+.rendered ol.references {
+  padding-left: 2.6em;
+  font-size: 0.92em;
+  color: var(--text-dim);
+}
+.rendered ol.references li {
+  margin: 0.35em 0;
+  overflow-wrap: anywhere;
+}
+.rendered ol.references li::marker {
+  content: "[" counter(list-item) "] ";
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
 .rendered dt {
   font-weight: 700;
   color: var(--rendered-heading);
