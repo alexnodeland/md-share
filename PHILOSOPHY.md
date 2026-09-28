@@ -10,7 +10,7 @@ No backend, no account, no database. **The document *is* the URL.** Content is c
 - No signup wall, no storage quota, no "your session expired."
 - A shared link works offline, forever, as long as someone has the HTML.
 
-There is a build step — Vite bundles TypeScript to static assets — but the *output* is still pure `index.html` + `assets/*.js`, deployable to any static host (GitHub Pages, Cloudflare Pages, Netlify, S3, or opened directly via `file://`). "Serverless" is about runtime, not toolchain.
+There is a build step — Vite bundles TypeScript to static assets — but the *output* is still pure `index.html` + `assets/*.js`, deployable to any static host (GitHub Pages, Cloudflare Pages, Netlify, S3, `npx serve`). "Serverless" is about runtime, not toolchain. After one visit, a service worker keeps the app working offline. (Opening `index.html` straight from disk via `file://` does not work: browsers block ES-module scripts on `file://` pages.)
 
 Implication: features that would require server state (collaboration, persistence, accounts) are out of scope unless they can be expressed as pure URL/local-storage semantics.
 

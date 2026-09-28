@@ -225,7 +225,7 @@ let katexPending: Promise<Katex> | null = null;
 const loadKatex = (): Promise<Katex> => {
   if (katexMod) return Promise.resolve(katexMod);
   if (!katexPending) {
-    // Bundled (not CDN) so math renders offline and from file://.
+    // Bundled (not CDN) so the service worker can cache it and math renders offline.
     katexPending = Promise.all([import('katex'), import('katex/dist/katex.min.css')]).then(
       ([m]) => {
         katexMod = m.default;

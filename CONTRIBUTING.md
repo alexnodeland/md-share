@@ -105,7 +105,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
 - [ ] Copy a few paragraphs with a link and a list from Google Docs (or Word) and paste — it arrives as Markdown; `Ctrl/⌘+Shift+V` pastes plain
 - [ ] Theme toggle — mermaid re-renders with the matching theme
-- [ ] Open `dist/index.html` directly via `file://` after `npm run build` and confirm it still works
+- [ ] Offline — `npm run build && npx serve dist`, load it once, go offline in devtools, reload: the app and your draft still work. (`file://` is not supported: browsers block ES-module scripts there.)
 
 ---
 

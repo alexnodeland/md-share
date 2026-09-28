@@ -33,7 +33,7 @@ Touching a new browser API? Add a port in `src/ports.ts`, an adapter in `src/ada
 
 Single command: `npm run verify` → Biome (0 warnings) + `tsc --noEmit` + Vitest with coverage (100% on pure modules, no asterisks). Same as CI. Node version: `.nvmrc`.
 
-E2E: `npm run test:e2e` (Playwright against the production build, `e2e/`). Add a check there for new user-facing behavior; the manual list in CONTRIBUTING is only for what a headless browser can't cover (speech, real file drops, cross-browser, `file://`).
+E2E: `npm run test:e2e` (Playwright against the production build, `e2e/`). Add a check there for new user-facing behavior; the manual list in CONTRIBUTING is only for what a headless browser can't cover (speech, real file drops, cross-browser, going offline).
 
 **Never** bypass with `--no-verify`, `biome-ignore`, or `@ts-ignore` without an explicit justification the user has approved. Fix the root cause.
 

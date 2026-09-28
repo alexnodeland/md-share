@@ -108,7 +108,7 @@ git clone https://github.com/YOUR_USERNAME/md-share.git
 cd md-share
 npm install
 npm run dev       # http://localhost:5173
-npm run build     # → dist/ (static, deployable anywhere, openable via file://)
+npm run build     # → dist/ (static, deployable to any host; works offline after one visit)
 ```
 
 Full dev loop, scripts, architecture rules, and testing conventions live in [**CONTRIBUTING.md**](./CONTRIBUTING.md).
