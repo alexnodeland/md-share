@@ -105,6 +105,35 @@ test('long links explain why there is no QR code', async ({ page }) => {
   await expect(page.locator('#link-qr-code')).toContainText('too long to scan');
 });
 
+test('the dialog says where a long link fits, and can leave embedded images out', async ({
+  page,
+}) => {
+  await page.goto('./');
+  // Incompressible bytes, like a real photo: ~6 KB of base64 from a xorshift PRNG.
+  const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let seed = 2463534242;
+  const photo = Array.from({ length: 6000 }, () => {
+    seed ^= seed << 13;
+    seed ^= seed >>> 17;
+    seed ^= seed << 5;
+    return B64.charAt((seed >>> 0) % 64);
+  }).join('');
+  await typeDoc(page, `# Trip\n\n![Beach](data:image/webp;base64,${photo})\n\nPack light.`);
+  await page.locator('#btn-link').click();
+  await expect(page.locator('#url-warn')).toContainText('fits Slack and WhatsApp');
+  const toggle = page.locator('#link-images-toggle');
+  await expect(toggle).toBeVisible();
+  await expect(page.locator('#link-images-note')).toContainText('1 image · the link drops to');
+  const withImages = ((await page.locator('#link-url').textContent()) ?? '').length;
+
+  await page.locator('#link-images-check').check();
+  await expect(page.locator('#url-warn')).toContainText('fits anywhere');
+  const url = (await page.locator('#link-url').textContent()) ?? '';
+  expect(url.length).toBeLessThan(withImages / 4);
+  await page.goto(url);
+  await expect(editor(page)).toHaveValue('# Trip\n\n*[Image: Beach]*\n\nPack light.');
+});
+
 test('Share… hands the link to the OS share sheet when available', async ({ page }) => {
   await page.addInitScript(() => {
     const calls: unknown[] = [];

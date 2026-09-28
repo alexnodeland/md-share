@@ -1,3 +1,4 @@
+import { stripEmbeddedImages } from '../imageEmbed.ts';
 import type { Clipboard, Compressor, Location, NativeShare } from '../ports.ts';
 import { fitsInQr, qrSvg } from '../qr.ts';
 import { buildShareURL, describeUrlLength, embedSnippet } from '../share.ts';
@@ -27,6 +28,9 @@ export const initShareModal = (deps: ShareDeps): { open: () => void } => {
   const sectionCheckbox = document.getElementById('link-section-check') as HTMLInputElement | null;
   const sectionSlug = document.getElementById('link-section-slug');
   const embedCheckbox = document.getElementById('link-embed-check') as HTMLInputElement | null;
+  const imagesToggle = document.getElementById('link-images-toggle');
+  const imagesCheckbox = document.getElementById('link-images-check') as HTMLInputElement | null;
+  const imagesNote = document.getElementById('link-images-note');
   const qrDetails = document.getElementById('link-qr') as HTMLDetailsElement | null;
   const qrBox = document.getElementById('link-qr-code');
   const nativeBtn = document.getElementById('btn-link-native');
@@ -46,10 +50,14 @@ export const initShareModal = (deps: ShareDeps): { open: () => void } => {
   let heading: string | null = null;
   let refreshGen = 0;
 
-  const buildURL = (embed = false) =>
+  /** The document as shared: embedded images left out when the reader asked. */
+  const sharedSource = () =>
+    imagesCheckbox?.checked ? stripEmbeddedImages(deps.getSource()).text : deps.getSource();
+
+  const buildURL = (embed = false, source = sharedSource()) =>
     buildShareURL(
       deps.location,
-      deps.getSource(),
+      source,
       deps.getFlavor(),
       deps.compressor,
       sectionCheckbox.checked ? heading : null,
@@ -66,10 +74,24 @@ export const initShareModal = (deps: ShareDeps): { open: () => void } => {
     if (gen !== refreshGen) return;
     currentUrl = url;
     urlBox.textContent = shown;
+    void describeImages(gen);
     const { text, level } = describeUrlLength(url.length);
     warn.textContent = text;
     warn.className = level === 'ok' ? 'url-warn' : `url-warn ${level}`;
     if (qrDetails?.open) void renderQr(url);
+  };
+
+  // Embedded images are usually most of a long link: offer to leave them out,
+  // and say what that saves.
+  const describeImages = async (gen: number) => {
+    if (!imagesToggle || !imagesNote) return;
+    const { text, count } = stripEmbeddedImages(deps.getSource());
+    imagesToggle.hidden = count === 0;
+    if (count === 0) return;
+    const without = (await buildURL(false, text)).length.toLocaleString('en-US');
+    if (gen !== refreshGen) return;
+    const images = count === 1 ? '1 image' : `${count} images`;
+    imagesNote.textContent = `(${images} · the link drops to ${without} chars)`;
   };
 
   // QR codes are rendered on demand (the encoder is lazy-loaded).
@@ -113,6 +135,7 @@ export const initShareModal = (deps: ShareDeps): { open: () => void } => {
     heading = deps.getCurrentHeading();
     sectionCheckbox.checked = false;
     if (embedCheckbox) embedCheckbox.checked = false;
+    if (imagesCheckbox) imagesCheckbox.checked = false;
     copyBtn.textContent = 'Copy URL';
     if (heading) {
       sectionToggle.hidden = false;
@@ -137,6 +160,9 @@ export const initShareModal = (deps: ShareDeps): { open: () => void } => {
   openBtn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
   sectionCheckbox.addEventListener('change', () => {
+    void refreshURL();
+  });
+  imagesCheckbox?.addEventListener('change', () => {
     void refreshURL();
   });
   embedCheckbox?.addEventListener('change', () => {

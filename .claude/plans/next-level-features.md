@@ -9,7 +9,7 @@ A survey of candidate features that could bring md-share to the next level, each
 | # | Item | Status |
 |---|---|---|
 | 1 | QR code in share modal | ✅ Shipped (#26) — with OS share sheet; sized at whole px/module so it actually scans |
-| 2 | URL length meter | ◐ Meter shipped (`describeUrlLength`); overflow *suggestions* still open |
+| 2 | URL length meter | ✅ Guidance by destination (QR, Discord, Slack, WhatsApp; fragment links have no server limit) + leave out embedded images |
 | 3 | HTML / DOCX paste → Markdown | ✅ Rich HTML paste (#25) and `.docx` Open…/drop import |
 | 4 | Standalone `.html` / `.docx` export | ✅ Standalone HTML + Copy formatted (#23), Word `.docx` export |
 | 13 | Autocomplete for refs / footnotes | ✅ `](#` heading slugs, `[^` footnote labels, and (Academic) `@` citation keys and cross-ref labels (wikilink targets need a vault, so not applicable) |
