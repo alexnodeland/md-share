@@ -14,6 +14,9 @@
   },
   "author": "Alex Nodeland (https://alexnodeland.github.io/alexnodeland/)",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -27,7 +30,7 @@
     "format": "biome format --write .",
     "check": "biome check --write .",
     "check:ci": "biome check --error-on-warnings .",
-    "verify": "npm run check:ci && npm run typecheck && npm run test",
+    "verify": "npm run check:ci && npm run typecheck && npm run test:coverage",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
@@ -53,12 +56,12 @@
     "@biomejs/biome": "^2.4.12",
     "@types/katex": "^0.16.8",
     "@types/markdown-it": "^14.1.2",
-    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.11",
     "happy-dom": "^20.9.0",
     "lint-staged": "^16.4.0",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.8",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.11"
   }
 }

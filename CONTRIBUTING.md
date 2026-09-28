@@ -7,7 +7,7 @@ Thanks for wanting to help. This project has a clear philosophy (see [PHILOSOPHY
 ## 🛠 Setup
 
 **Requirements**
-- Node 20.19+ (Vite 8 requires this minimum)
+- Node 22.12+ (`.nvmrc` pins the major; run `nvm use`). Node 20 reached end-of-life in April 2026.
 - npm 10+ (bundled with recent Node versions)
 
 **Install**
@@ -41,9 +41,9 @@ npm run verify       # the single quality gate — see below
 
 1. **`biome check --error-on-warnings .`** — lint + format across TS, CSS, JSON, HTML. Any warning is an error.
 2. **`tsc --noEmit`** — strict TypeScript, including `noUncheckedIndexedAccess`.
-3. **`vitest run`** — all tests pass.
+3. **`vitest run --coverage`** — all tests pass, and **100 %** statements / branches / functions / lines on the pure modules (see exclusions in `vitest.config.ts`).
 
-Additionally, `npm run test:coverage` enforces **100 %** statements / branches / functions / lines on the pure modules (see exclusions in `vitest.config.ts`).
+This is exactly what CI runs, so a green `verify` locally means a green check on the PR.
 
 **No suppressions. No `--no-verify`.** If the gate fails, fix the root cause — don't bypass it.
 
@@ -114,8 +114,7 @@ Also: run `npm run build && npx serve dist` and repeat on the built static outpu
 
 Before opening a PR, confirm:
 
-- [ ] `npm run verify` passes locally (Biome 0 warnings, tsc clean, all tests green)
-- [ ] `npm run test:coverage` reports 100 % on pure modules
+- [ ] `npm run verify` passes locally (Biome 0 warnings, tsc clean, all tests green, 100 % coverage on pure modules)
 - [ ] Manual smoke test above passes for any UI-touching change
 - [ ] No new `--no-verify`, no `biome-ignore`, no `@ts-ignore` without a comment explaining why
 - [ ] The change answers the 7-question philosophy check in [PHILOSOPHY.md](./PHILOSOPHY.md) for user-facing features
