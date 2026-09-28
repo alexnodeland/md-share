@@ -25,7 +25,7 @@ Six flavors: CommonMark, Extended, Academic (KaTeX), GitHub (`gfm`), Obsidian, A
 | UI wiring | `src/ui/` | `initX(deps)` functions attaching event listeners. |
 | Composition | `src/app.ts` | The only file that imports adapters + UI and wires them. |
 
-Pure modules are tested with **100% statements/branches/functions/lines** (enforced in `vitest.config.ts`). `app.ts`, `adapters/**`, `ui/**`, `types.ts`, `ports.ts`, `defaults.ts` are deliberately excluded — correctness verified by the manual smoke test in CONTRIBUTING.md.
+Pure modules are tested with **100% statements/branches/functions/lines** (enforced in `vitest.config.ts`). `app.ts`, `adapters/**`, `ui/**`, `types.ts`, `ports.ts` are deliberately excluded — correctness verified by the manual smoke test in CONTRIBUTING.md.
 
 Touching a new browser API? Add a port in `src/ports.ts`, an adapter in `src/adapters/`, wire it in `app.ts`. The pure module takes the port as an argument.
 
@@ -42,7 +42,7 @@ Coverage: `npm run test:coverage` — 100% on pure modules, no asterisks.
 - `tests/` mirrors `src/` exactly (including subdirs).
 - Plugin tests use a real `markdown-it` instance and assert on rendered HTML — no mocks.
 - Don't test that a dependency's API was called (e.g. `addEventListener`). Test *your* logic.
-- Defaults are test content: `src/defaults.ts` is the first rendering most users see — beware smart-quote / en-dash corruption (principle from PHILOSOPHY §7).
+- Samples are test content: `src/samples.ts` is the first rendering most users see — beware smart-quote / en-dash corruption (principle from PHILOSOPHY §7).
 - TypeScript strict, including `noUncheckedIndexedAccess`.
 
 ## Commit style

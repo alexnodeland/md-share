@@ -80,6 +80,8 @@ body {
   gap: 6px;
 }
 .logo {
+  white-space: nowrap;
+  flex-shrink: 0;
   font-weight: 700;
   font-size: 14px;
   letter-spacing: -0.5px;
@@ -335,7 +337,8 @@ body.is-resizing-panes {
   font-family: var(--mono);
   font-size: 13px;
   line-height: 1.7;
-  padding: 16px;
+  /* Extra bottom room so the last lines can scroll clear of the stats pill. */
+  padding: 16px 16px 44px;
   tab-size: 2;
   box-sizing: border-box;
   white-space: pre-wrap;
@@ -1661,6 +1664,18 @@ kbd {
   }
   .topbar-group button {
     padding: 5px 6px;
+  }
+}
+@media (max-width: 480px) {
+  .topbar > .sep,
+  .logo span {
+    display: none;
+  }
+  #flavor-select {
+    min-width: 0;
+    max-width: 118px;
+    flex-shrink: 1;
+    text-overflow: ellipsis;
   }
 }
 @media (min-width: 901px) {

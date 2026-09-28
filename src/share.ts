@@ -34,6 +34,9 @@ export const buildShareURL = async (
 
 const stripHashFragment = (raw: string): string => (raw.startsWith('#') ? raw.slice(1) : raw);
 
+export const hasSharePayload = (hash: string, search = ''): boolean =>
+  new URLSearchParams(stripHashFragment(hash)).has('d') || new URLSearchParams(search).has('d');
+
 export const parseShareParams = async (
   search: string,
   compressor: Compressor,
@@ -47,7 +50,10 @@ export const parseShareParams = async (
   const encoded = params.get('d');
   const flavorRaw = params.get('f');
   const source = encoded ? await decodeDoc(compressor, encoded) : null;
-  const flavor = isFlavor(flavorRaw) ? flavorRaw : null;
+  // A share link always pins its flavor: `buildShareURL` omits `f=` only for
+  // CommonMark, so a payload without one must not fall back to the reader's
+  // stored preference.
+  const flavor = isFlavor(flavorRaw) ? flavorRaw : source !== null ? 'commonmark' : null;
 
   let anchor: string | null = null;
   if (payloadInHash) {

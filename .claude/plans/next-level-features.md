@@ -64,7 +64,7 @@ Different enough from Obsidian to warrant its own plugin:
 - `@mentions` and inline databases as tables
 - `/` slash commands in source rendered as literal `/command`
 
-- **Shape:** `src/plugins/notion.ts` + sample doc in `src/defaults.ts`.
+- **Shape:** `src/plugins/notion.ts` + sample doc in `src/samples.ts`.
 - **Gate:** 1✅ 2✅ 3✅ 4✅ 5✅ 6✅ 7✅.
 
 ### 7. LaTeX / Typst export from Academic

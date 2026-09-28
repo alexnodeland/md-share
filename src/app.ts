@@ -15,12 +15,12 @@ import { insertImageAtCursor } from './imageEmbed.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
 import { isSampleContent, SAMPLE_FLAVOR, type SampleKey, sampleFor } from './samples.ts';
-import { parseShareParams } from './share.ts';
+import { hasSharePayload, parseShareParams } from './share.ts';
 import { detectPlatform, formatShortcut } from './shortcuts.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { generateTOC } from './toc.ts';
-import type { Flavor, Theme } from './types.ts';
+import type { Flavor, ShareParams, Theme } from './types.ts';
 import { applyEdit } from './ui/applyEdit.ts';
 import { initClearButton } from './ui/clearButton.ts';
 import { initCodeCopyButtons } from './ui/codeCopyButtons.ts';
@@ -244,6 +244,35 @@ const readHeadingPositions = (): HeadingPosition[] => {
   }));
 };
 
+const stripUrlPayload = (): void => {
+  window.history.replaceState(null, '', window.location.pathname);
+};
+
+/** Fill the editor from a shared link, else from the saved draft. */
+const loadInitialDocument = (
+  params: ShareParams,
+  editor: HTMLTextAreaElement,
+  banner: HTMLElement | null,
+): void => {
+  if (params.source !== null) {
+    editor.value = params.source;
+    banner?.classList.add('visible');
+    const clearBanner = () => {
+      banner?.classList.remove('visible');
+      stripUrlPayload();
+      editor.removeEventListener('input', clearBanner);
+    };
+    editor.addEventListener('input', clearBanner);
+    return;
+  }
+  const unreadableLink = hasSharePayload(window.location.hash, window.location.search);
+  if (unreadableLink) stripUrlPayload();
+  const draft = loadDraft(browserStorage);
+  if (draft) editor.value = draft;
+  if (unreadableLink) showToast('Could not read that shared link — it may be truncated');
+  else if (draft) showToast('Draft restored', true);
+};
+
 const boot = async (): Promise<void> => {
   const params = await parseShareParams(
     window.location.search,
@@ -274,28 +303,14 @@ const boot = async (): Promise<void> => {
   const banner = document.getElementById('readonly-banner');
   if (!editor) return;
 
+  const platform = detectPlatform(navigator.platform);
+  const pasteHint = formatShortcut('Mod+V', platform);
   const updatePlaceholder = () => {
-    editor.placeholder = `⌘V to paste ${FLAVOR_LABELS[state.flavor]} markdown…`;
+    editor.placeholder = `${pasteHint} to paste ${FLAVOR_LABELS[state.flavor]} markdown…`;
   };
 
-  if (params.source !== null) {
-    editor.value = params.source;
-    state.activeSample = isSampleContent(params.source);
-    banner?.classList.add('visible');
-    const clearBanner = () => {
-      banner?.classList.remove('visible');
-      window.history.replaceState(null, '', window.location.pathname);
-      editor.removeEventListener('input', clearBanner);
-    };
-    editor.addEventListener('input', clearBanner);
-  } else {
-    const draft = loadDraft(browserStorage);
-    if (draft !== null && draft !== '') {
-      editor.value = draft;
-      state.activeSample = isSampleContent(draft);
-      showToast('Draft restored', true);
-    }
-  }
+  loadInitialDocument(params, editor, banner);
+  state.activeSample = editor.value ? isSampleContent(editor.value) : null;
   setSampleSelectValue(state.activeSample);
   updatePlaceholder();
 
@@ -475,7 +490,6 @@ const boot = async (): Promise<void> => {
   ensureKatexFor(state.flavor);
   rerender();
 
-  const platform = detectPlatform(navigator.platform);
   for (const el of document.querySelectorAll<HTMLElement>('[data-shortcut]')) {
     const combo = el.dataset.shortcut;
     if (!combo) continue;
@@ -485,6 +499,12 @@ const boot = async (): Promise<void> => {
       base ? `${base} (${formatShortcut(combo, platform)})` : formatShortcut(combo, platform),
     );
   }
+
+  // Pasting a new share link into this tab only changes the fragment, which
+  // never triggers a navigation. Reload so the incoming document boots cleanly.
+  window.addEventListener('hashchange', () => {
+    if (hasSharePayload(window.location.hash)) window.location.reload();
+  });
 
   if (params.anchor) document.getElementById(params.anchor)?.scrollIntoView({ block: 'start' });
   if (params.source === null && editor.value === '') editor.focus();
