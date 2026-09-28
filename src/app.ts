@@ -28,6 +28,7 @@ import { buildMD, createFlavorDeps, FLAVOR_LABELS, type FlavorDeps } from './fla
 import { bodyLineOffset, parseFrontmatter, renderFrontmatter } from './frontmatter.ts';
 import { languageFile } from './hljsAliases.ts';
 import { insertImageAtCursor } from './imageEmbed.ts';
+import { toLatex } from './latex.ts';
 import { type Diagnostic, lintDocument } from './lint.ts';
 import { extractSpeakableChunks } from './listen/chunker.ts';
 import { buildMermaidError } from './mermaidErrorBox.ts';
@@ -560,6 +561,10 @@ const boot = async (): Promise<void> => {
     docxWriter: browserDocxWriter,
     rasterizer: browserRasterizer,
     getDocModel: () => buildDocModel(state.md.parse(parseFrontmatter(editor.value).body, {})),
+    getLatex: () => {
+      const { meta, body } = parseFrontmatter(editor.value);
+      return toLatex(state.md.parse(body, {}), { meta });
+    },
     getSource: () => editor.value,
     getPreviewHTML: () => {
       const el = document.getElementById('preview');

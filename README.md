@@ -67,6 +67,7 @@ Not `speak(innerText)`. A DOM walker narrates structure:
 Users should always be able to leave:
 - ⬇️ **Markdown** (`.md`) — the source
 - ⬇️ **Word** (`.docx`) — real headings, numbered lists, footnotes, tables, tinted callouts, diagrams as images
+- ⬇️ **LaTeX** (`.tex`) — compiles as is: `\cite`, `\ref`, figure and table floats, labelled equations, the bibliography
 - ⬇️ **HTML page** — one self-contained file, styled like the preview
 - 📋 **Copy formatted** — paste into Docs, email, or Notion with formatting intact
 - 🖼️ **PNG** — for chat, slides, screenshots

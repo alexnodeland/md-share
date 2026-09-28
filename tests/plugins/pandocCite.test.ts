@@ -9,6 +9,7 @@ import {
   type CitationMeta,
   pluginPandocCite,
 } from '../../src/plugins/pandocCite.ts';
+import { pluginTaskList } from '../../src/plugins/taskList.ts';
 
 const build = (crossRefs = true) => {
   const md = new MarkdownIt({ html: true, linkify: true });
@@ -111,6 +112,23 @@ describe('pluginPandocCite — cross-references', () => {
 
   it('treats every reference as missing without the cross-ref plugin', () => {
     expect(render(`${doc}@fig:p`, build(false))).toContain('@fig:p?');
+  });
+});
+
+describe('pluginPandocCite — with plugins that re-parse inline text', () => {
+  it('still resolves references when a task list re-parses its items', () => {
+    const md = build();
+    pluginTaskList(md);
+    const html = md.render(
+      `- [x] cite [@knuth84] and @fig:p\n\n![P](p.png){#fig:p}\n\nSee @fig:p.\n\n${BIB}`,
+    );
+    expect(html).toContain('cite <span class="citation">[<a href="#ref-knuth84">1</a>]</span>');
+    expect(html.match(/<a class="xref" href="#fig:p">Figure 1<\/a>/g)).toHaveLength(2);
+  });
+
+  it('leaves citations unresolved in a bare parseInline (no document to number against)', () => {
+    const [inline] = build().parseInline('[@knuth84]', {});
+    expect((inline!.children![0]!.meta as CitationMeta).resolved).toBeUndefined();
   });
 });
 

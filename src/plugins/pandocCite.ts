@@ -165,6 +165,7 @@ export const pluginPandocCite = (md: MarkdownIt): void => {
 
   // Pushed last, so cross-references (if the flavor has them) are numbered first.
   md.core.ruler.push('citations', (state) => {
+    if (state.inlineMode) return; // see cross_refs: the full parse resolves everything
     const tokens = state.tokens;
     const lists = tokens.filter(isBibliography);
     const entries = new Map<string, BibEntry>();

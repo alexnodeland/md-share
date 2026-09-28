@@ -98,6 +98,9 @@ const figure = (state: StateCore, i: number, label: string, number: Numberer): v
 
 export const pluginCrossRef = (md: MarkdownIt): void => {
   md.core.ruler.after('inline', 'cross_refs', (state) => {
+    // parseInline (e.g. the task-list plugin re-parsing an item) shares env;
+    // numbering is the whole document's business.
+    if (state.inlineMode) return;
     const tokens = state.tokens;
     const targets = new Map<string, RefTarget>();
     const counts: Record<RefKind, number> = { fig: 0, tbl: 0, eq: 0 };

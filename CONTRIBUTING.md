@@ -92,7 +92,7 @@ The repo is organized around ports-and-adapters:
 - embed snippets (chrome hidden, read-only, viewer's draft untouched) and Web Share Target text
 - open-in-place and Save to file… (against stubbed File System Access pickers), unlinking when the document is replaced; the file-input fallback
 - heading-link and footnote autocomplete: keyboard and mouse selection, Esc dismissal
-- Academic citations and cross-references: numbering, reference list, scroll-to-reference, `@` autocomplete, Word export
+- Academic citations and cross-references: numbering, reference list, scroll-to-reference, `@` autocomplete, Word and LaTeX export
 - zero axe-core accessibility violations in both themes: empty state, four samples, the share dialog, and the document-check menu
 
 First run: `npx playwright install chromium`. To use a Chromium you already have, set `PW_CHROMIUM_PATH=/path/to/chrome`.
@@ -112,6 +112,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Drop (or Open…) a real Word document with headings, a table, and a photo → it arrives as Markdown with the image compressed
 - [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
 - [ ] Word export opens cleanly in Word / Google Docs / LibreOffice: headings in the navigation pane, working numbered lists and footnotes, diagrams as pictures
+- [ ] LaTeX export of the Academic sample compiles with `pdflatex` (run twice for references) with no errors or undefined references
 - [ ] Copy a few paragraphs with a link and a list from Google Docs (or Word) and paste — it arrives as Markdown; `Ctrl/⌘+Shift+V` pastes plain
 - [ ] Theme toggle — mermaid re-renders with the matching theme
 - [ ] Offline — `npm run build && npx serve dist`, load it once, go offline in devtools, reload: the app and your draft still work. (`file://` is not supported: browsers block ES-module scripts there.)

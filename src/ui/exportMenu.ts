@@ -14,6 +14,8 @@ export interface ExportDeps {
   docxWriter: DocxWriter;
   rasterizer: Rasterizer;
   getDocModel: () => DocModel;
+  /** The document as a standalone .tex file. */
+  getLatex: () => string;
   getKatexVersion: () => string | null;
   getSource: () => string;
   getPreviewHTML: () => string;
@@ -63,6 +65,16 @@ export const initExportMenu = (deps: ExportDeps): void => {
   btnPresent.addEventListener('click', () => {
     closeAllDropdowns();
     deps.onPresent();
+  });
+
+  document.getElementById('btn-export-tex')?.addEventListener('click', () => {
+    closeAllDropdowns();
+    const source = deps.getSource();
+    download(
+      new Blob([deps.getLatex()], { type: 'application/x-tex' }),
+      deriveFilename(source, 'tex'),
+    );
+    showToast('LaTeX exported', true);
   });
 
   btnMd.addEventListener('click', () => {
