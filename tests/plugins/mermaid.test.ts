@@ -24,6 +24,12 @@ describe('wrapMermaidFences', () => {
     expect(html).toContain('&lt;script&gt;');
   });
 
+  it('treats extra words after `mermaid` in the info string as a diagram', () => {
+    const { md } = build();
+    const html = md.render('```mermaid title="Flow"\nA-->B\n```');
+    expect(html).toContain('class="mermaid-container"');
+  });
+
   it('leaves non-mermaid fences alone', () => {
     const { md } = build();
     const html = md.render('```\nplain code\n```');

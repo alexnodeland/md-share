@@ -15,10 +15,16 @@ describe('applyHighlighting', () => {
     expect(html).toContain('hljs-keyword');
   });
 
-  it('skips mermaid fences (returns raw string)', () => {
+  it('defers mermaid fences to markdown-it escaping (returns empty)', () => {
     const md = build();
     const result = md.options.highlight?.('graph TD\nA-->B', 'mermaid', '');
-    expect(result).toBe('graph TD\nA-->B');
+    expect(result).toBe('');
+  });
+
+  it('never emits raw HTML from a mermaid-tagged fence', () => {
+    const html = build().render('```mermaid x\n<img src=x onerror=alert(1)>\n```');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
   });
 
   it('falls back to auto-detect for unknown languages', () => {

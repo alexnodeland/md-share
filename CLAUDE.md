@@ -20,7 +20,7 @@ Six flavors: CommonMark, Extended, Academic (KaTeX), GitHub (`gfm`), Obsidian, A
 | Layer | Location | Rule |
 |---|---|---|
 | Pure logic | `src/*.ts`, `src/plugins/`, `src/listen/` | No `window`, `document`, or globals. Deps arrive as function args. |
-| Ports | `src/ports.ts` | Interfaces for browser APIs (`Synth`, `Clipboard`, `Compressor`, `Printer`). |
+| Ports | `src/ports.ts` | Interfaces for browser APIs (`Synth`, `Clipboard`, `Compressor`, `Printer`, `Sanitizer`). |
 | Adapters | `src/adapters/` | Bind ports to real browser APIs. One file per port. |
 | UI wiring | `src/ui/` | `initX(deps)` functions attaching event listeners. |
 | Composition | `src/app.ts` | The only file that imports adapters + UI and wires them. |

@@ -1,3 +1,4 @@
+import { escapeHtml } from './escapeHtml.ts';
 import { cleanHeadingText, slugifyHeading, uniqueSlug } from './slug.ts';
 import type { TocHeading } from './types.ts';
 
@@ -29,7 +30,10 @@ const MIN_HEADINGS_FOR_TOC = 3;
 export const renderTOC = (headings: readonly TocHeading[]): string => {
   if (headings.length < MIN_HEADINGS_FOR_TOC) return '';
   const items = headings
-    .map((h) => `<li class="toc-h${h.level}"><a href="#${h.slug}">${h.text}</a></li>`)
+    .map(
+      (h) =>
+        `<li class="toc-h${h.level}"><a href="#${escapeHtml(h.slug)}">${escapeHtml(h.text)}</a></li>`,
+    )
     .join('');
   return `<div class="toc-container"><div class="toc-title">Contents</div><ul>${items}</ul></div>`;
 };

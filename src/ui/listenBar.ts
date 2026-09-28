@@ -46,6 +46,16 @@ const positionMarker = (marker: HTMLElement, chunk: SpeechChunk | undefined): vo
   chunk.el.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
 };
 
+const LABEL_MAX = 80;
+
+/** Chunk text came from the preview's textContent — never parse it as HTML. */
+const setLabel = (label: HTMLElement, status: string, text = ''): void => {
+  const strong = document.createElement('strong');
+  strong.textContent = status;
+  const short = text.length > LABEL_MAX ? `${text.slice(0, LABEL_MAX)}…` : text;
+  label.replaceChildren(strong, short ? `\u2002${short}` : '');
+};
+
 const updateUI = (
   marker: HTMLElement,
   active: boolean,
@@ -70,7 +80,7 @@ const updateUI = (
   if (!active) {
     marker.style.opacity = '0';
     fill.style.width = '0%';
-    label.innerHTML = '<strong>Ready</strong>';
+    setLabel(label, 'Ready');
     iconPlay.style.display = '';
     iconPause.style.display = 'none';
     return;
@@ -80,8 +90,7 @@ const updateUI = (
   fill.style.width = `${pct}%`;
   const chunk = chunks[index];
   const text = chunk?.text ?? '';
-  const short = text.length > 80 ? `${text.slice(0, 80)}…` : text;
-  label.innerHTML = `<strong>${index + 1}/${total}</strong> &ensp;${short}`;
+  setLabel(label, `${index + 1}/${total}`, text);
   iconPlay.style.display = playing ? 'none' : '';
   iconPause.style.display = playing ? '' : 'none';
   positionMarker(marker, chunk);
@@ -265,8 +274,7 @@ export const initListenBar = ({ synth, getChunks }: ListenBarDeps): ListenBarHan
     if (fill) fill.style.width = `${((idx + 1) / activeChunks.length) * 100}%`;
     const label = document.getElementById('audio-label');
     if (label) {
-      const short = chunk.text.length > 80 ? `${chunk.text.slice(0, 80)}…` : chunk.text;
-      label.innerHTML = `<strong>${idx + 1}/${activeChunks.length}</strong> &ensp;${short}`;
+      setLabel(label, `${idx + 1}/${activeChunks.length}`, chunk.text);
     }
     if (chunk.el) {
       const rect = chunk.el.getBoundingClientRect();

@@ -22,7 +22,7 @@ export const wrapMermaidFences = (md: MarkdownIt, counter: MermaidCounter): void
 
   md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
     const token = tokens[idx];
-    if (token && token.info.trim().toLowerCase() === 'mermaid') {
+    if (token && token.info.trim().split(/\s+/)[0]?.toLowerCase() === 'mermaid') {
       const id = counter.next();
       return `<div class="mermaid-container"><pre class="mermaid" id="mermaid-${id}">${md.utils.escapeHtml(token.content)}</pre></div>`;
     }

@@ -56,7 +56,7 @@ The repo is organized around ports-and-adapters:
 | Layer | Location | Rule |
 |---|---|---|
 | **Pure logic** | `src/` (not `adapters/` or `ui/`) | No `window`, no `document`, no globals. Dependencies arrive as function arguments. |
-| **Ports** | `src/ports.ts` | Tiny interfaces for browser APIs (`Synth`, `Clipboard`, `Compressor`, `Printer`). |
+| **Ports** | `src/ports.ts` | Tiny interfaces for browser APIs (`Synth`, `Clipboard`, `Compressor`, `Printer`, `Sanitizer`). |
 | **Adapters** | `src/adapters/` | Bind ports to real browser APIs. One file per port. Excluded from coverage. |
 | **UI wiring** | `src/ui/` | `initX(deps)` functions that attach event listeners. Excluded from coverage. |
 | **Composition** | `src/app.ts` | The *only* file that imports adapters and UI modules and wires them together. |

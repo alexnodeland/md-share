@@ -4,6 +4,7 @@ import { browserCompressor } from './adapters/compressor.ts';
 import { compressImage } from './adapters/imageCompress.ts';
 import { browserStorage } from './adapters/localStorage.ts';
 import { browserPrinter } from './adapters/printer.ts';
+import { browserSanitizer } from './adapters/sanitizer.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
@@ -114,7 +115,9 @@ const renderPreview = async (state: AppState): Promise<void> => {
   try {
     const { meta, body } = parseFrontmatter(src);
     const front = renderFrontmatter(meta, state.md.utils.escapeHtml);
-    preview.innerHTML = front + generateTOC(body) + state.md.render(body);
+    preview.innerHTML = browserSanitizer.sanitize(
+      front + generateTOC(body) + state.md.render(body),
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     preview.replaceChildren(renderError(message));

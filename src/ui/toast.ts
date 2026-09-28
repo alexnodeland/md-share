@@ -1,7 +1,9 @@
 let timer: number | undefined;
 
 export const showToast = (message: string, success = false): void => {
-  const toast = document.getElementById('toast');
+  // Not getElementById: a rendered heading like "## Toast" gets id="toast" and
+  // precedes the real element in document order.
+  const toast = document.querySelector<HTMLElement>('body > #toast');
   if (!toast) return;
   toast.textContent = message;
   toast.className = `toast visible${success ? ' success' : ''}`;
