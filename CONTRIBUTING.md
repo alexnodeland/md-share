@@ -97,6 +97,7 @@ When you add a user-facing behavior, add its check to `e2e/` rather than to the 
 
 Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 
+- [ ] Scan the share dialog's QR code with a real phone camera; on a phone, **Share…** opens the OS share sheet
 - [ ] Cross-browser decode — copy a `#d=…` URL (`df1.` for most docs) from Chrome, open it in Firefox and Safari, confirm it renders identically; do the reverse too
 - [ ] Listen — speech plays, progress advances, skip fwd/back and seek-on-click work, speed change works, `Esc` stops
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds

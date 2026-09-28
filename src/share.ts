@@ -67,3 +67,27 @@ export const parseShareParams = async (
   }
   return { source, flavor, anchor };
 };
+
+/** Past this, some chat apps, SMS gateways, and QR scanners mangle or refuse the link. */
+export const SOFT_URL_LENGTH = 2000;
+/** Past this, some browsers and servers truncate URLs outright. */
+export const HARD_URL_LENGTH = 8000;
+
+export type UrlLengthLevel = 'ok' | 'soft' | 'over';
+
+export const describeUrlLength = (length: number): { level: UrlLengthLevel; text: string } => {
+  const n = length.toLocaleString('en-US');
+  if (length > HARD_URL_LENGTH) {
+    return {
+      level: 'over',
+      text: `⚠ URL is ${n} chars — likely to exceed browser limits. Consider exporting as Markdown instead.`,
+    };
+  }
+  if (length > SOFT_URL_LENGTH) {
+    return {
+      level: 'soft',
+      text: `⚠ URL is ${n} chars — may not survive every chat app or QR scanner.`,
+    };
+  }
+  return { level: 'ok', text: `URL length: ${n} chars` };
+};

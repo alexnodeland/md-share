@@ -2157,3 +2157,28 @@ html.theme-switching *::after {
   font-size: 11px;
   color: var(--text-xdim);
 }
+
+.link-qr {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.link-qr summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.link-qr summary:hover {
+  color: var(--text);
+}
+.link-qr-code {
+  margin-top: 10px;
+  line-height: 1.5;
+}
+.link-qr-code svg {
+  /* Intrinsic size is a whole number of px per module (see qrDisplaySize). */
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 4px;
+}

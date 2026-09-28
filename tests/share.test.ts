@@ -3,6 +3,7 @@ import type { Compressor } from '../src/ports.ts';
 import {
   buildShareURL,
   decodeDoc,
+  describeUrlLength,
   encodeDoc,
   hasSharePayload,
   normalizeSource,
@@ -315,5 +316,22 @@ describe('share round trip', () => {
     expect(url.hash).not.toContain('f=');
     const parsed = await parseShareParams(url.search, identityCompressor, url.hash);
     expect(parsed.flavor).toBe('commonmark');
+  });
+});
+
+describe('describeUrlLength', () => {
+  it('reports short URLs plainly', () => {
+    expect(describeUrlLength(1234)).toEqual({ level: 'ok', text: 'URL length: 1,234 chars' });
+  });
+
+  it('warns softly past the chat-app / QR limit', () => {
+    expect(describeUrlLength(2001).level).toBe('soft');
+    expect(describeUrlLength(2000).level).toBe('ok');
+  });
+
+  it('warns hard past browser limits', () => {
+    const { level, text } = describeUrlLength(9000);
+    expect(level).toBe('over');
+    expect(text).toContain('9,000');
   });
 });
