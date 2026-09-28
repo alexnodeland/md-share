@@ -16,6 +16,8 @@ export interface ShareParams {
   source: string | null;
   flavor: Flavor | null;
   anchor: string | null;
+  /** `e=1`: render only the document, for <iframe> embedding. */
+  embed: boolean;
 }
 
 export interface DocHeading {

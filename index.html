@@ -384,6 +384,10 @@
           <input type="checkbox" id="link-section-check" />
           <span>Link to current section (<code id="link-section-slug"></code>)</span>
         </label>
+        <label class="link-section-toggle">
+          <input type="checkbox" id="link-embed-check" />
+          <span>Embed code — the document alone, in an <code>&lt;iframe&gt;</code> for your site</span>
+        </label>
         <div class="url-warn" id="url-warn"></div>
         <div class="url-box" id="link-url" tabindex="0" aria-label="Share link"></div>
         <details class="link-qr" id="link-qr">
@@ -397,6 +401,7 @@
         </div>
       </div>
     </div>
+    <a id="embed-open" class="embed-open" target="_blank" rel="noopener" hidden>Open in md-share ↗</a>
     <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <script type="module" src="/src/app.ts"></script>

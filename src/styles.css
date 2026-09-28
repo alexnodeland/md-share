@@ -2288,3 +2288,41 @@ html.theme-switching *::after {
   color: var(--text-xdim);
   flex-shrink: 0;
 }
+
+/* Embed mode (#…&e=1): only the rendered document. */
+html[data-embed="true"] .topbar,
+html[data-embed="true"] .editor-pane,
+html[data-embed="true"] .pane-divider,
+html[data-embed="true"] .readonly-banner,
+html[data-embed="true"] .site-footer,
+html[data-embed="true"] #preview-pane > .pane-header {
+  display: none !important;
+}
+html[data-embed="true"] .preview-pane {
+  display: flex !important;
+  flex: 1 1 auto;
+}
+html[data-embed="true"] #preview input[type="checkbox"] {
+  pointer-events: none;
+}
+.embed-open {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  z-index: 50;
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+.embed-open:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.embed-open[hidden] {
+  display: none;
+}
