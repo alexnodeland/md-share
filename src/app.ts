@@ -115,7 +115,12 @@ const mermaidConfig = (theme: Theme) =>
     themeVariables: mermaidThemeVars(theme),
     fontFamily: 'JetBrains Mono,monospace',
     fontSize: 13,
-    flowchart: { curve: 'monotoneX' as const },
+    // Pinned rather than left to Mermaid's defaults: v12 switched to the
+    // ELK layout (square-cornered edges), the shadowed "neo" look, and
+    // narrower, wrapping nodes, none of which match the rest of the page.
+    layout: 'dagre',
+    look: 'classic' as const,
+    flowchart: { curve: 'monotoneX' as const, wrappingWidth: 200, minNodeWidth: 0 },
   }) satisfies Parameters<Mermaid['initialize']>[0];
 
 let mermaidMod: Mermaid | null = null;

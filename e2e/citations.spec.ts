@@ -10,7 +10,7 @@ test('Academic numbers citations, figures, tables, and equations', async ({ page
   await expect(preview(page).locator('.citation').first()).toHaveText('[1]');
   await expect(preview(page).locator('table caption')).toHaveText('Table 1: What each flavor adds');
   await expect(preview(page).locator('a.xref').first()).toHaveText('Equation (1)');
-  await expect(preview(page).locator('[id="eq:gauss"] .tag')).toHaveText('(1)');
+  await expect(preview(page).locator('[id="eq:gauss"] .katex-tag')).toHaveText('(1)');
   // No bibliography source shows up as a code block.
   await expect(preview(page).locator('pre code.language-bibliography')).toHaveCount(0);
 });
