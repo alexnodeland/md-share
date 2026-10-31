@@ -21,7 +21,6 @@ export interface ExportDeps {
   getSource: () => string;
   getPreviewHTML: () => string;
   getPreviewElement: () => HTMLElement | null;
-  onPresent: () => void;
 }
 
 // The bundled KaTeX sheet uses relative font URLs that break in a standalone
@@ -52,13 +51,7 @@ export const initExportMenu = (deps: ExportDeps): void => {
   const btnCopy = document.getElementById('btn-copy-rich');
   const btnPng = document.getElementById('btn-export-png');
   const btnPdf = document.getElementById('btn-export-pdf');
-  const btnPresent = document.getElementById('btn-present');
-  if (!btnMd || !btnHtml || !btnDocx || !btnCopy || !btnPng || !btnPdf || !btnPresent) return;
-
-  btnPresent.addEventListener('click', () => {
-    closeAllDropdowns();
-    deps.onPresent();
-  });
+  if (!btnMd || !btnHtml || !btnDocx || !btnCopy || !btnPng || !btnPdf) return;
 
   document.getElementById('btn-export-tex')?.addEventListener('click', () => {
     closeAllDropdowns();

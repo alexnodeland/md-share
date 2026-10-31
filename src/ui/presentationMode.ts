@@ -1,4 +1,4 @@
-import { groupBetweenBreaks } from '../slides.ts';
+import { presentableGroups } from '../slides.ts';
 
 export interface PresentationDeps {
   getPreviewRoot: () => Element | null;
@@ -35,10 +35,7 @@ export const initPresentationMode = ({
     if (active) return;
     const root = getPreviewRoot();
     if (!root) return;
-    const presentable = Array.from(root.children).filter(
-      (el) => !el.classList.contains('toc-container'),
-    );
-    const groups = groupBetweenBreaks(presentable);
+    const groups = presentableGroups(Array.from(root.children));
     if (groups.length === 0) return;
 
     while (root.firstChild) root.removeChild(root.firstChild);

@@ -87,6 +87,7 @@ Users should always be able to leave:
 - Type `](#` for heading-link suggestions, `[^` for footnotes, `@` for citations and figure/table/equation labels (Academic)
 - `Tab` / `Shift+Tab` indent and outdent the selected lines; `Esc` then `Tab` moves focus out of the editor
 - Mobile: Edit/View toggle instead of cramped split
+- Slides: a document split into three or more parts by `---` gets a **Present** button at the top of the preview (`Ctrl+Alt+P` / `⌘⌥P`); arrows step through, `Esc` ends
 
 </td>
 </tr>

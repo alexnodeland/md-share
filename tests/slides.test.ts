@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { groupBetweenBreaks } from '../src/slides.ts';
+import { groupBetweenBreaks, isDeck, presentableGroups } from '../src/slides.ts';
 
 const mk = (tag: string, text = ''): Element => {
   const el = document.createElement(tag);
@@ -56,5 +56,38 @@ describe('groupBetweenBreaks', () => {
     const c = mk('ul');
     const groups = groupBetweenBreaks([a, b, c]);
     expect(groups).toEqual([[a, b, c]]);
+  });
+});
+
+describe('presentableGroups', () => {
+  it('leaves the table of contents out of the slides', () => {
+    const toc = mk('div');
+    toc.className = 'toc-container';
+    const a = mk('h1', 'a');
+    expect(presentableGroups([toc, a, mk('hr'), mk('p', 'b')])).toEqual([[a], [expect.anything()]]);
+  });
+});
+
+describe('isDeck', () => {
+  const slides = (n: number): Element[] =>
+    Array.from({ length: n }, (_, i) => [mk('p', String(i)), mk('hr')])
+      .flat()
+      .slice(0, -1);
+
+  it('is true from three slides up', () => {
+    expect(isDeck(slides(3))).toBe(true);
+    expect(isDeck(slides(8))).toBe(true);
+  });
+
+  it('is false for a document with one section break, or none', () => {
+    expect(isDeck(slides(2))).toBe(false);
+    expect(isDeck(slides(1))).toBe(false);
+    expect(isDeck([])).toBe(false);
+  });
+
+  it('does not count a table of contents as a slide', () => {
+    const toc = mk('div');
+    toc.className = 'toc-container';
+    expect(isDeck([toc, mk('hr'), ...slides(2)])).toBe(false);
   });
 });

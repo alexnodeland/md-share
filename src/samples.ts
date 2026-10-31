@@ -391,7 +391,7 @@ const presentation = `# Presentation demo
 
 A slideshow built from plain Markdown.
 
-Press **⌘⌥P** (or **Ctrl+Alt+P** on Windows/Linux, or use the export menu → **Present slides**) to begin.
+Press **Present** at the top of the preview, or **⌘⌥P** (**Ctrl+Alt+P** on Windows/Linux), to begin.
 
 Use **→** / **←** to navigate. **Esc** or click to exit.
 
