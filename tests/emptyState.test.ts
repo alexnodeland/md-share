@@ -11,6 +11,13 @@ describe('renderEmptyState', () => {
     expect(html).toContain('>GitHub</button>');
   });
 
+  it('says what it is for and offers a way into the editor', () => {
+    const html = renderEmptyState();
+    expect(html).toContain('Paste Markdown from anywhere');
+    expect(html).toContain('data-start-writing');
+    expect(html).toContain('Nothing leaves your browser');
+  });
+
   it('only features samples that exist', () => {
     for (const key of EMPTY_STATE_SAMPLES) expect(SAMPLES[key]).toBeTruthy();
   });
