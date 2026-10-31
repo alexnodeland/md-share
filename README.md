@@ -35,7 +35,7 @@ _The document **is** the URL._
 <td width="50%" valign="top">
 
 ### 🪄 Six Markdown flavors
-Paste from the tool you already use — it just renders.
+Paste from the tool you already use — it just renders. Paste a note into an empty editor and the flavor follows it: an Obsidian callout switches to Obsidian, a GitHub table to GitHub, a Confluence panel to Atlassian.
 - **CommonMark** · the default, strict
 - **Extended** · footnotes, deflists, typographer
 - **Academic** · Extended + KaTeX math, numbered citations from a BibTeX `bibliography` block (`[@key]`, `@key`), and pandoc-crossref-style numbered figures, tables, and equations (`{#fig:x}` → `@fig:x`)
@@ -131,6 +131,8 @@ curl -fsSL https://raw.githubusercontent.com/alexnodeland/md-share/main/scripts/
 # run it against a local file
 node generate-share-link.mjs ./notes.md
 ```
+
+The flavor is guessed from the document the same way the editor does on paste; pass `--flavor=<name>` to choose it yourself.
 
 Or run the version in this repo directly:
 

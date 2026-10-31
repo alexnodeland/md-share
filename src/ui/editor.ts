@@ -26,6 +26,8 @@ export interface EditorDeps {
   compressImage: ImageCompressor;
   htmlToMarkdown: HtmlToMarkdown;
   onFormatCommand?: (command: FormatCommand) => void;
+  /** Text was pasted into an empty editor: a fresh document, whole. */
+  onPasteIntoEmpty?: (text: string) => void;
 }
 
 export const initEditor = ({
@@ -34,6 +36,7 @@ export const initEditor = ({
   compressImage,
   htmlToMarkdown,
   onFormatCommand,
+  onPasteIntoEmpty,
 }: EditorDeps): (() => void) => {
   const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
   if (!editor) return () => {};
@@ -163,11 +166,23 @@ export const initEditor = ({
         end: cursor,
       });
       if (converted) showToast('Pasted as Markdown — add Shift to paste plain text', true);
+      // After the toast above, so a flavor switch gets the last word.
+      if (before === '') onPasteIntoEmpty?.(text);
     };
     htmlToMarkdown
       .convert(html)
       .then((md) => (md && isWorthConverting(md, plain) ? insert(md, true) : insert(plain, false)))
       .catch(() => insert(plain, false));
+  };
+
+  const pastedImage = (data: DataTransfer | null): File | null => {
+    for (const item of data?.items ?? []) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) return file;
+      }
+    }
+    return null;
   };
 
   const onPaste = (e: ClipboardEvent) => {
@@ -180,18 +195,15 @@ export const initEditor = ({
       pasteAsMarkdown(html, plain);
       return;
     }
-    const items = e.clipboardData?.items;
-    if (items) {
-      for (const item of items) {
-        if (item.kind === 'file' && item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) {
-            e.preventDefault();
-            void embedImageFile(file);
-            return;
-          }
-        }
-      }
+    const image = pastedImage(e.clipboardData);
+    if (image) {
+      e.preventDefault();
+      void embedImageFile(image);
+      return;
+    }
+    if (editor.value === '' && plain.trim()) {
+      onPasteIntoEmpty?.(plain);
+      return;
     }
     if (!isUrl(plain)) return;
     const start = editor.selectionStart;
