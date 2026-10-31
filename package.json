@@ -44,6 +44,8 @@
     ]
   },
   "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/source-serif-4": "^5.3.1",
     "docx": "^9.8.0",
     "dompurify": "^3.4.16",
     "fflate": "^0.8.3",

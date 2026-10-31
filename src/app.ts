@@ -78,6 +78,16 @@ import { initStats } from './ui/stats.ts';
 import { initTaskToggle } from './ui/taskToggle.ts';
 import { initThemeToggle } from './ui/themeToggle.ts';
 import { showToast } from './ui/toast.ts';
+// Fonts ship with the app: no request to a font CDN, and the service worker
+// caches them like any other asset, so the design survives going offline.
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/600.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/source-serif-4/400.css';
+import '@fontsource/source-serif-4/400-italic.css';
+import '@fontsource/source-serif-4/600.css';
+import '@fontsource/source-serif-4/700.css';
 import './styles.css';
 
 import type MarkdownIt from 'markdown-it';
