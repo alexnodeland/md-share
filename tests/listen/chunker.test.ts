@@ -68,7 +68,9 @@ describe('extractSpeakableChunks', () => {
 
   it('names numbered equations by their tag', () => {
     const chunks = extractSpeakableChunks(
-      makeRoot('<div class="katex-display" id="eq:e">E=mc^2<span class="tag">(2)</span></div>'),
+      makeRoot(
+        '<div class="katex-display" id="eq:e">E=mc^2<span class="katex-tag">(2)</span></div>',
+      ),
     );
     expect(chunks[0]!.text).toBe('Equation (2) is displayed.');
   });
