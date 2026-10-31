@@ -43,6 +43,7 @@ import {
 } from './samples.ts';
 import { hasSharePayload, parseShareParams, sharedDocument, shareTargetDocument } from './share.ts';
 import { detectPlatform, formatShortcut } from './shortcuts.ts';
+import { isDeck } from './slides.ts';
 import { toggleTaskAtLine } from './taskToggle.ts';
 import { isTheme, mermaidThemeName, mermaidThemeVars } from './theme.ts';
 import { renderTOC } from './toc.ts';
@@ -154,10 +155,15 @@ const renderPreview = async (state: AppState): Promise<void> => {
   const preview = document.getElementById('preview');
   const scroller = document.getElementById('preview-scroll');
   if (!editor || !preview) return;
+  // The slides are built from the rendered preview; a late debounced render
+  // would wipe them mid-talk. Leaving the presentation renders afresh.
+  if (document.documentElement.dataset.presenting === 'true') return;
   const src = editor.value;
   const scrollTop = scroller?.scrollTop ?? 0;
   state.deps.mermaidCounter.reset();
   document.title = pageTitle(src);
+  const presentBtn = document.getElementById('btn-present');
+  if (presentBtn) presentBtn.hidden = true;
   if (!src.trim()) {
     preview.innerHTML = renderEmptyState();
     state.reportDiagnostics([]);
@@ -174,6 +180,7 @@ const renderPreview = async (state: AppState): Promise<void> => {
     const headings = env.headings ?? [];
     state.headings = headings;
     preview.innerHTML = browserSanitizer.sanitize(front + renderTOC(headings) + html);
+    if (presentBtn) presentBtn.hidden = !isDeck(Array.from(preview.children));
     state.reportDiagnostics(
       lintDocument(tokens, {
         body,
@@ -632,7 +639,14 @@ const boot = async (): Promise<void> => {
       return clone.innerHTML;
     },
     getPreviewElement: () => document.getElementById('preview'),
-    onPresent: () => presentation.enter(),
+  });
+  document.getElementById('btn-present')?.addEventListener('click', () => presentation.enter());
+  document.addEventListener('keydown', (e) => {
+    // `code`, not `key`: on a Mac, Option+P types "π".
+    if ((e.ctrlKey || e.metaKey) && e.altKey && e.code === 'KeyP' && !presentation.isActive()) {
+      e.preventDefault();
+      presentation.enter();
+    }
   });
   initPrintExpansion(() => document.getElementById('preview'));
   const importFile = createFileImporter({

@@ -279,6 +279,7 @@ button.active-listen {
   flex-direction: column;
 }
 .preview-pane {
+  position: relative;
   flex: 1 1 0;
   min-width: 160px;
   overflow: hidden;
@@ -1666,6 +1667,18 @@ details.atl-expand .expand-body {
 .dropdown.open {
   display: block;
 }
+.dropdown-label {
+  padding: 6px 10px 2px;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-xdim);
+}
+.dropdown [role="group"] + [role="group"] {
+  margin-top: 4px;
+  padding-top: 2px;
+  border-top: 1px solid var(--border);
+}
 .dropdown button {
   width: 100%;
   border: none;
@@ -2404,4 +2417,40 @@ html[data-embed="true"] #preview input[type="checkbox"] {
 }
 .embed-open[hidden] {
   display: none;
+}
+
+/* Offered when the document reads as a deck (see slides.ts isDeck). Sits
+   centred on the preview's header bar, so it never covers the document. */
+.present-float {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  gap: 6px;
+  height: 22px;
+  padding: 0 12px;
+  font-size: 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+.present-float:hover {
+  filter: brightness(1.1);
+}
+.present-float svg {
+  width: 10px;
+  height: 10px;
+}
+.present-float[hidden],
+html[data-presenting="true"] .present-float,
+html[data-embed="true"] .present-float {
+  display: none;
+}
+@media print {
+  .present-float {
+    display: none;
+  }
 }
