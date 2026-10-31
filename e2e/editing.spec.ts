@@ -93,3 +93,37 @@ test('Mod+Shift+V skips the Markdown conversion', async ({ page }) => {
   await pasteClipboard(page, { 'text/plain': 'Title', 'text/html': '<h1>Title</h1>' });
   await expect(editor(page)).toHaveValue('');
 });
+
+// A real paste (not a synthetic event), so the browser inserts the text.
+const pasteText = async (page: import('@playwright/test').Page, text: string) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.evaluate((t) => navigator.clipboard.writeText(t), text);
+  await editor(page).focus();
+  await page.keyboard.press('ControlOrMeta+V');
+};
+
+test('pasting an Obsidian note into an empty editor switches the flavor', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.locator('#flavor-select')).toHaveValue('commonmark');
+  await pasteText(page, '# Trip\n\n> [!tip] Pack light\n> One bag.\n\nSee [[Hotel]].');
+  await expect(page.locator('#flavor-select')).toHaveValue('obsidian');
+  await expect(page.locator('#toast')).toContainText('Looks like Obsidian Markdown');
+  await expect(preview(page).locator('.callout')).toHaveCount(1);
+});
+
+test('a flavor someone chose is not overridden by a paste', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('#flavor-select').selectOption('extended');
+  await pasteText(page, '| a | b |\n|---|---|\n| 1 | 2 |');
+  await expect(editor(page)).toHaveValue(/\| 1 \| 2 \|/);
+  await expect(page.locator('#flavor-select')).toHaveValue('extended');
+});
+
+test('pasting into a document that has text keeps the flavor', async ({ page }) => {
+  await page.goto('./');
+  await typeDoc(page, 'Intro\n\n');
+  await editor(page).press('ControlOrMeta+End');
+  await pasteText(page, '- [ ] task');
+  await expect(editor(page)).toHaveValue(/- \[ \] task/);
+  await expect(page.locator('#flavor-select')).toHaveValue('commonmark');
+});

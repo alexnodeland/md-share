@@ -7,6 +7,9 @@ import { basename, extname, resolve } from 'node:path';
 const USAGE = `Usage:
   node scripts/generate-share-link.mjs <file.md|file.txt> [--base=<url>] [--flavor=<name>]
 
+Without --flavor, the flavor is guessed from the document (Obsidian callouts,
+GitHub tables, Confluence panels, …), falling back to CommonMark.
+
 Examples:
   node scripts/generate-share-link.mjs notes.md
   node scripts/generate-share-link.mjs notes.txt --flavor=gfm
@@ -23,6 +26,40 @@ const ALLOWED_FLAVORS = new Set([
   'atlassian',
 ]);
 const DEFAULT_BASE = 'https://md.alexnodeland.com/';
+
+// A copy of src/detectFlavor.ts: this script is downloaded on its own, so it
+// can't import it. tests/detectFlavor.test.ts checks the two agree.
+const BIBLIOGRAPHY_FENCE = /^ {0,3}(`{3,}|~{3,})\s*bibliography\s*$/m;
+const FENCED_CODE = /^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^ {0,3}\1[ \t]*$|(?![\s\S]))/gm;
+const INLINE_CODE = /(`+)[^`\n][\s\S]*?\1/g;
+const RULES = [
+  [
+    'atlassian',
+    [
+      /^ *\{(info|note|warning|tip|panel|expand|quote|noformat)(:[^}\n]*)?\} *$/m,
+      /\{status(:[^}\n]*)?\}/,
+    ],
+  ],
+  ['obsidian', [/^ *> *\[![\w-]+\]/m, /!?\[\[[^\]\n]+\]\]/, /%%[\s\S]+?%%/]],
+  ['academic', [/\[-?@[\w:.-]+/, /\{#(fig|tbl|eq|sec):[\w-]+\}/, /\$\$[\s\S]+?\$\$/]],
+  ['extended', [/^\[\^[^\]\n]+\]:/m, /^[^\s:][^\n]*\n(?: *\n)?: {1,3}\S/m]],
+  [
+    'gfm',
+    [
+      /^ *[-*+] \[[ xX]\] /m,
+      /^ *\|?( *:?-+:? *\|)+( *:?-+:? *)?$/m,
+      /~~[^~\n]+~~/,
+    ],
+  ],
+];
+const detectFlavor = (text) => {
+  if (BIBLIOGRAPHY_FENCE.test(text)) return 'academic';
+  const prose = text.replace(FENCED_CODE, '').replace(INLINE_CODE, '');
+  for (const [flavor, patterns] of RULES) {
+    if (patterns.some((re) => re.test(prose))) return flavor;
+  }
+  return null;
+};
 
 const normalizeSource = (text) => {
   const withoutBom = text.startsWith('\uFEFF') ? text.slice(1) : text;
@@ -71,10 +108,10 @@ if (unknownOption) {
 }
 
 const baseRaw = parseOption(options, 'base') ?? DEFAULT_BASE;
-const flavor = parseOption(options, 'flavor') ?? 'commonmark';
+const flavorOption = parseOption(options, 'flavor');
 
-if (!ALLOWED_FLAVORS.has(flavor)) {
-  fail(`Unsupported flavor "${flavor}".`);
+if (flavorOption !== null && !ALLOWED_FLAVORS.has(flavorOption)) {
+  fail(`Unsupported flavor "${flavorOption}".`);
 }
 
 let baseUrl;
@@ -93,5 +130,6 @@ if (!source) {
 }
 
 const encoded = encodeDoc(source);
+const flavor = flavorOption ?? detectFlavor(source) ?? 'commonmark';
 const flavorQuery = flavor === 'commonmark' ? '' : `&f=${encodeURIComponent(flavor)}`;
 console.log(`${noHashBase}#d=${encoded}${flavorQuery}`);

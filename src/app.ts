@@ -16,6 +16,7 @@ import { browserSharedInbox } from './adapters/sharedInbox.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { citationTargets } from './completions.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
+import { detectFlavor } from './detectFlavor.ts';
 import { buildDocModel } from './docModel.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { recordSnapshot } from './draftHistory.ts';
@@ -454,6 +455,17 @@ const boot = async (): Promise<void> => {
     compressImage,
     htmlToMarkdown: browserHtmlToMarkdown,
     onFormatCommand: (cmd) => toolbar?.pulse(cmd),
+    // A note pasted from Obsidian, GitHub, or Confluence should render as its
+    // author saw it, without a trip to the flavor menu. Only the default
+    // flavor gives way; a flavor someone chose stays.
+    onPasteIntoEmpty: (text) => {
+      if (state.flavor !== 'commonmark') return;
+      const detected = detectFlavor(text);
+      if (!detected) return;
+      switchFlavor(detected);
+      rerender();
+      showToast(`Looks like ${FLAVOR_LABELS[detected]} Markdown — switched flavor`, true);
+    },
   });
   const mirrorEl = document.getElementById('editor-mirror');
   const editorWrap = editor.parentElement;
