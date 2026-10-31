@@ -19,9 +19,11 @@ test('a share link round-trips content and flavor, then forks on edit', async ({
   await expect(reader.locator('#preview mark')).toHaveText('marked');
   // Readers get the document, not its source, until they ask to edit.
   await expect(reader.locator('#editor')).toBeHidden();
+  await expect(reader.locator('#pane-divider')).toBeHidden();
   await expect(reader.locator('#btn-editor-toggle')).toHaveAttribute('aria-pressed', 'false');
   await reader.locator('#btn-readonly-edit').click();
   await expect(reader.locator('#editor')).toBeFocused();
+  await expect(reader.locator('#pane-divider')).toBeVisible();
 
   await reader.locator('#editor').press('End');
   await reader.keyboard.type('!');

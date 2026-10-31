@@ -15,8 +15,12 @@ export const initEditorToggle = ({
   const pane = document.getElementById('editor-pane');
   if (!pane) return { show: () => {} };
 
+  // The divider resizes the editor against the preview; alone it's a stray line.
+  const divider = document.getElementById('pane-divider');
+
   const setHidden = (hidden: boolean) => {
     pane.style.display = hidden ? 'none' : '';
+    if (divider) divider.style.display = hidden ? 'none' : '';
     button.setAttribute('aria-pressed', String(!hidden));
   };
 

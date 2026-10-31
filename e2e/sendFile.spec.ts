@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { editor, expect, test, typeDoc } from './fixtures.ts';
+import { editor, expect, preview, test, typeDoc } from './fixtures.ts';
 
 const DOC = '# Trip plan\n\n![Map](data:image/png;base64,AAAA)\n\nPack light.';
 
@@ -62,4 +62,20 @@ test('a file shared into the installed app (POST share target) becomes the docum
   await page.goto('./?shared=1');
   await expect.poll(() => new URL(page.url()).search).toBe('');
   await expect(editor(page)).toHaveValue('# From another app\n\nShared as a file.');
+});
+
+test('a note shared in from another app renders in its flavor', async ({ page }) => {
+  await page.goto('./');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  const landed = await page.evaluate(async () => {
+    const form = new FormData();
+    form.append('text', '# From Obsidian\n\n> [!note] Shared\n> from my phone');
+    const res = await fetch('./share-target', { method: 'POST', body: form });
+    return res.url;
+  });
+  await page.goto(landed);
+  await expect(page.locator('#flavor-select')).toHaveValue('obsidian');
+  await expect(page.locator('#toast')).toContainText('Added from share as Obsidian');
+  await expect(preview(page).locator('.callout')).toHaveCount(1);
 });
