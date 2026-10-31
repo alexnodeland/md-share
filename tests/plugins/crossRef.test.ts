@@ -90,7 +90,7 @@ describe('pluginCrossRef — equations', () => {
   it('tags labelled equations with their number and id', () => {
     const { html, refs } = render('$$ a $$\n\n$$ E = mc^2 $$ {#eq:e}\n\n$$\nx\n$$ {#eq:x}');
     expect(html).toContain('<div class="katex-display" id="eq:e"');
-    expect(html).toMatch(/id="eq:x"[\s\S]*x\\tag\{2\}[\s\S]*class="tag"/);
+    expect(html).toMatch(/id="eq:x"[\s\S]*x\\tag\{2\}[\s\S]*class="katex-tag"/);
     expect(html).not.toMatch(/>a\\tag/);
     expect(refs.get('eq:e')).toEqual({ kind: 'eq', number: 1 });
     expect(refs.get('eq:x')).toEqual({ kind: 'eq', number: 2 });

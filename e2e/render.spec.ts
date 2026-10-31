@@ -117,3 +117,18 @@ test('the page says what md-share is, for tabs and link previews', async ({ page
     /Markdown document as a link/,
   );
 });
+
+// Mermaid's defaults move between majors (v12: ELK layout, shadowed "neo"
+// look). app.ts pins the classic look; this notices if a bump undoes it.
+test('diagrams keep the classic look: curved edges, no shadows', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('#sample-select').selectOption('gfm');
+  const svg = preview(page).locator('.mermaid-container svg').first();
+  await expect(svg).toBeVisible();
+  const edges = await svg
+    .locator('.flowchart-link, path[class*="edge"]')
+    .evaluateAll((paths) => paths.map((p) => p.getAttribute('d') ?? ''));
+  expect(edges.length).toBeGreaterThan(0);
+  expect(edges.some((d) => d.includes('C'))).toBe(true);
+  expect(await svg.locator('[filter*="drop-shadow"], [style*="drop-shadow"]').count()).toBe(0);
+});

@@ -173,9 +173,10 @@ const describeMermaid = (el: Element): string => {
   return 'A diagram is shown here.';
 };
 
-// Numbered equations (Academic `{#eq:x}`) say which one it is.
+// Numbered equations (Academic `{#eq:x}`) say which one it is. KaTeX
+// renders the number as `.katex-tag` (`.tag` before 0.18).
 const chunkFromEquation = (el: Element): SpeechChunk => {
-  const number = el.querySelector('.tag')?.textContent;
+  const number = el.querySelector('.katex-tag')?.textContent;
   return {
     text: number ? `Equation ${number} is displayed.` : 'A mathematical equation is displayed.',
     el,
