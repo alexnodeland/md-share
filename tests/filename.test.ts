@@ -124,6 +124,6 @@ describe('pageTitle', () => {
   });
 
   it('is just the app name for untitled documents', () => {
-    expect(pageTitle('')).toBe('md-share');
+    expect(pageTitle('')).toBe('md-share — send Markdown as a link');
   });
 });
