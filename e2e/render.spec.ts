@@ -106,3 +106,14 @@ test('code grammars load on demand, aliases included', async ({ page }) => {
   // The editor mirror picks up the same grammar.
   await expect(page.locator('#editor-mirror .hljs-keyword', { hasText: 'const' })).toBeAttached();
 });
+
+// Shared links unfurl in chat apps from the page's own metadata: the
+// document rides in the fragment, which never reaches them.
+test('the page says what md-share is, for tabs and link previews', async ({ page }) => {
+  await page.goto('./');
+  await expect(page).toHaveTitle('md-share — send Markdown as a link');
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+    'content',
+    /Markdown document as a link/,
+  );
+});

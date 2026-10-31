@@ -2,7 +2,7 @@
 
 # 📝 md-share
 
-### ✨ Render, share, and export Markdown — no server required ✨
+### ✨ Send someone a Markdown document as a link ✨
 
 _The document **is** the URL._
 
@@ -20,11 +20,20 @@ _The document **is** the URL._
 
 <br>
 
-**Write → Share → Escape.** A lightweight markdown renderer that speaks six dialects, reads itself aloud, and compresses your whole document into a shareable URL. No backend. No account. No "session expired."
+No account, nothing stored, opens anywhere. Paste Markdown from the tool you already use, and md-share renders it the way it was written, reads it aloud, and compresses the whole document into the link itself. No backend. No sign-up. No "session expired."
 
 [**🌐 Live demo**](https://md.alexnodeland.com/) · [**Philosophy**](./PHILOSOPHY.md) · [**Contributing**](./CONTRIBUTING.md) · [**License**](./LICENSE)
 
 </div>
+
+---
+
+## 👋 Who it's for
+
+- **Obsidian users** sending a note to people who don't use Obsidian: callouts, wikilinks, and math render as you wrote them.
+- **Engineers** handing a README, RFC, or runbook to someone who'd rather not read raw Markdown.
+- **Anyone outside the workspace**: a Confluence page or Notion doc for someone without a seat. Paste it, send the link.
+- **Anyone who wants out**: Word, LaTeX, HTML, PNG, and PDF exports mean nothing you write here is trapped.
 
 ---
 

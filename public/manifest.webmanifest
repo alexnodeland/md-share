@@ -1,7 +1,7 @@
 {
   "name": "md-share",
   "short_name": "md-share",
-  "description": "Render, share, and export Markdown — no server required.",
+  "description": "Send someone a Markdown document as a link. No account, nothing stored, opens anywhere.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
