@@ -17,6 +17,11 @@ test('a share link round-trips content and flavor, then forks on edit', async ({
   await expect(reader.locator('#readonly-banner')).toBeVisible();
   await expect(reader.locator('#flavor-select')).toHaveValue('obsidian');
   await expect(reader.locator('#preview mark')).toHaveText('marked');
+  // Readers get the document, not its source, until they ask to edit.
+  await expect(reader.locator('#editor')).toBeHidden();
+  await expect(reader.locator('#btn-editor-toggle')).toHaveAttribute('aria-pressed', 'false');
+  await reader.locator('#btn-readonly-edit').click();
+  await expect(reader.locator('#editor')).toBeFocused();
 
   await reader.locator('#editor').press('End');
   await reader.keyboard.type('!');
@@ -85,6 +90,7 @@ test('opening a shared link keeps the previous draft in Recent versions', async 
 
   const link = `./#d=lz1.${LZString.compressToEncodedURIComponent('# Someone else')}`;
   await page.goto(link);
+  await page.locator('#btn-readonly-edit').click();
   await editor(page).press('End');
   await page.keyboard.type('x');
   await page.waitForTimeout(350);
@@ -163,4 +169,11 @@ test('Share… hands the link to the OS share sheet when available', async ({ pa
     () => (window as unknown as { shareCalls: unknown[] }).shareCalls,
   );
   expect(calls).toEqual([{ title: 'Sheet', url: expect.stringContaining('#d=') }]);
+});
+
+test('your own document still opens with the editor showing', async ({ page }) => {
+  await page.goto('./');
+  await typeDoc(page, '# Mine');
+  await page.reload();
+  await expect(editor(page)).toBeVisible();
 });
