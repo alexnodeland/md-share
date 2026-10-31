@@ -64,3 +64,32 @@ test('importing keeps the replaced text in Recent versions', async ({ page }) =>
   await page.locator('#btn-history').click();
   await expect(page.locator('#history-menu .history-item').first()).toContainText('Before import');
 });
+
+test('opening an Obsidian note switches to its flavor', async ({ page }) => {
+  await page.goto('./');
+  const chooser = page.waitForEvent('filechooser');
+  await page.locator('#btn-open').click();
+  await (await chooser).setFiles({
+    name: 'trip.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('# Trip\n\n> [!tip] Pack light\n> One bag.'),
+  });
+  await expect(page.locator('#flavor-select')).toHaveValue('obsidian');
+  await expect(page.locator('#toast')).toContainText('Loaded trip.md — looks like Obsidian');
+  await expect(preview(page).locator('.callout')).toHaveCount(1);
+});
+
+test('opening a file keeps a flavor someone chose', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('#flavor-select').selectOption('extended');
+  const chooser = page.waitForEvent('filechooser');
+  await page.locator('#btn-open').click();
+  await (await chooser).setFiles({
+    name: 'trip.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('See [[Hotel]].'),
+  });
+  await expect(preview(page)).toContainText('[[Hotel]]');
+  await expect(page.locator('#flavor-select')).toHaveValue('extended');
+  await expect(page.locator('#toast')).toHaveText('Loaded trip.md');
+});

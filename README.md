@@ -44,7 +44,7 @@ No account, nothing stored, opens anywhere. Paste Markdown from the tool you alr
 <td width="50%" valign="top">
 
 ### 🪄 Six Markdown flavors
-Paste from the tool you already use — it just renders. Paste a note into an empty editor and the flavor follows it: an Obsidian callout switches to Obsidian, a GitHub table to GitHub, a Confluence panel to Atlassian.
+Paste from the tool you already use — it just renders. Paste a note into an empty editor, open or drop a `.md` file, or share one in from another app, and the flavor follows it: an Obsidian callout switches to Obsidian, a GitHub table to GitHub, a Confluence panel to Atlassian.
 - **CommonMark** · the default, strict
 - **Extended** · footnotes, deflists, typographer
 - **Academic** · Extended + KaTeX math, numbered citations from a BibTeX `bibliography` block (`[@key]`, `@key`), and pandoc-crossref-style numbered figures, tables, and equations (`{#fig:x}` → `@fig:x`)
@@ -78,7 +78,7 @@ Users should always be able to leave:
 - ⬇️ **Word** (`.docx`) — real headings, numbered lists, footnotes, tables, tinted callouts, diagrams as images
 - ⬇️ **LaTeX** (`.tex`) — compiles as is: `\cite`, `\ref`, figure and table floats, labelled equations, the bibliography
 - ⬇️ **HTML page** — one self-contained file, styled like the preview
-- 📋 **Copy formatted** — paste into Docs, email, or Notion with formatting intact
+- 📋 **Copy → Formatted text** — paste into Docs, email, or Notion with formatting intact
 - 🖼️ **PNG** — for chat, slides, screenshots
 - 🖨️ **PDF** — via print CSS, properly themed; folded sections print expanded
 

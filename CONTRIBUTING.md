@@ -114,7 +114,7 @@ Run `npm run dev`, load `http://localhost:5173/`, and exercise:
 - [ ] Drop a `.md` file anywhere on the window → it loads into the editor; drop an image → it embeds
 - [ ] In Chrome, Open… a real `.md` file, edit, `Ctrl+S` → the file on disk changes (grant the write prompt); Export → Save to file… creates one
 - [ ] Drop (or Open…) a real Word document with headings, a table, and a photo → it arrives as Markdown with the image compressed
-- [ ] PNG and PDF exports look right; Copy formatted pastes into a doc with formatting
+- [ ] PNG and PDF exports look right; Copy → Formatted text pastes into a doc with formatting
 - [ ] Word export opens cleanly in Word / Google Docs / LibreOffice: headings in the navigation pane, working numbered lists and footnotes, diagrams as pictures
 - [ ] LaTeX export of the Academic sample compiles with `pdflatex` (run twice for references) with no errors or undefined references
 - [ ] Copy a few paragraphs with a link and a list from Google Docs (or Word) and paste — it arrives as Markdown; `Ctrl/⌘+Shift+V` pastes plain

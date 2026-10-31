@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { detectFlavor } from '../src/detectFlavor.ts';
+import { detectFlavor, flavorToAdopt } from '../src/detectFlavor.ts';
 import { SAMPLE_FLAVOR, type SampleKey, sampleFor } from '../src/samples.ts';
 
 describe('detectFlavor', () => {
@@ -65,6 +65,21 @@ describe('detectFlavor', () => {
     expect(detectFlavor('Use {braces} freely.')).toBeNull();
     expect(detectFlavor('~ approx ~')).toBeNull();
     expect(detectFlavor('Above\n\n---\n\nBelow')).toBeNull();
+  });
+});
+
+describe('flavorToAdopt', () => {
+  it('switches away from the default flavor when the text says where it came from', () => {
+    expect(flavorToAdopt('commonmark', 'See [[note]].')).toBe('obsidian');
+  });
+
+  it('stays when nothing is detected', () => {
+    expect(flavorToAdopt('commonmark', '# Plain')).toBeNull();
+  });
+
+  it('never overrides a flavor someone chose', () => {
+    expect(flavorToAdopt('extended', 'See [[note]].')).toBeNull();
+    expect(flavorToAdopt('gfm', '{info}\nx\n{info}')).toBeNull();
   });
 });
 

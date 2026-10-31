@@ -14,8 +14,11 @@ export interface FileImportDeps {
   docxReader: DocxReader;
   htmlToMarkdown: HtmlToMarkdown;
   compressImage: ImageCompressor;
-  /** Replace the document with imported text; `fromDocx` marks Word imports. */
-  onText: (text: string, fromDocx: boolean) => void;
+  /**
+   * Replace the document with imported text; `fromDocx` marks Word imports.
+   * May return a note for the "Loaded" toast (e.g. a flavor switch).
+   */
+  onText: (text: string, fromDocx: boolean) => string | undefined;
   /** Insert an image at the cursor. */
   onImageInsert: (dataUrl: string) => void;
 }
@@ -54,8 +57,8 @@ export const createFileImporter = (deps: FileImportDeps): FileImporter => {
     const kind = fileKind(file.name, file.type);
     try {
       if (kind === 'text') {
-        deps.onText(await file.text(), false);
-        showToast(`Loaded ${file.name}`, true);
+        const note = deps.onText(await file.text(), false);
+        showToast(note ? `Loaded ${file.name} — ${note}` : `Loaded ${file.name}`, true);
       } else if (kind === 'docx') {
         await importDocx(file);
       } else if (kind === 'image') {

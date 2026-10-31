@@ -39,3 +39,10 @@ export const detectFlavor = (text: string): Flavor | null => {
   }
   return null;
 };
+
+/**
+ * The flavor a fresh document should switch to, or `null` to stay. Only the
+ * default flavor gives way: a flavor someone chose is theirs.
+ */
+export const flavorToAdopt = (current: Flavor, text: string): Flavor | null =>
+  current === 'commonmark' ? detectFlavor(text) : null;

@@ -16,7 +16,7 @@ import { browserSharedInbox } from './adapters/sharedInbox.ts';
 import { browserSynth } from './adapters/speechSynth.ts';
 import { citationTargets } from './completions.ts';
 import { type HeadingPosition, getCurrentHeading as pickCurrentHeading } from './currentHeading.ts';
-import { detectFlavor } from './detectFlavor.ts';
+import { flavorToAdopt } from './detectFlavor.ts';
 import { buildDocModel } from './docModel.ts';
 import { clearDraft, loadDraft, saveDraft } from './draft.ts';
 import { recordSnapshot } from './draftHistory.ts';
@@ -367,17 +367,20 @@ const loadShareTarget = (editor: HTMLTextAreaElement, shared: string | null): bo
   return true;
 };
 
-/** Fill the editor from a shared link, else from the saved draft. */
+/**
+ * Fill the editor from a shared link, else from the saved draft. True when
+ * the document came in through the OS share sheet (a fresh document).
+ */
 const loadInitialDocument = (
   params: ShareParams,
   editor: HTMLTextAreaElement,
   banner: HTMLElement | null,
   shared: string | null,
-): void => {
+): boolean => {
   if (params.source !== null) {
     editor.value = params.source;
     // An embed is a read-only view on someone else's site: no drafts, no banner.
-    if (params.embed) return;
+    if (params.embed) return false;
     // The first edit forks the shared doc into the draft slot; keep the old draft.
     const draft = loadDraft(browserStorage);
     if (draft && draft !== params.source) snapshot(draft);
@@ -388,15 +391,16 @@ const loadInitialDocument = (
       editor.removeEventListener('input', clearBanner);
     };
     editor.addEventListener('input', clearBanner);
-    return;
+    return false;
   }
-  if (loadShareTarget(editor, shared)) return;
+  if (loadShareTarget(editor, shared)) return true;
   const unreadableLink = hasSharePayload(window.location.hash, window.location.search);
   if (unreadableLink) stripUrlPayload();
   const draft = loadDraft(browserStorage);
   if (draft) editor.value = draft;
   if (unreadableLink) showToast('Could not read that shared link — it may be truncated');
   else if (draft) showToast('Draft restored', true);
+  return false;
 };
 
 const boot = async (): Promise<void> => {
@@ -446,7 +450,12 @@ const boot = async (): Promise<void> => {
   // Paste detection picks the flavor, so the hint names sources, not flavors.
   editor.placeholder = `Write here, or ${pasteHint} to paste from GitHub, Obsidian, Confluence, Word…`;
 
-  loadInitialDocument(params, editor, banner, params.source === null ? await readShare() : null);
+  const receivedShare = loadInitialDocument(
+    params,
+    editor,
+    banner,
+    params.source === null ? await readShare() : null,
+  );
   if (params.embed) initEmbedMode(editor);
   state.activeSample = editor.value ? isSampleContent(editor.value) : null;
   setSampleSelectValue(state.activeSample);
@@ -484,12 +493,7 @@ const boot = async (): Promise<void> => {
     // author saw it, without a trip to the flavor menu. Only the default
     // flavor gives way; a flavor someone chose stays.
     onPasteIntoEmpty: (text) => {
-      if (state.flavor !== 'commonmark') return;
-      const detected = detectFlavor(text);
-      if (!detected) return;
-      switchFlavor(detected);
-      rerender();
-      showToast(`Looks like ${FLAVOR_LABELS[detected]} Markdown — switched flavor`, true);
+      adoptFlavorOf(text, (label) => `Looks like ${label} Markdown — switched flavor`);
     },
   });
   const mirrorEl = document.getElementById('editor-mirror');
@@ -513,6 +517,26 @@ const boot = async (): Promise<void> => {
     ensureKatexFor(next);
     setFlavorSelectValue(next);
   };
+  /**
+   * A fresh, whole document (pasted into an empty editor, opened, dropped, or
+   * shared in from another app) renders in the flavor it was written for.
+   * Says so with `message(label)`; returns that message, or undefined.
+   */
+  const adoptFlavorOf = (text: string, message: (label: string) => string): string | undefined => {
+    const detected = flavorToAdopt(state.flavor, text);
+    if (!detected) return undefined;
+    switchFlavor(detected);
+    rerender();
+    const note = message(FLAVOR_LABELS[detected]);
+    showToast(note, true);
+    return note;
+  };
+  if (receivedShare) {
+    adoptFlavorOf(
+      editor.value,
+      (label) => `Added from share as ${label} — your previous draft is in Recent versions`,
+    );
+  }
   initFlavorSelect({
     onChange: (next) => {
       switchFlavor(next);
@@ -659,6 +683,9 @@ const boot = async (): Promise<void> => {
       linkedFile.unlink();
       applyEdit(editor, { value: text, start: 0, end: 0 });
       rerender();
+      return fromDocx
+        ? undefined
+        : adoptFlavorOf(text, (label) => `looks like ${label}, switched flavor`);
     },
     onImageInsert: (dataUrl) => {
       const r = insertImageAtCursor(
