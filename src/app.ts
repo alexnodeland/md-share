@@ -54,7 +54,7 @@ import { initCodeCopyButtons } from './ui/codeCopyButtons.ts';
 import { initDropdowns } from './ui/dropdown.ts';
 import { initDropZone } from './ui/dropZone.ts';
 import { initEditor } from './ui/editor.ts';
-import { initEditorToggle } from './ui/editorToggle.ts';
+import { type EditorToggle, initEditorToggle } from './ui/editorToggle.ts';
 import { initEditorUndo } from './ui/editorUndo.ts';
 import { initEmbedMode } from './ui/embedMode.ts';
 import { initPrintExpansion } from './ui/expandDetails.ts';
@@ -219,6 +219,8 @@ const renderPreview = async (state: AppState): Promise<void> => {
 
 const THEME_STORAGE_KEY = 'md-share:theme';
 const FLAVOR_STORAGE_KEY = 'md-share:flavor';
+/** Matches the CSS breakpoint where the panes become Edit/View tabs. */
+const MOBILE_LAYOUT = '(max-width: 900px)';
 
 const initialTheme = (): Theme => {
   const value = document.documentElement.dataset.theme;
@@ -434,21 +436,27 @@ const boot = async (): Promise<void> => {
 
   const platform = detectPlatform(navigator.platform);
   const pasteHint = formatShortcut('Mod+V', platform);
-  const updatePlaceholder = () => {
-    editor.placeholder = `${pasteHint} to paste ${FLAVOR_LABELS[state.flavor]} markdown…`;
-  };
+  // Paste detection picks the flavor, so the hint names sources, not flavors.
+  editor.placeholder = `Write here, or ${pasteHint} to paste from GitHub, Obsidian, Confluence, Word…`;
 
   loadInitialDocument(params, editor, banner, params.source === null ? await readShare() : null);
   if (params.embed) initEmbedMode(editor);
   state.activeSample = editor.value ? isSampleContent(editor.value) : null;
   setSampleSelectValue(state.activeSample);
-  updatePlaceholder();
 
   let rerender = () => {
     void renderPreview(state);
   };
 
   let toolbar: SelectionToolbar | undefined;
+  // Set once the editor toggle exists (it needs the topbar button).
+  let editorToggle: EditorToggle | undefined;
+  /** Bring the editor into view and put the cursor in it. */
+  const startEditing = (): void => {
+    editorToggle?.show();
+    if (window.matchMedia(MOBILE_LAYOUT).matches) document.getElementById('btn-edit-view')?.click();
+    editor.focus();
+  };
   initEditor({
     onChange: () => {
       saveDraft(browserStorage, editor.value);
@@ -497,7 +505,6 @@ const boot = async (): Promise<void> => {
     browserStorage.set(FLAVOR_STORAGE_KEY, next);
     ensureKatexFor(next);
     setFlavorSelectValue(next);
-    updatePlaceholder();
   };
   initFlavorSelect({
     onChange: (next) => {
@@ -522,6 +529,7 @@ const boot = async (): Promise<void> => {
     const key = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-sample]')?.dataset
       .sample;
     if (key && isSampleKey(key)) loadSample(key);
+    if ((e.target as HTMLElement | null)?.closest('[data-start-writing]')) startEditing();
   });
   initClearButton({
     onClear: () => {
@@ -544,9 +552,11 @@ const boot = async (): Promise<void> => {
       rerender();
     },
   });
+  // Phones open on the preview when there's something to read (a shared
+  // link) and when there's nothing yet: the empty preview is the welcome.
   initMobileToggle({
     onShowPreview: () => rerender(),
-    initialView: params.source !== null ? 'preview' : undefined,
+    initialView: params.source !== null || !editor.value ? 'preview' : undefined,
   });
   initHistoryMenu({
     storage: browserStorage,
@@ -663,8 +673,15 @@ const boot = async (): Promise<void> => {
   document.getElementById('btn-find')?.addEventListener('click', () => findBar.open('find'));
   const editorToggleBtn = document.getElementById('btn-editor-toggle');
   if (editorToggleBtn instanceof HTMLButtonElement) {
-    initEditorToggle({ button: editorToggleBtn });
+    // Someone opening a shared link came to read: on a wide screen, give them
+    // the document, not its source. The banner's Edit brings the editor back.
+    const sharedView = params.source !== null && !params.embed;
+    editorToggle = initEditorToggle({
+      button: editorToggleBtn,
+      initiallyHidden: sharedView && !window.matchMedia(MOBILE_LAYOUT).matches,
+    });
   }
+  document.getElementById('btn-readonly-edit')?.addEventListener('click', startEditing);
   initHelpModal();
   const previewScroll = document.getElementById('preview-scroll');
   if (previewScroll) initScrollSync({ editor, preview: previewScroll });

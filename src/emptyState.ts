@@ -10,7 +10,10 @@ export const EMPTY_STATE_SAMPLES: readonly SampleKey[] = [
   'presentation',
 ];
 
-/** First-run preview: what this is, how to start, and one-click samples. */
+/**
+ * First-run preview: what this is for, how to start, and one-click samples.
+ * On phones it's the first screen, so it carries its own way into the editor.
+ */
 export const renderEmptyState = (samples: readonly SampleKey[] = EMPTY_STATE_SAMPLES): string => {
   const buttons = samples
     .map(
@@ -20,9 +23,10 @@ export const renderEmptyState = (samples: readonly SampleKey[] = EMPTY_STATE_SAM
     .join('');
   return [
     '<div class="preview-empty">',
-    '<p class="preview-empty-title">Nothing to preview yet</p>',
-    '<p>Type or paste in the editor, drop a <code>.md</code> or Word <code>.docx</code> file anywhere, or use Open.</p>',
-    `<p class="preview-empty-samples">Or start from a sample: ${buttons}</p>`,
+    '<p class="preview-empty-title">Paste Markdown from anywhere</p>',
+    '<p>GitHub, Obsidian, Confluence, Word, Google Docs — it renders the way it was written. Or drop a <code>.md</code> or <code>.docx</code> file anywhere, or use Open.</p>',
+    '<p class="mobile-only"><button type="button" class="preview-empty-start" data-start-writing>Start writing</button></p>',
+    `<p class="preview-empty-samples">See what it does: ${buttons}</p>`,
     '<p class="preview-empty-note">Nothing leaves your browser. Share puts the whole document inside the link.</p>',
     '</div>',
   ].join('');
