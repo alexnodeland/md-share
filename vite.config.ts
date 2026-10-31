@@ -19,7 +19,9 @@ export default defineConfig({
   base: './',
   build: {
     target: 'es2022',
-    sourcemap: true,
+    // No maps in the deployed site: they were several MB per chunk and only
+    // useful locally, where `npm run dev` serves its own.
+    sourcemap: false,
     // Mermaid's parser chunk (~660 kB) is lazy — loaded only for documents
     // with a diagram. Keep the limit just above it so a bloated entry chunk
     // still warns.

@@ -1,15 +1,11 @@
 import { test as base, expect, type Page } from '@playwright/test';
 
-/**
- * Every test fails on an uncaught page error, and runs offline from web
- * fonts so results don't depend on the network.
- */
+/** Every test fails on an uncaught page error. */
 export const test = base.extend<{ pageErrors: string[] }>({
   pageErrors: [
     async ({ page }, use) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
-      await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort());
       await use(errors);
       expect(errors, 'uncaught page errors').toEqual([]);
     },
