@@ -7,8 +7,15 @@
       http-equiv="Content-Security-Policy"
       content="object-src 'none'; base-uri 'self'; form-action 'none'"
     />
-    <title>md-share</title>
-    <meta name="description" content="Render, share, and export Markdown — no server required." />
+    <title>md-share — send Markdown as a link</title>
+    <meta name="description" content="Send someone a Markdown document as a link. No account, nothing stored, opens anywhere." />
+    <!-- Chat apps unfurl links from these: the document itself rides in the
+         fragment, which never reaches them, so say what md-share is. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="md-share" />
+    <meta property="og:title" content="md-share — send Markdown as a link" />
+    <meta property="og:description" content="Send someone a Markdown document as a link. No account, nothing stored, opens anywhere." />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180.png" />

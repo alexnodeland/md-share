@@ -36,7 +36,7 @@ export const documentTitle = (source: string): string | null => {
 /** Browser tab title: the document's title, then the app name. */
 export const pageTitle = (source: string): string => {
   const title = documentTitle(source);
-  return title ? `${title} · md-share` : 'md-share';
+  return title ? `${title} · md-share` : 'md-share — send Markdown as a link';
 };
 
 export const slugifyFilename = (text: string): string =>
